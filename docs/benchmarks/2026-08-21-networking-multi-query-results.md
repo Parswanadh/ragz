@@ -1,9 +1,9 @@
 # RAGZ Multi-Query Retrieval: Synthetic Fusion Pilot and Implementation Report
 
-**Date:** 2026-08-21  
-**Feature branch:** `codex/multi-query-retrieval`  
-**Fork:** <https://github.com/Parswanadh/ragz/tree/codex/multi-query-retrieval>  
-**Base:** upstream `b23949853fa2c76584218d68ec619685525568ab`  
+**Date:** 2026-08-21
+**Feature branch:** `codex/multi-query-retrieval`
+**Fork:** <https://github.com/Parswanadh/ragz/tree/codex/multi-query-retrieval>
+**Base:** upstream `b23949853fa2c76584218d68ec619685525568ab`
 **Scored feature commit:** `cfe7d1a105c153fd069af83a2091ba350d0c120f`
 **Benchmark status:** synthetic fusion pilot; live expansion/provider cell pending
 
@@ -232,13 +232,12 @@ and ambient Redis/Celery/KEK test leakage were fixed in merged PR #2.
 
 ## Verification snapshot
 
-- Relevant backend baseline: 49 passed
-- Multi-query/query-expansion/retrieval/settings/isolation suite: 110 passed
-- Workspace API + migration: 28 passed
-- Benchmark tooling: 9 passed
-- Frontend: 698 passed
+- Full backend pytest after all review fixes: 1,707 passed, 14 skipped, 0 failed
+- Focused tenant/workspace/group-ACL and benchmark-tooling review suite: 15 passed
+- Frontend Vitest: 698 passed, 0 failed
 - Ruff: passed
 - mypy: 158 source files passed
 - import-linter: 2 contracts kept
 - Frontend lint/typecheck/build: passed
-- Full backend pytest: 1,694 passed, 14 skipped, 0 failed
+- Alembic: one head (`6a8d2c4f1b90`)
+- Docker Compose configuration and Git whitespace checks: passed
