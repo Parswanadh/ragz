@@ -6,12 +6,13 @@ from qdrant_client import models
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import get_settings
-from ragz.core.errors import WorkspaceAccessDenied
+from ragz.core.errors import UpstreamError, WorkspaceAccessDenied
 from ragz.modules.auth.models import User
 from ragz.modules.models.models import LOCAL_EMBEDDING_MODEL_ID
 from ragz.modules.retrieval import service as retrieval_service
 from ragz.modules.retrieval.client import COLLECTION, get_qdrant
 from ragz.modules.retrieval.embeddings import embed_sparse, get_dense_embedder
+from ragz.modules.retrieval.query_expansion import ExpandedQueries
 from ragz.modules.retrieval.service import (
     RetrievedChunk,
     _dedupe_hq,
@@ -37,12 +38,19 @@ _LOCAL_MODEL_KW = {
 async def seed_workspace(
     session: AsyncSession, org_name: str, *, role: str = "user", member: bool = True,
     min_score: float = 0.0, top_k: int = 8, rerank_enabled: bool = False,
+    multi_query_enabled: bool = False,
 ) -> tuple[TenantContext, Workspace]:
     org = Organization(name=org_name)
     session.add(org)
     await session.flush()
-    ws = Workspace(org_id=org.id, name="ws", min_score=min_score,
-                   top_k=top_k, rerank_enabled=rerank_enabled)
+    ws = Workspace(
+        org_id=org.id,
+        name="ws",
+        min_score=min_score,
+        top_k=top_k,
+        rerank_enabled=rerank_enabled,
+        multi_query_enabled=multi_query_enabled,
+    )
     user = User(org_id=org.id, email=f"u@{org_name}.com", password_hash="x", role=role)  # noqa: S106
     session.add_all([ws, user])
     await session.flush()
@@ -83,6 +91,28 @@ async def upsert_texts(
     return document_id
 
 
+class _FakeQueryExpander:
+    def __init__(
+        self,
+        alternatives: tuple[str, ...] = ("expanded alpha", "expanded beta"),
+        *,
+        error: Exception | None = None,
+    ) -> None:
+        self.alternatives = alternatives
+        self.error = error
+        self.calls: list[tuple[str, str]] = []
+
+    async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+        self.calls.append((query, model))
+        if self.error is not None:
+            raise self.error
+        return ExpandedQueries(
+            queries=(query, *self.alternatives),
+            prompt_tokens=13,
+            completion_tokens=5,
+        )
+
+
 async def test_retrieve_returns_matching_chunk(
     session: AsyncSession, qdrant_collection: None
 ) -> None:
@@ -111,6 +141,122 @@ async def test_empty_workspace_is_no_answer(
     ctx, ws = await seed_workspace(session, "orgc")
     result = await retrieve(session, ctx, ws.id, "anything")
     assert result.no_answer and result.chunks == []
+
+
+async def test_disabled_multi_query_never_calls_expander(
+    session: AsyncSession, qdrant_collection: None
+) -> None:
+    ctx, ws = await seed_workspace(session, "mq-disabled")
+    await upsert_texts(ctx, ws, ["alpha report"])
+    expander = _FakeQueryExpander()
+
+    result = await retrieve(
+        session, ctx, ws.id, "alpha", query_expander=expander
+    )
+
+    assert result.chunks
+    assert expander.calls == []
+
+
+async def test_enabled_multi_query_without_utility_model_uses_original_only(
+    session: AsyncSession, qdrant_collection: None
+) -> None:
+    ctx, ws = await seed_workspace(
+        session, "mq-no-utility", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+    expander = _FakeQueryExpander()
+
+    result = await retrieve(
+        session, ctx, ws.id, "alpha", query_expander=expander
+    )
+
+    assert result.chunks
+    assert expander.calls == []
+
+
+async def test_enabled_multi_query_builds_six_filtered_prefetches_and_records_usage(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from sqlalchemy import select
+
+    from ragz.modules.quotas.models import UsageRecord
+
+    ctx, ws = await seed_workspace(
+        session, "mq-lanes", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha beta report", "unrelated text"])
+    expander = _FakeQueryExpander(("alpha report", "beta report"))
+    client = get_qdrant()
+    original_query_points = client.query_points
+    captured_prefetches: list[models.Prefetch] = []
+
+    async def spy_query_points(*args, **kwargs):  # type: ignore[no-untyped-def]
+        if kwargs.get("prefetch") is not None:
+            captured_prefetches.extend(kwargs["prefetch"])
+        return await original_query_points(*args, **kwargs)
+
+    monkeypatch.setattr(client, "query_points", spy_query_points)
+
+    result = await retrieve(
+        session, ctx, ws.id, "alpha beta", query_expander=expander
+    )
+
+    assert result.chunks
+    assert expander.calls == [("alpha beta", "utility-model")]
+    assert len(captured_prefetches) == 6
+    assert all(prefetch.filter is not None for prefetch in captured_prefetches)
+    usage = (
+        await session.execute(
+            select(UsageRecord).where(
+                UsageRecord.org_id == ctx.org_id,
+                UsageRecord.feature == "query_expansion",
+            )
+        )
+    ).scalar_one()
+    assert (usage.prompt_tokens, usage.completion_tokens) == (13, 5)
+
+
+async def test_multi_query_provider_failure_degrades_to_original(
+    session: AsyncSession, qdrant_collection: None, utility_model: object
+) -> None:
+    ctx, ws = await seed_workspace(
+        session, "mq-provider-down", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+    expander = _FakeQueryExpander(error=UpstreamError("provider down"))
+
+    result = await retrieve(
+        session, ctx, ws.id, "alpha", query_expander=expander
+    )
+
+    assert result.chunks
+    assert expander.calls == [("alpha", "utility-model")]
+
+
+async def test_multi_query_no_answer_uses_best_variant_dense_score(
+    session: AsyncSession, qdrant_collection: None, utility_model: object
+) -> None:
+    ctx, ws = await seed_workspace(
+        session,
+        "mq-threshold",
+        min_score=0.99,
+        multi_query_enabled=True,
+    )
+    await upsert_texts(ctx, ws, ["flux capacitor requires 1.21 gigawatts"])
+    expander = _FakeQueryExpander(
+        ("flux capacitor requires 1.21 gigawatts",)
+    )
+
+    result = await retrieve(
+        session, ctx, ws.id, "unrelated terminology", query_expander=expander
+    )
+
+    assert result.chunks
+    assert result.no_answer is False
 
 
 async def test_retrieve_uses_workspace_specific_collection(
