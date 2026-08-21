@@ -234,4 +234,9 @@ test('renders single and multi-query answers side by side with sources and timin
   expect(within(multiCard as HTMLElement).getByText('policy.pdf')).toBeInTheDocument();
   expect(screen.getByText('12.0 ms total')).toBeInTheDocument();
   expect(screen.getByText('16.0 ms total')).toBeInTheDocument();
+
+  await user.clear(screen.getByLabelText('Comparison question'));
+  await user.type(screen.getByLabelText('Comparison question'), 'A different question');
+  expect(screen.queryByRole('heading', { name: 'Single query' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Multi-query' })).not.toBeInTheDocument();
 });

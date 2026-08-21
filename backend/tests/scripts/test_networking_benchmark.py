@@ -18,6 +18,7 @@ from run_multi_query_benchmark import (  # noqa: E402
     ranking_metrics,
     safe_query_record,
 )
+from seed_networking_comparison_lab import validate_lab_target  # noqa: E402
 
 
 def test_query_set_requires_original_alternatives_and_page_qrels(tmp_path: Path) -> None:
@@ -216,3 +217,34 @@ def test_anythingllm_segment_ids_are_stable_at_boundaries() -> None:
     assert segment_id("book-1", 1, pages_per_segment=20) == "book-1-pages-0001-0020"
     assert segment_id("book-1", 20, pages_per_segment=20) == "book-1-pages-0001-0020"
     assert segment_id("book-1", 21, pages_per_segment=20) == "book-1-pages-0021-0040"
+
+
+def test_comparison_lab_requires_explicit_dedicated_database_confirmation() -> None:
+    database_url = "postgresql+asyncpg://ragz:ragz@localhost/ragz_mq_lab_review"
+
+    assert (
+        validate_lab_target(
+            database_url=database_url,
+            environment="dev",
+            confirmed_database="ragz_mq_lab_review",
+        )
+        == "ragz_mq_lab_review"
+    )
+    with pytest.raises(RuntimeError):
+        validate_lab_target(
+            database_url=database_url,
+            environment="production",
+            confirmed_database="ragz_mq_lab_review",
+        )
+    with pytest.raises(RuntimeError):
+        validate_lab_target(
+            database_url=database_url,
+            environment="dev",
+            confirmed_database="ragz",
+        )
+    with pytest.raises(RuntimeError):
+        validate_lab_target(
+            database_url="postgresql+asyncpg://ragz:ragz@localhost/ragz",
+            environment="dev",
+            confirmed_database="ragz",
+        )

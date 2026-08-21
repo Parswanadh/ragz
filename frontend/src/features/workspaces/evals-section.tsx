@@ -25,6 +25,11 @@ const EXAMPLES = [
   'Why may BGP deliberately select an AS path that is not the shortest available route?',
 ] as const;
 
+interface SubmittedComparison {
+  question: string;
+  modelName: string;
+}
+
 function ms(value: number): string {
   return `${value.toFixed(1)} ms`;
 }
@@ -54,10 +59,21 @@ export function EvalsSection({
   const compare = useCompareAnswers(workspaceId);
   const [comparisonQuestion, setComparisonQuestion] = useState('');
   const [modelId, setModelId] = useState<string | null>(defaultModelId);
+  const [submittedComparison, setSubmittedComparison] = useState<SubmittedComparison | null>(null);
   const [question, setQuestion] = useState('');
   const [expected, setExpected] = useState<Set<string>>(new Set());
   const [removing, setRemoving] = useState<GoldenQueryOut | null>(null);
   const effectiveModelId = modelId ?? defaultModelId ?? models.data?.[0]?.id ?? null;
+
+  const clearStaleComparison = (): void => {
+    if (compare.data !== undefined || compare.error !== null) compare.reset();
+    setSubmittedComparison(null);
+  };
+
+  const updateComparisonQuestion = (value: string): void => {
+    clearStaleComparison();
+    setComparisonQuestion(value);
+  };
 
   const toggleExpected = (id: string): void => {
     setExpected((prev) => {
@@ -110,7 +126,8 @@ export function EvalsSection({
             <textarea
               id="comparison-question"
               value={comparisonQuestion}
-              onChange={(event) => setComparisonQuestion(event.target.value)}
+              onChange={(event) => updateComparisonQuestion(event.target.value)}
+              disabled={compare.isPending}
               rows={3}
               maxLength={2000}
               placeholder="Ask one question against the indexed documents…"
@@ -122,8 +139,11 @@ export function EvalsSection({
             <NativeSelect
               id="comparison-model"
               value={effectiveModelId ?? ''}
-              onChange={(event) => setModelId(event.target.value)}
-              disabled={(models.data?.length ?? 0) === 0}
+              onChange={(event) => {
+                clearStaleComparison();
+                setModelId(event.target.value);
+              }}
+              disabled={(models.data?.length ?? 0) === 0 || compare.isPending}
             >
               {(models.data ?? []).map((model) => (
                 <option key={model.id} value={model.id}>
@@ -137,10 +157,17 @@ export function EvalsSection({
             className="h-8"
             disabled={!comparisonQuestion.trim() || effectiveModelId === null || compare.isPending}
             onClick={() => {
+              const question = comparisonQuestion.trim();
+              const selectedModel = models.data?.find((model) => model.id === effectiveModelId);
+              if (!effectiveModelId) return;
+              setSubmittedComparison({
+                question,
+                modelName: selectedModel?.display_name ?? 'Workspace default',
+              });
               compare.mutate(
                 {
-                  question: comparisonQuestion.trim(),
-                  model_id: effectiveModelId ?? undefined,
+                  question,
+                  model_id: effectiveModelId,
                 },
                 { onError: (error) => toast.error(error.message) },
               );
@@ -155,8 +182,9 @@ export function EvalsSection({
             <button
               key={example}
               type="button"
-              onClick={() => setComparisonQuestion(example)}
-              className="rounded-md border border-line-faint bg-subtle px-2 py-1 text-left text-[11px] text-secondary transition-colors hover:border-line hover:text-ink"
+              onClick={() => updateComparisonQuestion(example)}
+              disabled={compare.isPending}
+              className="rounded-md border border-line-faint bg-subtle px-2 py-1 text-left text-[11px] text-secondary transition-colors hover:border-line hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
             >
               Example {index + 1}
             </button>
@@ -169,14 +197,14 @@ export function EvalsSection({
           </div>
         ) : null}
 
-        {compare.data ? (
+        {compare.data && submittedComparison ? (
           <div className="grid gap-3 lg:grid-cols-[minmax(220px,0.65fr)_repeat(2,minmax(0,1fr))]">
             <aside className="rounded-lg border border-line bg-subtle p-4">
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
                 Fixed input
               </p>
               <p className="text-[14px] font-medium leading-relaxed text-ink">
-                {comparisonQuestion}
+                {submittedComparison.question}
               </p>
               <dl className="mt-5 space-y-2 border-t border-line pt-3 text-[12px]">
                 <div className="flex items-center justify-between gap-3">
@@ -186,8 +214,7 @@ export function EvalsSection({
                 <div className="flex items-center justify-between gap-3">
                   <dt className="text-muted">Answer model</dt>
                   <dd className="truncate font-medium text-secondary">
-                    {models.data?.find((model) => model.id === effectiveModelId)?.display_name ??
-                      'Workspace default'}
+                    {submittedComparison.modelName}
                   </dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">

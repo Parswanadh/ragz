@@ -189,7 +189,7 @@ Heavy native products remain resource-gated on this host: RAGFlow and Onyx need 
 larger dedicated benchmark machine; Dify and FastGPT need more Docker headroom.
 No unexecuted system receives a numeric score.
 
-## Open branches and integration order
+## Merged branches and integration status
 
 | PR | Scope | Multi-query interaction |
 |---|---|---|
@@ -200,15 +200,13 @@ No unexecuted system receives a numeric score.
 | #6 | Prometheus and retrieval-stage metrics | Direct conflict in `retrieval/service.py` |
 | #7 | Stacked on #6; HTTP tracing | Merge after #6 |
 
-Recommended upstream order is #3 → #8 and #6 → #7; #4/#5 are independent. This
-feature branch must be rebased after #6/#7 and #3/#8 land so expansion/vector/fusion
-latency remains instrumented and tenancy boundaries stay enforceable.
-
-Live status checked on 2026-08-21: upstream `main` remains
-`b23949853fa2c76584218d68ec619685525568ab`; PRs #3–#8 are open and their current
-GitHub checks are green. PRs #8 and #7 are stacked on #3 and #6 respectively. The
-fork has no open PR, so this work remains a pushed feature branch rather than a
-submitted change.
+Live status rechecked on 2026-08-21: PRs #3–#6 are merged into upstream `main`,
+which is now `9d08839f6855967f3b141b731a269a54b76222fb`. PR #7 is merged into the
+`phase-3-metrics` stacked base and PR #8 into the `phase-2-completion` stacked base;
+all six PRs are closed. This feature branch therefore requires a deliberate rebase
+and conflict resolution against the new metrics/tenancy/frontend changes. Another
+Codex owns the combined verification worktree; this branch did not modify it. The
+fork still has no open PR.
 
 ## Current issues not covered by those PRs
 
@@ -231,7 +229,7 @@ and a bounded page-range parsing proposal. It is not fixed on this branch.
 Already covered: ACL projection split-brain, upload/delete commit-to-enqueue loss,
 and ambient Redis/Celery/KEK test leakage were fixed in merged PR #2.
 
-## Missing product features after open PRs
+## Missing product features after merged PRs
 
 - Explicit query decomposition/sub-question execution
 - Conversational document-query rewriting
@@ -251,8 +249,9 @@ and ambient Redis/Celery/KEK test leakage were fixed in merged PR #2.
   fusion quality but excludes native expansion latency, tokens, cost and variance.
 - Hash dense embeddings are a deterministic benchmark baseline, not the production
   bge-m3/OpenAI configuration.
-- The question set is a 12-answerable-query plus 3-off-corpus-probe pilot with initial page annotations, not a public
-  benchmark standard. A second human adjudicator and held-out queries are required.
+- The question set is a 12-answerable-query plus 3-off-corpus-probe pilot with
+  initial page annotations, not a public benchmark standard. A second human
+  adjudicator and held-out queries are required.
 - Approximate retrieval/ties produced small repetition-level variation.
 - Page recall is strict: a relevant concept retrieved on an adjacent unlabeled page
   counts as a miss. Qrels need adjudication before release claims.
@@ -272,13 +271,13 @@ an external merge blocker rather than a resolved branch claim.
 
 ## Verification snapshot
 
-- Final full backend pytest after the harness correction: 1,708 passed, 14 skipped,
+- Final full backend pytest after the interactive comparison: 1,713 passed, 14 skipped,
   0 failed
 - Final benchmark-tooling focused suite: 13 passed
 - Tenant/workspace/group-ACL focused suite: 3 passed
-- Frontend Vitest: 698 passed, 0 failed
+- Frontend Vitest: 699 passed, 0 failed
 - Ruff: passed
-- mypy: 158 source files passed
+- mypy: 159 source files passed
 - import-linter: 2 contracts kept
 - Frontend lint/typecheck/build: passed
 - Alembic: one head (`6a8d2c4f1b90`)
