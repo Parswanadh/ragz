@@ -323,6 +323,52 @@ async def test_retrieve_uses_workspace_specific_collection(
     assert other_model.collection_name != COLLECTION
 
 
+async def test_multi_query_override_compares_without_mutating_workspace_setting(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+) -> None:
+    ctx, ws = await seed_workspace(session, "mq-override", multi_query_enabled=False)
+    expander = _FakeQueryExpander()
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "original",
+        query_expander=expander,
+        multi_query_enabled_override=True,
+    )
+
+    await session.refresh(ws)
+    assert ws.multi_query_enabled is False
+    assert expander.calls == [("original", "utility-model")]
+    assert result.query_count == 3
+
+
+async def test_single_query_override_skips_expansion_on_enabled_workspace(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+) -> None:
+    ctx, ws = await seed_workspace(session, "single-override", multi_query_enabled=True)
+    expander = _FakeQueryExpander()
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "original",
+        query_expander=expander,
+        multi_query_enabled_override=False,
+    )
+
+    await session.refresh(ws)
+    assert ws.multi_query_enabled is True
+    assert expander.calls == []
+    assert result.query_count == 1
+
+
 async def test_non_member_denied(session: AsyncSession, qdrant_collection: None) -> None:
     ctx, ws = await seed_workspace(session, "orgd", member=False)
     with pytest.raises(WorkspaceAccessDenied):
