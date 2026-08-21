@@ -74,10 +74,12 @@ def safe_query_record(
     elapsed_ms: float,
     expansion_count: int,
     error: str | None,
+    repetition: int = 1,
 ) -> dict[str, Any]:
     return {
         "query_id": query_id,
         "mode": mode,
+        "repetition": repetition,
         "retrieved": retrieved,
         "metrics": metrics,
         "elapsed_ms": round(elapsed_ms, 4),
@@ -303,6 +305,8 @@ async def _run_mode(
     document_map: dict[UUID, str],
     output: Path,
     top_k: int,
+    warmups: int,
+    repetitions: int,
 ) -> dict[str, Any]:
     from ragz.modules.retrieval.service import retrieve
     from ragz.modules.tenancy.models import Workspace
@@ -314,63 +318,81 @@ async def _run_mode(
         assert workspace is not None
         workspace.multi_query_enabled = mode == "multi"
         await session.commit()
-        for record in queries:
-            expander = (
-                StaticQueryExpander(record["alternatives"])
-                if mode == "multi"
-                else None
+        for record in queries[:warmups]:
+            await retrieve(
+                session,
+                ctx,
+                workspace_id,
+                record["query"],
+                top_k=top_k,
+                query_expander=(
+                    StaticQueryExpander(record["alternatives"])
+                    if mode == "multi"
+                    else None
+                ),
             )
-            started = time.perf_counter()
-            error: str | None = None
-            result: Any = None
-            try:
-                result = await retrieve(
-                    session,
-                    ctx,
-                    workspace_id,
-                    record["query"],
-                    top_k=top_k,
-                    query_expander=expander,
+        for repetition in range(1, repetitions + 1):
+            for record in queries:
+                expander = (
+                    StaticQueryExpander(record["alternatives"])
+                    if mode == "multi"
+                    else None
                 )
-            except Exception as exc:  # noqa: BLE001 - benchmark records typed failure only
-                error = type(exc).__name__
-            elapsed_ms = (time.perf_counter() - started) * 1000
-            retrieved: list[dict[str, object]] = []
-            evidence_ids: list[str] = []
-            if result is not None:
-                for rank, chunk in enumerate(result.chunks, 1):
-                    evidence_id = f"{document_map[chunk.document_id]}:{chunk.page}"
-                    evidence_ids.append(evidence_id)
-                    retrieved.append(
-                        {
-                            "evidence_id": evidence_id,
-                            "rank": rank,
-                            "score": round(float(chunk.score), 8),
-                        }
+                started = time.perf_counter()
+                error: str | None = None
+                result: Any = None
+                try:
+                    result = await retrieve(
+                        session,
+                        ctx,
+                        workspace_id,
+                        record["query"],
+                        top_k=top_k,
+                        query_expander=expander,
                     )
-            metrics = ranking_metrics(
-                retrieved=evidence_ids,
-                relevant=_relevant_keys(record),
-                k=top_k,
-            )
-            records.append(
-                safe_query_record(
-                    query_id=record["query_id"],
-                    mode=mode,
-                    retrieved=retrieved,
-                    metrics=metrics,
-                    elapsed_ms=elapsed_ms,
-                    expansion_count=3 if mode == "multi" else 1,
-                    error=error,
+                except Exception as exc:  # noqa: BLE001 - typed failure only
+                    error = type(exc).__name__
+                elapsed_ms = (time.perf_counter() - started) * 1000
+                retrieved: list[dict[str, object]] = []
+                evidence_ids: list[str] = []
+                if result is not None:
+                    for rank, chunk in enumerate(result.chunks, 1):
+                        evidence_id = f"{document_map[chunk.document_id]}:{chunk.page}"
+                        evidence_ids.append(evidence_id)
+                        retrieved.append(
+                            {
+                                "evidence_id": evidence_id,
+                                "rank": rank,
+                                "score": round(float(chunk.score), 8),
+                            }
+                        )
+                metrics = ranking_metrics(
+                    retrieved=evidence_ids,
+                    relevant=_relevant_keys(record),
+                    k=top_k,
                 )
-            )
+                records.append(
+                    safe_query_record(
+                        query_id=record["query_id"],
+                        mode=mode,
+                        retrieved=retrieved,
+                        metrics=metrics,
+                        elapsed_ms=elapsed_ms,
+                        expansion_count=3 if mode == "multi" else 1,
+                        error=error,
+                        repetition=repetition,
+                    )
+                )
     with (output / "per_query.jsonl").open("w", encoding="utf-8") as handle:
         for record in records:
             handle.write(json.dumps(record, sort_keys=True) + "\n")
     latencies = [float(item["elapsed_ms"]) for item in records if item["error"] is None]
     summary: dict[str, Any] = {
         "mode": mode,
-        "query_count": len(records),
+        "query_count": len(queries),
+        "observations": len(records),
+        "warmups": warmups,
+        "repetitions": repetitions,
         "errors": sum(item["error"] is not None for item in records),
         "mean_recall_at_k": sum(float(item["metrics"]["recall_at_k"]) for item in records)
         / len(records),
@@ -427,30 +449,28 @@ async def run(args: argparse.Namespace) -> None:
             qdrant_url=qdrant_url,
         )
         try:
-            single = await _run_mode(
-                mode="single",
-                queries=queries,
-                factory=factory,
-                ctx=ctx,
-                workspace_id=workspace_id,
-                document_map=document_map,
-                output=output / "single",
-                top_k=args.top_k,
-            )
-            multi = await _run_mode(
-                mode="multi",
-                queries=queries,
-                factory=factory,
-                ctx=ctx,
-                workspace_id=workspace_id,
-                document_map=document_map,
-                output=output / "multi",
-                top_k=args.top_k,
-            )
+            summaries: dict[str, dict[str, Any]] = {}
+            modes = ("single", "multi") if args.order == "single-first" else ("multi", "single")
+            for mode in modes:
+                summaries[mode] = await _run_mode(
+                    mode=mode,
+                    queries=queries,
+                    factory=factory,
+                    ctx=ctx,
+                    workspace_id=workspace_id,
+                    document_map=document_map,
+                    output=output / mode,
+                    top_k=args.top_k,
+                    warmups=args.warmups,
+                    repetitions=args.repetitions,
+                )
         finally:
             await engine.dispose()
     manifest["corpus_stats"] = corpus_stats
-    manifest["conditions"] = {"single": single, "multi": multi}
+    manifest["condition_order"] = args.order
+    manifest["warmups"] = args.warmups
+    manifest["repetitions"] = args.repetitions
+    manifest["conditions"] = summaries
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -462,11 +482,20 @@ def main() -> None:
     parser.add_argument("--queries", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument("--warmups", type=int, default=2)
+    parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument(
+        "--order",
+        choices=("single-first", "multi-first"),
+        default="single-first",
+    )
     args = parser.parse_args()
     if len(args.pdf) != 3 or len({book_id for book_id, _ in args.pdf}) != 3:
         raise ValueError("exactly three uniquely named PDFs are required")
     if not 1 <= args.top_k <= 50:
         raise ValueError("top-k must be between 1 and 50")
+    if args.warmups < 0 or args.repetitions < 1:
+        raise ValueError("warmups must be non-negative and repetitions positive")
     asyncio.run(run(args))
 
 
