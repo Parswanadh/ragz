@@ -258,6 +258,16 @@ and ambient Redis/Celery/KEK test leakage were fixed in merged PR #2.
   expansion, optional Cohere rerank, larger held-out qrels, and paired answer/citation
   evaluation with settled provider cost.
 
+## Independent final review
+
+A read-only Sol re-review found no remaining Critical or Important branch-local
+product or benchmark defect. It independently recomputed the `r12`/`r13` quality
+means, abstention confusion matrices/F1, paired deltas, bootstrap intervals and
+improved/regressed/tied counts; verified every committed raw-artifact, calibration
+manifest and query-set hash; and found no prohibited query/text/auth fields in raw
+per-query artifacts. The known upstream PR/migration integration conflict remains
+an external merge blocker rather than a resolved branch claim.
+
 ## Verification snapshot
 
 - Final full backend pytest after the harness correction: 1,708 passed, 14 skipped,
