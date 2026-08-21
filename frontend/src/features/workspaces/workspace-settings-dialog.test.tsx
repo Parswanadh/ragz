@@ -14,6 +14,7 @@ const ws: WorkspaceOut = {
   default_model_id: null,
   top_k: 8,
   rerank_enabled: false,
+  multi_query_enabled: false,
   system_prompt_override: null,
   fallback_policy: 'general_knowledge',
   web_search_enabled: false,
@@ -103,6 +104,24 @@ test('shows current values and PATCHes only the edited settings', async () => {
   expect(body).toStrictEqual({ top_k: 12, rerank_enabled: true });
 });
 
+test('checking multi-query PATCHes only multi_query_enabled', async () => {
+  const user = userEvent.setup();
+  renderDialog(ws, { ...ws, multi_query_enabled: true });
+  const toggle = screen.getByLabelText('Expand each question into multiple searches');
+  expect(toggle).not.toBeChecked();
+
+  await user.click(toggle);
+  await user.click(screen.getByRole('button', { name: 'Save settings' }));
+  await waitFor(() =>
+    expect(vi.mocked(fetch).mock.calls.some(([req]) => (req as Request).method === 'PATCH')).toBe(
+      true,
+    ),
+  );
+
+  const body = (await findPatch().clone().json()) as Record<string, unknown>;
+  expect(body).toStrictEqual({ multi_query_enabled: true });
+});
+
 test('leaves an untouched field out of the PATCH body entirely', async () => {
   const user = userEvent.setup();
   renderDialog(ws, { ...ws, top_k: 12 });
@@ -120,6 +139,7 @@ test('leaves an untouched field out of the PATCH body entirely', async () => {
   expect(body).toStrictEqual({ top_k: 12 });
   expect('min_score' in body).toBe(false);
   expect('rerank_enabled' in body).toBe(false);
+  expect('multi_query_enabled' in body).toBe(false);
   expect('system_prompt_override' in body).toBe(false);
 });
 
