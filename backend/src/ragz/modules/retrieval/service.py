@@ -35,12 +35,13 @@ from qdrant_client import models
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import get_settings
-from ragz.core.errors import NotFoundError, WorkspaceAccessDenied
+from ragz.core.errors import NotFoundError, UpstreamError, WorkspaceAccessDenied
 from ragz.core.metrics import observe_stage
 from ragz.modules.documents.pipeline import Chunk
 from ragz.modules.quotas import service as quota_service
 from ragz.modules.retrieval.client import EPHEMERAL_COLLECTION, get_qdrant
 from ragz.modules.retrieval.embeddings import embed_sparse, get_dense_embedder
+from ragz.modules.retrieval.query_expansion import QueryExpander, build_query_expander
 from ragz.modules.retrieval.rerank import RerankUnavailable, get_reranker
 from ragz.modules.tenancy.context import TenantContext
 from ragz.modules.tenancy.service import get_workspace_checked
@@ -463,25 +464,33 @@ async def retrieve(
     query: str,
     top_k: int | None = None,
     metadata_clauses: Sequence[MetadataClause] | None = None,
+    *,
+    query_expander: QueryExpander | None = None,
 ) -> RetrievalResult:
     """Hybrid retrieval — the one code path (spec §3.3), Plan E additions:
 
     1. Workspace access gate (typed WorkspaceAccessDenied).
     2. top_k=None resolves to workspace.top_k (ADM-3).
-    3. Qdrant prefetch dense + sparse under the tenant filter → RRF fusion
+    3. multi_query_enabled: a designated utility model produces at most two
+       alternatives; missing/malformed/unavailable expansion degrades to the
+       exact original query. Generated queries are retrieval aids, not evidence.
+    4. Qdrant prefetch dense + sparse for every query under the SAME tenant
+       filter → one RRF fusion
        (top-50 candidates when workspace.rerank_enabled, else top_k).
        Plan K Task 5: fused candidates are then deduped by (document_id,
        page, chunk_index) via `_dedupe_hq` — collapses a chunk's own point
        and its hq siblings into one RetrievedChunk (max score wins) before
        any no_answer/top_k decision. No-op when no hq points exist.
-    4. rerank_enabled: cross-encoder scores the candidates; final top_k come
+    5. rerank_enabled: cross-encoder scores the candidates against the ORIGINAL
+       user query; final top_k come
        back in reranker order carrying RERANKER scores, and no_answer compares
        the best reranker score against workspace.min_score. CALIBRATION: that
        threshold now reads in sigmoid cross-encoder space, not dense-cosine
        space — revisit min_score when flipping rerank_enabled.
-    5. Reranker down → structlog warning and EXACTLY the pre-rerank behavior:
-       fusion order, no_answer via best dense cosine (NFR graceful degradation).
-    6. Plan H: current_only=True — only the current version of each document
+    6. Reranker down → structlog warning and fusion order, with no_answer based
+       on the best dense cosine across valid query variants (NFR graceful
+       degradation).
+    7. Plan H: current_only=True — only the current version of each document
        (or legacy pre-H points) is ever retrievable; metadata_clauses narrow
        further per Task 10's route wiring.
 
@@ -503,9 +512,48 @@ async def retrieve(
         embedding_model.id, provider_kind=embedding_model.provider_kind,
         litellm_model_name=embedding_model.litellm_model_name,
     )
+    queries: tuple[str, ...] = (query,)
+    if ws.multi_query_enabled:
+        utility_model = await models_service.resolve_utility_model(session)
+        if utility_model is None:
+            structlog.get_logger().warning(
+                "multi_query_no_utility_model",
+                workspace_id=str(workspace_id),
+            )
+        else:
+            expander = query_expander or build_query_expander(get_settings())
+            try:
+                expanded = await expander.expand(
+                    query, model=utility_model.litellm_model_name
+                )
+            except UpstreamError as exc:
+                structlog.get_logger().warning(
+                    "multi_query_expansion_failed",
+                    workspace_id=str(workspace_id),
+                    error=type(exc).__name__,
+                )
+            else:
+                queries = expanded.queries or (query,)
+                expansion_tokens = expanded.prompt_tokens + expanded.completion_tokens
+                if expansion_tokens > 0:
+                    await quota_service.record_usage(
+                        session,
+                        org_id=ctx.org_id,
+                        user_id=ctx.user_id,
+                        workspace_id=workspace_id,
+                        model_id=utility_model.id,
+                        feature="query_expansion",
+                        prompt_tokens=expanded.prompt_tokens,
+                        completion_tokens=expanded.completion_tokens,
+                        commit=False,
+                    )
+                structlog.get_logger().info(
+                    "multi_query_expanded",
+                    workspace_id=str(workspace_id),
+                    query_count=len(queries),
+                )
     with observe_stage("embed_dense"):
-        dense_vecs, embed_tokens = await dense_embedder.embed_with_usage([query])
-    dense_vec = dense_vecs[0]
+        dense_vecs, embed_tokens = await dense_embedder.embed_with_usage(list(queries))
     # Cost reporting (design 2026-08-15 §2): the query embedding's billed tokens
     # (hosted providers only; self-hosted TEI / the hash test backend report 0).
     # commit=False stages the row so it rides this turn's end-of-turn commit
@@ -519,7 +567,7 @@ async def retrieve(
             prompt_tokens=embed_tokens, completion_tokens=0, commit=False,
         )
     with observe_stage("embed_sparse"):
-        sparse_vec = (await asyncio.to_thread(embed_sparse, [query]))[0]
+        sparse_vecs = await asyncio.to_thread(embed_sparse, list(queries))
     # Fail-closed ACL projection (review P0): documents whose committed security
     # state has not reached this collection are excluded from the query. Local
     # import for the same reason as models_service above -- documents.service
@@ -538,17 +586,28 @@ async def retrieve(
     client = get_qdrant()
     fetch_k = _RERANK_PREFETCH if ws.rerank_enabled else k
     prefetch_limit = max(fetch_k, k * 4)
+    prefetch = [
+        lane
+        for dense_vec, sparse_vec in zip(dense_vecs, sparse_vecs, strict=True)
+        for lane in (
+            models.Prefetch(
+                query=dense_vec,
+                using="dense",
+                filter=flt,
+                limit=prefetch_limit,
+            ),
+            models.Prefetch(
+                query=sparse_vec,
+                using="sparse",
+                filter=flt,
+                limit=prefetch_limit,
+            ),
+        )
+    ]
     with observe_stage("vector_search"):
         fused = await client.query_points(
             collection_name,
-            prefetch=[
-                models.Prefetch(
-                    query=dense_vec, using="dense", filter=flt, limit=prefetch_limit
-                ),
-                models.Prefetch(
-                    query=sparse_vec, using="sparse", filter=flt, limit=prefetch_limit
-                ),
-            ],
+            prefetch=prefetch,
             query=models.FusionQuery(fusion=models.Fusion.RRF),
             query_filter=flt,  # belt and braces on top of the filtered prefetches
             limit=fetch_k,
@@ -614,11 +673,27 @@ async def retrieve(
             )
 
     chunks = candidates[:k]
-    top_dense = await client.query_points(
-        collection_name, query=dense_vec, using="dense", query_filter=flt,
-        limit=1, with_payload=False,
+    top_dense_results = await asyncio.gather(
+        *(
+            client.query_points(
+                collection_name,
+                query=dense_vec,
+                using="dense",
+                query_filter=flt,
+                limit=1,
+                with_payload=False,
+            )
+            for dense_vec in dense_vecs
+        )
     )
-    best_cosine = float(top_dense.points[0].score) if top_dense.points else 0.0
+    best_cosine = max(
+        (
+            float(result.points[0].score)
+            for result in top_dense_results
+            if result.points
+        ),
+        default=0.0,
+    )
     return RetrievalResult(chunks=chunks, no_answer=best_cosine < ws.min_score)
 
 
