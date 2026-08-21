@@ -1,0 +1,169 @@
+[
+  {
+    "query_id": "q01",
+    "query_type": "paraphrase",
+    "query": "Why can a high-bandwidth, long-delay TCP path underuse the link unless its receive window is enlarged?",
+    "alternatives": [
+      "TCP bandwidth-delay product and advertised window capacity",
+      "long fat network TCP window scaling throughput"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [66, 397, 412, 426]},
+      {"book_id": "kurose-2021", "pages": [85, 241]},
+      {"book_id": "tanenbaum-2021", "pages": [627, 628, 629]}
+    ]
+  },
+  {
+    "query_id": "q02",
+    "query_type": "comparison",
+    "query": "After one frame is lost, how do Go-Back-N and Selective Repeat differ in buffering, acknowledgments, and retransmission work?",
+    "alternatives": [
+      "GBN versus SR ARQ behavior after a missing frame",
+      "cumulative acknowledgments compared with individual ACK and out-of-order buffering"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [417, 419, 422]},
+      {"book_id": "kurose-2021", "pages": [230, 231, 232]},
+      {"book_id": "tanenbaum-2021", "pages": [266, 267]}
+    ]
+  },
+  {
+    "query_id": "q03",
+    "query_type": "failure-mode",
+    "query": "Why does distance-vector routing suffer from count-to-infinity, and which routing loops are not eliminated by poison reverse?",
+    "alternatives": [
+      "distance vector bad news travels slowly split horizon poison reverse",
+      "routing loop metric increases three-node poison reverse limitation"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [320, 321, 322]},
+      {"book_id": "kurose-2021", "pages": [405, 406]},
+      {"book_id": "tanenbaum-2021", "pages": [400, 401]}
+    ]
+  },
+  {
+    "query_id": "q04",
+    "query_type": "policy",
+    "query": "Why may BGP deliberately select an AS path that is not the shortest available route?",
+    "alternatives": [
+      "BGP local preference business policy before AS path length",
+      "path vector routing administrative policy chooses longer path"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [325, 347, 348]},
+      {"book_id": "kurose-2021", "pages": [416, 418, 420]},
+      {"book_id": "tanenbaum-2021", "pages": [508, 509, 510]}
+    ]
+  },
+  {
+    "query_id": "q05",
+    "query_type": "wireless",
+    "query": "How do RTS, CTS, and the network allocation vector reduce hidden-terminal collisions in a wireless LAN?",
+    "alternatives": [
+      "802.11 hidden station RTS CTS reservation NAV",
+      "wireless nodes cannot hear each other collision avoidance handshake"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [156, 157]},
+      {"book_id": "kurose-2021", "pages": [551, 552, 553]},
+      {"book_id": "tanenbaum-2021", "pages": [340, 341, 342]}
+    ]
+  },
+  {
+    "query_id": "q06",
+    "query_type": "application-layer",
+    "query": "Contrast recursive and iterative DNS resolution, including how cached records and TTLs affect later lookups.",
+    "alternatives": [
+      "DNS resolver recursion referrals caching time to live",
+      "stub local name server iterative authoritative query cache expiration"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [520, 521, 522]},
+      {"book_id": "kurose-2021", "pages": [141, 143]},
+      {"book_id": "tanenbaum-2021", "pages": [638, 639, 640]}
+    ]
+  },
+  {
+    "query_id": "q07",
+    "query_type": "error-detection",
+    "query": "How does a CRC use polynomial division and a generator to create and verify an error-detecting remainder?",
+    "alternatives": [
+      "cyclic redundancy check modulo two generator polynomial syndrome",
+      "append CRC remainder receiver divisibility error detection"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [104, 105, 106, 107]},
+      {"book_id": "kurose-2021", "pages": [469, 470, 471]},
+      {"book_id": "tanenbaum-2021", "pages": [244, 245, 246, 247]}
+    ]
+  },
+  {
+    "query_id": "q08",
+    "query_type": "comparison",
+    "query": "Why is packet switching usually more efficient than reserved circuits for bursty users, and what delay tradeoff does it introduce?",
+    "alternatives": [
+      "statistical multiplexing burst traffic versus circuit reservation",
+      "packet switched queueing delay shared capacity circuit idle resources"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [180, 234, 236]},
+      {"book_id": "kurose-2021", "pages": [40, 41, 42]},
+      {"book_id": "tanenbaum-2021", "pages": [174, 175, 176, 177]}
+    ]
+  },
+  {
+    "query_id": "q09",
+    "query_type": "protocol-comparison",
+    "query": "How does IPv6 Neighbor Discovery replace and extend the address-resolution role performed by ARP in IPv4?",
+    "alternatives": [
+      "ICMPv6 NDP neighbor solicitation advertisement compared with ARP",
+      "IPv6 router discovery and neighbor resolution versus IPv4 address mapping"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [246, 297, 298, 299]},
+      {"book_id": "kurose-2021", "pages": [358, 359, 360, 491, 492, 493]},
+      {"book_id": "tanenbaum-2021", "pages": [494, 496, 497]}
+    ]
+  },
+  {
+    "query_id": "q10",
+    "query_type": "transport",
+    "query": "How do TCP slow start, additive increase, multiplicative decrease, fast retransmit, and fast recovery change the congestion window?",
+    "alternatives": [
+      "TCP cwnd AIMD duplicate ACK timeout congestion control",
+      "Reno exponential growth congestion avoidance fast retransmission recovery"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [426, 427, 429, 432, 434]},
+      {"book_id": "kurose-2021", "pages": [277, 278, 279, 280, 281, 282]},
+      {"book_id": "tanenbaum-2021", "pages": [601, 604, 606, 608]}
+    ]
+  },
+  {
+    "query_id": "q11",
+    "query_type": "application-layer",
+    "query": "How do persistent HTTP connections and multiplexed streams reduce setup delay, and where can head-of-line blocking still occur?",
+    "alternatives": [
+      "HTTP 1.1 persistence pipelining compared with HTTP 2 multiplexing",
+      "web protocol connection reuse stream interleaving head of line blocking"
+    ],
+    "relevant": [
+      {"book_id": "forouzan-2022", "pages": [419, 480, 482]},
+      {"book_id": "kurose-2021", "pages": [109, 111, 124, 125, 126]},
+      {"book_id": "tanenbaum-2021", "pages": [695, 696, 697, 698, 699]}
+    ]
+  },
+  {
+    "query_id": "q12",
+    "query_type": "architecture-tradeoff",
+    "query": "What IPv4 problems does NAT alleviate, and how does its stateful translation weaken end-to-end reachability?",
+    "alternatives": [
+      "network address translation private address conservation port mapping",
+      "NAT inbound connections peer to peer end to end principle tradeoff"
+    ],
+    "relevant": [
+      {"book_id": "kurose-2021", "pages": [355, 356, 357]},
+      {"book_id": "tanenbaum-2021", "pages": [480, 482, 483, 484]}
+    ]
+  }
+]
