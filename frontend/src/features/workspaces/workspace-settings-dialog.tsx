@@ -100,7 +100,11 @@ export function WorkspaceSettingsDialog({
       <DialogContent
         title={`Retrieval settings — ${workspace.name}`}
         description="Tuning applies to every chat and search in this workspace."
-        className={tab === 'evals' ? 'max-w-[calc(100vw-2rem)] xl:max-w-7xl' : 'max-w-lg'}
+        className={
+          tab === 'evals'
+            ? 'max-h-[calc(100vh-2rem)] max-w-[calc(100vw-2rem)] overflow-y-auto xl:max-w-7xl'
+            : 'max-h-[calc(100vh-2rem)] max-w-lg overflow-y-auto'
+        }
       >
         <div className="mb-3 flex gap-1">
           {(['settings', 'members', 'evals'] as const).map((t) => (
