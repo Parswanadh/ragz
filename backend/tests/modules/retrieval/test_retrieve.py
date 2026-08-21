@@ -237,6 +237,30 @@ async def test_multi_query_provider_failure_degrades_to_original(
     assert expander.calls == [("alpha", "utility-model")]
 
 
+async def test_multi_query_releases_db_transaction_before_provider_call(
+    session: AsyncSession, qdrant_collection: None, utility_model: object
+) -> None:
+    ctx, ws = await seed_workspace(
+        session, "mq-transaction-boundary", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+
+    class CheckingExpander(_FakeQueryExpander):
+        async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+            assert session.in_transaction() is False
+            return await super().expand(query, model=model)
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "alpha",
+        query_expander=CheckingExpander(("alpha report",)),
+    )
+
+    assert result.chunks
+
+
 async def test_multi_query_no_answer_uses_best_variant_dense_score(
     session: AsyncSession, qdrant_collection: None, utility_model: object
 ) -> None:
