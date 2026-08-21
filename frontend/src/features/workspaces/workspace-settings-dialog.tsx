@@ -26,6 +26,7 @@ export function WorkspaceSettingsDialog({
   const [topK, setTopK] = useState(String(workspace.top_k));
   const [minScore, setMinScore] = useState(String(workspace.min_score));
   const [rerank, setRerank] = useState(workspace.rerank_enabled);
+  const [multiQuery, setMultiQuery] = useState(workspace.multi_query_enabled);
   const [override, setOverride] = useState(workspace.system_prompt_override ?? '');
   const [fallback, setFallback] = useState<'general_knowledge' | 'decline'>(
     workspace.fallback_policy as 'general_knowledge' | 'decline',
@@ -51,6 +52,7 @@ export function WorkspaceSettingsDialog({
       top_k?: number;
       min_score?: number;
       rerank_enabled?: boolean;
+      multi_query_enabled?: boolean;
       system_prompt_override?: string | null;
       fallback_policy?: 'general_knowledge' | 'decline';
       web_search_enabled?: boolean;
@@ -64,6 +66,9 @@ export function WorkspaceSettingsDialog({
     if (nextTopK !== workspace.top_k) changes.top_k = nextTopK;
     if (nextMinScore !== workspace.min_score) changes.min_score = nextMinScore;
     if (rerank !== workspace.rerank_enabled) changes.rerank_enabled = rerank;
+    if (multiQuery !== workspace.multi_query_enabled) {
+      changes.multi_query_enabled = multiQuery;
+    }
     if (nextOverride !== workspace.system_prompt_override) {
       changes.system_prompt_override = nextOverride;
     }
@@ -179,6 +184,20 @@ export function WorkspaceSettingsDialog({
               <p className="text-[12px] text-muted">
                 With reranking on, the confidence threshold reads the reranker&apos;s 0–1 relevance
                 score instead of cosine similarity — recheck it after toggling.
+              </p>
+              <label className="flex items-center gap-2 text-[13px] text-secondary">
+                <input
+                  type="checkbox"
+                  checked={multiQuery}
+                  onChange={(e) => setMultiQuery(e.target.checked)}
+                  aria-label="Expand each question into multiple searches"
+                />
+                Expand each question into multiple searches
+              </label>
+              <p className="text-[12px] text-muted">
+                Uses the utility model to generate up to two alternative searches, then fuses
+                all results. This can improve recall but adds one model call and extra retrieval
+                latency.
               </p>
               <div className="space-y-1">
                 <Label htmlFor="ws-fallback">If retrieval finds nothing</Label>

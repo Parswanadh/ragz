@@ -4281,6 +4281,8 @@ export interface components {
             top_k: number;
             /** Rerank Enabled */
             rerank_enabled: boolean;
+            /** Multi Query Enabled */
+            multi_query_enabled: boolean;
             /** System Prompt Override */
             system_prompt_override: string | null;
             /** Fallback Policy */
@@ -4306,6 +4308,8 @@ export interface components {
             min_score?: number | null;
             /** Rerank Enabled */
             rerank_enabled?: boolean | null;
+            /** Multi Query Enabled */
+            multi_query_enabled?: boolean | null;
             /** System Prompt Override */
             system_prompt_override?: string | null;
             /** Fallback Policy */
