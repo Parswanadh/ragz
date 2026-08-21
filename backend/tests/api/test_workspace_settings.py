@@ -28,6 +28,7 @@ async def test_new_workspace_has_retrieval_defaults(
               if w["id"] == ws_id)
     assert ws["top_k"] == 8
     assert ws["rerank_enabled"] is False
+    assert ws["multi_query_enabled"] is False
     assert ws["system_prompt_override"] is None
 
 
@@ -84,6 +85,61 @@ async def test_non_admin_cannot_patch(
     ws_id = await make_workspace(client, h_admin)
     h_user = await auth(client, "p@acme.com")
     r = await client.patch(f"/api/v1/workspaces/{ws_id}", json={"top_k": 5}, headers=h_user)
+    assert r.status_code == 403
+
+
+async def test_multi_query_enabled_round_trips(
+    client: httpx.AsyncClient, seeded_user: User
+) -> None:
+    h = await auth(client, "a@acme.com")
+    ws_id = await make_workspace(client, h)
+
+    r = await client.patch(
+        f"/api/v1/workspaces/{ws_id}",
+        json={"multi_query_enabled": True},
+        headers=h,
+    )
+
+    assert r.status_code == 200
+    assert r.json()["multi_query_enabled"] is True
+
+
+async def test_multi_query_enabled_rejects_null(
+    client: httpx.AsyncClient, seeded_user: User
+) -> None:
+    h = await auth(client, "a@acme.com")
+    ws_id = await make_workspace(client, h)
+
+    r = await client.patch(
+        f"/api/v1/workspaces/{ws_id}",
+        json={"multi_query_enabled": None},
+        headers=h,
+    )
+
+    assert r.status_code == 409
+
+
+async def test_non_admin_cannot_enable_multi_query(
+    client: httpx.AsyncClient, seeded_user: User, session: AsyncSession
+) -> None:
+    plain = User(
+        org_id=seeded_user.org_id,
+        email="mq-plain@acme.com",
+        password_hash=seeded_user.password_hash,
+        role="user",
+    )
+    session.add(plain)
+    await session.commit()
+    h_admin = await auth(client, "a@acme.com")
+    ws_id = await make_workspace(client, h_admin)
+    h_user = await auth(client, "mq-plain@acme.com")
+
+    r = await client.patch(
+        f"/api/v1/workspaces/{ws_id}",
+        json={"multi_query_enabled": True},
+        headers=h_user,
+    )
+
     assert r.status_code == 403
 
 
