@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
   server: {
-    proxy: { '/api': 'http://localhost:8000' },
+    proxy: { '/api': process.env.RAGZ_DEV_API_URL ?? 'http://localhost:8000' },
   },
   test: {
     environment: 'jsdom',
