@@ -1,10 +1,11 @@
-# RAGZ Multi-Query Retrieval: Implementation, Branch, and Benchmark Report
+# RAGZ Multi-Query Retrieval: Synthetic Fusion Pilot and Implementation Report
 
 **Date:** 2026-08-21  
 **Feature branch:** `codex/multi-query-retrieval`  
 **Fork:** <https://github.com/Parswanadh/ragz/tree/codex/multi-query-retrieval>  
 **Base:** upstream `b23949853fa2c76584218d68ec619685525568ab`  
-**Scored feature commit:** `e981c93150cec801d327b198a13f874dc3ecefe5`
+**Scored feature commit:** `cfe7d1a105c153fd069af83a2091ba350d0c120f`
+**Benchmark status:** synthetic fusion pilot; live expansion/provider cell pending
 
 ## Executive result
 
@@ -23,9 +24,11 @@ degrades to single-query retrieval.
 
 On a 12-question page-labeled networking pilot with 8,374 locally parsed chunks,
 fixed alternatives improved every mean ranking metric at the cost of additional
-retrieval latency. The result supports keeping the feature optional and proceeding
-to a larger production-embedding/live-expansion evaluation; it does not justify
-enabling it by default yet.
+retrieval latency. Recall@5 and nDCG@5 had positive paired bootstrap intervals in
+both condition orders; MRR@5 remained uncertain. This is evidence about retrieval
+fusion with independently fixed alternatives, not a completed live-LLM benchmark.
+It supports keeping the feature optional and proceeding to a production-embedding,
+live-expansion evaluation; it does not justify enabling it by default.
 
 ## What changed
 
@@ -49,10 +52,10 @@ enabling it by default yet.
 
 | Book ID | PDF pages | Parsed chunks | LiteParse time in clean repeated run |
 |---|---:|---:|---:|
-| `forouzan-2022` | 861 | 3,500 | 8.325 s |
-| `kurose-2021` | 775 | 1,851 | 5.414 s |
-| `tanenbaum-2021` | 946 | 3,023 | 9.351 s |
-| **Total** | **2,582** | **8,374** | **23.089 s** |
+| `forouzan-2022` | 861 | 3,500 | 6.645 s |
+| `kurose-2021` | 775 | 1,851 | 4.361 s |
+| `tanenbaum-2021` | 946 | 3,023 | 6.478 s |
+| **Total** | **2,582** | **8,374** | **17.483 s** |
 
 The books were parsed locally with LiteParse. Committed artifacts contain only
 independently authored questions, alternatives, SHA-256 hashes and PDF page
@@ -65,7 +68,7 @@ versus circuit switching, NDP versus ARP, TCP congestion control, HTTP multiplex
 and NAT tradeoffs. Each book was annotated independently; low-confidence absent
 support was excluded (for example, the Forouzan NAT pages are not qrels).
 
-## Paired RAGZ benchmark
+## Paired RAGZ synthetic fusion pilot
 
 ### Fixed configuration
 
@@ -84,20 +87,21 @@ support was excluded (for example, the Forouzan NAT pages are not qrels).
 
 | Metric | Single query | Multi-query | Absolute delta | Relative delta |
 |---|---:|---:|---:|---:|
-| Mean page Recall@5 | 0.1501 | 0.2069 | +0.0568 | +37.8% |
-| Mean MRR@5 | 0.5926 | 0.6944 | +0.1019 | +17.2% |
-| Mean nDCG@5 | 0.3678 | 0.5466 | +0.1788 | +48.6% |
-| Retrieval p50 | 21.48 ms | 35.25 ms | +13.77 ms | +64.1% |
-| Retrieval p95 | 24.45 ms | 38.86 ms | +14.41 ms | +58.9% |
+| Mean page Recall@5 | 0.1501 | 0.2134 | +0.0634 | +42.2% |
+| Mean MRR@5 | 0.6204 | 0.6986 | +0.0782 | +12.6% |
+| Mean nDCG@5 | 0.3427 | 0.4714 | +0.1287 | +37.6% |
+| Retrieval p50 | 23.67 ms | 33.93 ms | +10.25 ms | +43.3% |
+| Retrieval p95 | 25.69 ms | 44.25 ms | +18.55 ms | +72.2% |
+| Retrieval p99 | 26.86 ms | 59.50 ms | +32.65 ms | +121.6% |
 | Errors | 0 | 0 | 0 | — |
 
 Query-level paired bootstrap (10,000 resamples, seed 42):
 
 | Metric delta | Improved / regressed / tied queries | 95% bootstrap CI |
 |---|---:|---:|
-| Recall@5 | 8 / 1 / 3 | +0.0149 to +0.0972 |
-| MRR@5 | 8 / 1 / 3 | -0.0394 to +0.2222 |
-| nDCG@5 | 10 / 1 / 1 | +0.0846 to +0.2873 |
+| Recall@5 | 8 / 1 / 3 | +0.0208 to +0.1036 |
+| MRR@5 | 7 / 1 / 4 | -0.0509 to +0.1852 |
+| nDCG@5 | 9 / 1 / 2 | +0.0466 to +0.2137 |
 
 Recall and nDCG improvements are positive in this small pilot's bootstrap interval;
 MRR remains uncertain. One query regressed, demonstrating why the toggle should
@@ -105,20 +109,25 @@ remain default-off.
 
 ### Reverse-order sensitivity run
 
-The `multi-first` run also improved mean recall, MRR and nDCG, but ran concurrently
-with a CPU/memory-heavy AnythingLLM cold index, inflating tails. It is retained as
-order-sensitivity evidence, not the headline latency result.
+The clean `multi-first` run, executed without a competing benchmark, reproduced
+the quality direction: Recall@5 0.1526 → 0.2231, MRR@5 0.5741 → 0.7014, and
+nDCG@5 0.3327 → 0.4850. Its paired Recall@5 CI was +0.0266 to +0.1093 and nDCG@5
+CI was +0.0699 to +0.2357; MRR@5 again crossed zero (-0.0185 to +0.2523).
 
 ### Run artifacts
 
-- Failed seed preflight:
-  `no_rel/benchmarks/results/runs/ragz-networking-mq-paired-20260821-adb4bf2/`
-- One-repetition pilot:
-  `no_rel/benchmarks/results/runs/ragz-networking-mq-paired-20260821-adb4bf2-r2/`
-- Reverse-order repeated run:
-  `no_rel/benchmarks/results/runs/ragz-networking-mq-paired-20260821-e981c93-r3/`
-- Clean repeated headline run:
-  `no_rel/benchmarks/results/runs/ragz-networking-mq-paired-20260821-e981c93-r4/`
+- Clean single-first run:
+  `no_rel/benchmarks/results/runs/ragz-networking-mq-synthetic-20260821-cfe7d1a-r5/`
+- Clean multi-first run:
+  `no_rel/benchmarks/results/runs/ragz-networking-mq-synthetic-20260821-cfe7d1a-r6/`
+- Committed compact evidence, configurations, hashes, metrics and CIs:
+  `docs/benchmarks/artifacts/2026-08-21-networking-multi-query-synthetic-pilot.json`
+
+Earlier `r2`–`r4` pilot values are superseded because their page-level nDCG
+calculation counted duplicate chunks from the same PDF page. The corrected runner
+deduplicates page evidence before Recall/MRR/nDCG and warms every query in each
+condition. The successful `r5`/`r6` manifests record a clean Git tree and the exact
+scored commit.
 
 Privacy scans found no query, alternative, document text, API key or authorization
 field in the successful raw run artifacts.

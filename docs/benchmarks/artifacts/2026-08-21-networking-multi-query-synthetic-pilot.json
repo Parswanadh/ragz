@@ -1,0 +1,126 @@
+{
+  "benchmark_status": "synthetic_fusion_pilot",
+  "copyright_safe": true,
+  "document_text_persisted": false,
+  "expansion_provider_calls": 0,
+  "provider_cost_usd": 0.0,
+  "git_commit": "cfe7d1a105c153fd069af83a2091ba350d0c120f",
+  "git_dirty": false,
+  "tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "dataset": {
+    "id": "networking-pdfs-v1",
+    "query_count": 12,
+    "query_set_sha256": "a705fcd15d85467a30cb057a47c0abc7d883ad43ffe3fa608fe06e45c6af9e43",
+    "pages": 2582,
+    "chunks": 8374,
+    "pdf_sha256": {
+      "forouzan-2022": "fec3e7c7d583018633cbba69510cdb9bba01622f4eed6ef894f571b909c59f25",
+      "kurose-2021": "7599e188b2645104576b5502400565aff7892ef02abb866ed6899ef9b5865a9a",
+      "tanenbaum-2021": "dca8648949db3f7f95f29917a32718d98a06888083c7f86712c9aa070cfebcb8"
+    }
+  },
+  "configuration": {
+    "python": "3.13.13",
+    "liteparse": "2.12.0",
+    "qdrant_client": "1.18.0",
+    "fastembed": "0.8.0",
+    "dense": "deterministic-hash-1024",
+    "sparse": "fastembed-bm25",
+    "fusion": "qdrant-rrf",
+    "reranker": "disabled",
+    "query_variants": "fixed-two-alternatives",
+    "top_k": 5,
+    "warmups_per_query": 2,
+    "repetitions": 3,
+    "bootstrap_samples": 10000,
+    "seed": 42
+  },
+  "runs": [
+    {
+      "id": "ragz-networking-mq-synthetic-20260821-cfe7d1a-r5",
+      "condition_order": "single-first",
+      "raw_artifact_sha256": {
+        "manifest.json": "deacc0e6a72c32a50f6c1fbd3f9ffab1a7a36c50878888fc9e6b30d7fd8c0b2e",
+        "paired-summary.json": "fdea9cfec6a470fb74c53fe43560fd0a8f3a50a5ce174d287522df9586287e06",
+        "single/per_query.jsonl": "d1f96dda8e22c5ad34fea4252c1fe5a6f1b227a80f3a89f0a54b8b28b7525c4c",
+        "multi/per_query.jsonl": "da5fcbe5fc9c5539d7ae42a9708c9806f1f86722b64203088bdd3de787306281"
+      },
+      "single": {
+        "observations": 36,
+        "errors": 0,
+        "recall_at_5": 0.15007908757908758,
+        "mrr_at_5": 0.6203703703703703,
+        "ndcg_at_5": 0.3426766573569351,
+        "latency_ms": {"p50": 23.6738, "p95": 25.6945, "p99": 26.85581}
+      },
+      "multi": {
+        "observations": 36,
+        "errors": 0,
+        "recall_at_5": 0.21343155301488637,
+        "mrr_at_5": 0.6986111111111111,
+        "ndcg_at_5": 0.47139674371356727,
+        "latency_ms": {"p50": 33.92825, "p95": 44.2451, "p99": 59.501}
+      },
+      "paired_query_delta": {
+        "recall_at_5": {
+          "mean": 0.06335246543579877,
+          "ci95": [0.020801960385293725, 0.10355308271974939],
+          "improved_regressed_tied": [8, 1, 3]
+        },
+        "mrr_at_5": {
+          "mean": 0.07824074074074075,
+          "ci95": [-0.05092592592592592, 0.1851851851851852],
+          "improved_regressed_tied": [7, 1, 4]
+        },
+        "ndcg_at_5": {
+          "mean": 0.12872008635663212,
+          "ci95": [0.04657601030421955, 0.21368786594670416],
+          "improved_regressed_tied": [9, 1, 2]
+        }
+      }
+    },
+    {
+      "id": "ragz-networking-mq-synthetic-20260821-cfe7d1a-r6",
+      "condition_order": "multi-first",
+      "raw_artifact_sha256": {
+        "manifest.json": "382bf9b7f5dfed29d95b5a6d7482da9168072fd9e554e035a93ac926a740be1e",
+        "paired-summary.json": "ea5a5e0700495efcd2d17d78cc30615c3e10b83b8c8c8589a4d53ca1d19d24ce",
+        "single/per_query.jsonl": "04bd26fe066534bdc3201504794abe08d994ba3470478521750d2f1ddc5cfddf",
+        "multi/per_query.jsonl": "b6ff8d200d473bea00f3ed20fba342e97f1579974c5b0f77e522b311b35c4783"
+      },
+      "single": {
+        "observations": 36,
+        "errors": 0,
+        "recall_at_5": 0.1526043401043401,
+        "mrr_at_5": 0.5740740740740741,
+        "ndcg_at_5": 0.33269726389624205,
+        "latency_ms": {"p50": 24.58995, "p95": 27.431, "p99": 27.677255}
+      },
+      "multi": {
+        "observations": 36,
+        "errors": 0,
+        "recall_at_5": 0.2230766147432814,
+        "mrr_at_5": 0.7013888888888888,
+        "ndcg_at_5": 0.4850479477964269,
+        "latency_ms": {"p50": 37.576, "p95": 42.1922, "p99": 43.07004}
+      },
+      "paired_query_delta": {
+        "recall_at_5": {
+          "mean": 0.0704722746389413,
+          "ci95": [0.026622374539041208, 0.10930774472441139],
+          "improved_regressed_tied": [9, 1, 2]
+        },
+        "mrr_at_5": {
+          "mean": 0.12731481481481483,
+          "ci95": [-0.018518518518518514, 0.2523148148148148],
+          "improved_regressed_tied": [8, 1, 3]
+        },
+        "ndcg_at_5": {
+          "mean": 0.15235068390018486,
+          "ci95": [0.06993282035102034, 0.23573994525520756],
+          "improved_regressed_tied": [10, 1, 1]
+        }
+      }
+    }
+  ]
+}

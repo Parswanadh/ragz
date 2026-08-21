@@ -20,6 +20,25 @@ retrieval aid only and is never cited as evidence.
 Qdrant Query API/RRF, React/TypeScript, Vitest, pytest/testcontainers, local
 LiteParse, existing `no_rel/benchmarks` result contracts.
 
+## Execution Status (2026-08-21)
+
+- Implemented and pushed Tasks 1–5 plus the default-off UI/API toggle, retrieval
+  fusion, accounting, transaction hardening, and tenant/workspace/group-ACL tests.
+- Completed two clean synthetic fusion runs at
+  `cfe7d1a105c153fd069af83a2091ba350d0c120f`, one per condition order, with 12
+  page-labeled questions × 3 repetitions and zero retrieval errors.
+- Corrected the page-level metric implementation after independent review: chunks
+  from one PDF page now count once. The earlier `r2`–`r4` scores are superseded by
+  `r5` and `r6`.
+- Attempted AnythingLLM v1.16.0 native indexing; it is recorded as resource-gated
+  after a server disconnect near the observed 2 GiB container limit. No score was
+  assigned and the temporary extracted-text dataset was deleted.
+- Preserved compact copyright-safe benchmark evidence under
+  `docs/benchmarks/artifacts/`; raw local run files contain no query/book text.
+- Pending before merge readiness: fresh full backend/frontend gates, rebase after
+  upstream PRs #3/#8 and #6/#7, live-provider expansion/production embeddings,
+  and any draft PR publication decision.
+
 ## Global Constraints
 
 - Work only in `/tmp/ragz-multi-query-20260821` on
