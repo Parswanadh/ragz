@@ -185,7 +185,18 @@ Recommended upstream order is #3 → #8 and #6 → #7; #4/#5 are independent. Th
 feature branch must be rebased after #6/#7 and #3/#8 land so expansion/vector/fusion
 latency remains instrumented and tenancy boundaries stay enforceable.
 
+Live status checked on 2026-08-21: upstream `main` remains
+`b23949853fa2c76584218d68ec619685525568ab`; PRs #3–#8 are open and their current
+GitHub checks are green. PRs #8 and #7 are stacked on #3 and #6 respectively. The
+fork has no open PR, so this work remains a pushed feature branch rather than a
+submitted change.
+
 ## Current issues not covered by those PRs
+
+The sole open upstream GitHub issue is
+[#9, LiteParse silently truncates documents over 1,000 pages](https://github.com/marketcalls/ragz/issues/9).
+It includes public-corpus reproductions, resource measurements, acceptance criteria,
+and a bounded page-range parsing proposal. It is not fixed on this branch.
 
 1. TXT/Markdown still route into unsupported LiteParse when explicitly selected.
 2. ACL managers can restrict a document away from themselves and lose the ability
