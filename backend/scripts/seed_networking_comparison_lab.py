@@ -69,61 +69,93 @@ async def seed(args: argparse.Namespace) -> None:
                         )
                     ).scalars()
                 )
-                print(
-                    f"workspace_id={existing.id} documents={len(documents)} "
-                    "status=already_seeded"
+                if len(documents) == 3 and all(
+                    document.status == "indexed" for document in documents
+                ):
+                    print(
+                        f"workspace_id={existing.id} documents={len(documents)} "
+                        "status=already_seeded"
+                    )
+                    return
+                if documents:
+                    raise RuntimeError(
+                        "comparison workspace is partially seeded; inspect it before retrying"
+                    )
+                workspace = existing
+                organization = await session.get(Organization, workspace.org_id)
+                admin = (
+                    await session.execute(
+                        select(User).where(
+                            User.org_id == workspace.org_id,
+                            User.email == args.admin_email,
+                        )
+                    )
+                ).scalar_one_or_none()
+                embedding_model = await session.get(Model, workspace.embedding_model_id)
+                chat_model = (
+                    await session.get(Model, workspace.default_model_id)
+                    if workspace.default_model_id is not None
+                    else None
                 )
-                return
+                if any(item is None for item in (organization, admin, embedding_model, chat_model)):
+                    raise RuntimeError("comparison workspace bootstrap rows are incomplete")
+            else:
+                organization = Organization(name=ORG_NAME)
+                session.add(organization)
+                await session.flush()
+                admin = User(
+                    org_id=organization.id,
+                    email=args.admin_email,
+                    password_hash=hash_password(password),
+                    role="superadmin",
+                )
+                session.add(admin)
+                await session.flush()
 
-            organization = Organization(name=ORG_NAME)
-            session.add(organization)
-            await session.flush()
-            admin = User(
-                org_id=organization.id,
-                email=args.admin_email,
-                password_hash=hash_password(password),
-                role="superadmin",
-            )
-            session.add(admin)
-            await session.flush()
+                embedding_model = await session.get(Model, LOCAL_EMBEDDING_MODEL_ID)
+                if embedding_model is None:
+                    raise RuntimeError(
+                        "seeded local embedding model is missing; run migrations first"
+                    )
+                embedding_model.display_name = "Hash embeddings — comparison lab"
+                embedding_model.provider_kind = "tei"
+                embedding_model.modality = "embedding"
+                embedding_model.dimension = settings.embedding_dim
+                embedding_model.collection_name = f"chunks_networking_lab_{uuid4().hex}"
+                embedding_model.enabled = True
+                embedding_model.sync_status = "synced"
 
-            embedding_model = await session.get(Model, LOCAL_EMBEDDING_MODEL_ID)
-            if embedding_model is None:
-                raise RuntimeError("seeded local embedding model is missing; run migrations first")
-            embedding_model.display_name = "Hash embeddings — comparison lab"
-            embedding_model.provider_kind = "tei"
-            embedding_model.modality = "embedding"
-            embedding_model.dimension = settings.embedding_dim
-            embedding_model.collection_name = f"chunks_networking_lab_{uuid4().hex}"
-            embedding_model.enabled = True
-            embedding_model.sync_status = "synced"
+                chat_model = Model(
+                    litellm_model_name=args.chat_model,
+                    display_name=args.chat_model,
+                    provider_kind="openai",
+                    modality="chat",
+                    enabled=True,
+                    is_utility=True,
+                    sync_status="synced",
+                )
+                session.add(chat_model)
+                await session.flush()
+                workspace = Workspace(
+                    org_id=organization.id,
+                    name=WORKSPACE_NAME,
+                    embedding_model_id=embedding_model.id,
+                    default_model_id=chat_model.id,
+                    top_k=5,
+                    min_score=0.0,
+                    rerank_enabled=False,
+                    multi_query_enabled=False,
+                    chunk_method="heading",
+                )
+                session.add(workspace)
+                await session.flush()
+                session.add(WorkspaceMember(workspace_id=workspace.id, user_id=admin.id))
+                await session.commit()
 
-            chat_model = Model(
-                litellm_model_name=args.chat_model,
-                display_name=args.chat_model,
-                provider_kind="openai",
-                modality="chat",
-                enabled=True,
-                is_utility=True,
-                sync_status="synced",
-            )
-            session.add(chat_model)
-            await session.flush()
-            workspace = Workspace(
-                org_id=organization.id,
-                name=WORKSPACE_NAME,
-                embedding_model_id=embedding_model.id,
-                default_model_id=chat_model.id,
-                top_k=5,
-                min_score=0.0,
-                rerank_enabled=False,
-                multi_query_enabled=False,
-                chunk_method="heading",
-            )
-            session.add(workspace)
-            await session.flush()
-            session.add(WorkspaceMember(workspace_id=workspace.id, user_id=admin.id))
-            await session.commit()
+            assert organization is not None
+            assert admin is not None
+            assert embedding_model is not None
+            assert chat_model is not None
 
         collection_name = embedding_model.collection_name
         assert collection_name is not None
@@ -161,7 +193,7 @@ async def seed(args: argparse.Namespace) -> None:
                         is_current=True,
                         approved=True,
                         vectors_present=False,
-                        index_state="building",
+                        index_state="pending",
                         security_revision=0,
                         projected_security_revision=0,
                     )
