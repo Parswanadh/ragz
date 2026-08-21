@@ -51,7 +51,18 @@ def percentile(values: list[float], quantile: float) -> float | None:
 def ranking_metrics(
     *, retrieved: list[str], relevant: set[str], k: int
 ) -> dict[str, float]:
-    ranked = retrieved[:k]
+    # Multiple chunks can start on the same PDF page. Page-level qrels must
+    # count that evidence page once; otherwise repeated hits inflate DCG above
+    # its ideal and can produce impossible nDCG values greater than 1.
+    ranked: list[str] = []
+    seen: set[str] = set()
+    for item in retrieved:
+        if item in seen:
+            continue
+        seen.add(item)
+        ranked.append(item)
+        if len(ranked) == k:
+            break
     hit_ranks = [index + 1 for index, item in enumerate(ranked) if item in relevant]
     recall = len({item for item in ranked if item in relevant}) / len(relevant) if relevant else 0.0
     reciprocal_rank = 1.0 / hit_ranks[0] if hit_ranks else 0.0
@@ -318,19 +329,20 @@ async def _run_mode(
         assert workspace is not None
         workspace.multi_query_enabled = mode == "multi"
         await session.commit()
-        for record in queries[:warmups]:
-            await retrieve(
-                session,
-                ctx,
-                workspace_id,
-                record["query"],
-                top_k=top_k,
-                query_expander=(
-                    StaticQueryExpander(record["alternatives"])
-                    if mode == "multi"
-                    else None
-                ),
-            )
+        for _ in range(warmups):
+            for record in queries:
+                await retrieve(
+                    session,
+                    ctx,
+                    workspace_id,
+                    record["query"],
+                    top_k=top_k,
+                    query_expander=(
+                        StaticQueryExpander(record["alternatives"])
+                        if mode == "multi"
+                        else None
+                    ),
+                )
         for repetition in range(1, repetitions + 1):
             for record in queries:
                 expander = (
@@ -405,6 +417,7 @@ async def _run_mode(
         "latency_ms": {
             "p50": percentile(latencies, 0.5),
             "p95": percentile(latencies, 0.95),
+            "p99": percentile(latencies, 0.99),
         },
     }
     (output / "summary.json").write_text(

@@ -78,6 +78,20 @@ def test_ranking_metrics_use_page_level_evidence() -> None:
     assert 0 < result["ndcg_at_k"] < 1
 
 
+def test_ranking_metrics_count_repeated_page_only_once() -> None:
+    result = ranking_metrics(
+        retrieved=["book-1:10", "book-1:10", "book-1:10"],
+        relevant={"book-1:10"},
+        k=3,
+    )
+
+    assert result == {
+        "recall_at_k": 1.0,
+        "reciprocal_rank": 1.0,
+        "ndcg_at_k": 1.0,
+    }
+
+
 def test_percentile_uses_linear_interpolation() -> None:
     assert percentile([10.0, 20.0, 30.0, 40.0], 0.5) == pytest.approx(25.0)
     assert percentile([10.0, 20.0, 30.0, 40.0], 0.95) == pytest.approx(38.5)

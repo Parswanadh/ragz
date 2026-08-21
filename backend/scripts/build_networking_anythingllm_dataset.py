@@ -78,7 +78,7 @@ async def build(args: argparse.Namespace) -> None:
             "query_id": row["query_id"],
             "query": row["query"],
             "query_type": row["query_type"],
-            "answerable": True,
+            "answerable": row["answerable"],
             "reference_answer": "",
         }
         for row in query_set

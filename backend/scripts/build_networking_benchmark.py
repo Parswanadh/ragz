@@ -47,6 +47,7 @@ def load_query_set(path: Path) -> list[dict[str, Any]]:
         query = raw.get("query")
         alternatives = raw.get("alternatives")
         relevant = raw.get("relevant")
+        answerable = raw.get("answerable", True)
         if not isinstance(query_id, str) or not query_id or query_id in seen:
             raise ValueError("query_id must be unique and non-empty")
         if not isinstance(query, str) or not query.strip() or len(query) > 2_000:
@@ -57,8 +58,14 @@ def load_query_set(path: Path) -> list[dict[str, Any]]:
             or any(not isinstance(item, str) or not item.strip() for item in alternatives)
         ):
             raise ValueError(f"{query_id}: exactly two alternatives are required")
-        if not isinstance(relevant, list) or not relevant:
-            raise ValueError(f"{query_id}: page-level relevance labels are required")
+        if not isinstance(answerable, bool):
+            raise ValueError(f"{query_id}: answerable must be boolean")
+        if not isinstance(relevant, list) or (answerable and not relevant):
+            raise ValueError(
+                f"{query_id}: answerable queries require page-level relevance labels"
+            )
+        if not answerable and relevant:
+            raise ValueError(f"{query_id}: unanswerable queries cannot have relevance labels")
         normalized_relevant: list[dict[str, Any]] = []
         for item in relevant:
             if not isinstance(item, dict) or not isinstance(item.get("book_id"), str):
@@ -80,6 +87,7 @@ def load_query_set(path: Path) -> list[dict[str, Any]]:
                 "query": query.strip(),
                 "alternatives": [str(item).strip() for item in alternatives],
                 "relevant": normalized_relevant,
+                "answerable": answerable,
                 "query_type": str(raw.get("query_type") or "unspecified"),
             }
         )
