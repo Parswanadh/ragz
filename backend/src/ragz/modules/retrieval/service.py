@@ -62,6 +62,7 @@ class RetrievedChunk:
 class RetrievalResult:
     chunks: list[RetrievedChunk]
     no_answer: bool
+    query_count: int = 1
 
 
 @dataclass(frozen=True)
@@ -466,6 +467,7 @@ async def retrieve(
     metadata_clauses: Sequence[MetadataClause] | None = None,
     *,
     query_expander: QueryExpander | None = None,
+    multi_query_enabled_override: bool | None = None,
 ) -> RetrievalResult:
     """Hybrid retrieval — the one code path (spec §3.3), Plan E additions:
 
@@ -504,10 +506,15 @@ async def retrieve(
 
     ws = await get_workspace_checked(session, ctx, workspace_id)
     k = top_k if top_k is not None else ws.top_k
+    multi_query_enabled = (
+        ws.multi_query_enabled
+        if multi_query_enabled_override is None
+        else multi_query_enabled_override
+    )
     embedding_model = await models_service.get_model(session, ws.embedding_model_id)
     utility_model = (
         await models_service.resolve_utility_model(session)
-        if ws.multi_query_enabled
+        if multi_query_enabled
         else None
     )
     # Workspace/model resolution above is read-only. End that transaction before
@@ -524,7 +531,7 @@ async def retrieve(
         litellm_model_name=embedding_model.litellm_model_name,
     )
     queries: tuple[str, ...] = (query,)
-    if ws.multi_query_enabled:
+    if multi_query_enabled:
         if utility_model is None:
             structlog.get_logger().warning(
                 "multi_query_no_utility_model",
@@ -648,7 +655,7 @@ async def retrieve(
         )
     candidates = _dedupe_hq(candidates)
     if not candidates:
-        return RetrievalResult(chunks=[], no_answer=True)
+        return RetrievalResult(chunks=[], no_answer=True, query_count=len(queries))
 
     if ws.rerank_enabled:
         try:
@@ -679,7 +686,9 @@ async def retrieve(
             top = order[:k]
             reranked = [replace(candidates[i], score=scores[i]) for i in top]
             return RetrievalResult(
-                chunks=reranked, no_answer=scores[top[0]] < ws.min_score
+                chunks=reranked,
+                no_answer=scores[top[0]] < ws.min_score,
+                query_count=len(queries),
             )
 
     chunks = candidates[:k]
@@ -704,7 +713,11 @@ async def retrieve(
         ),
         default=0.0,
     )
-    return RetrievalResult(chunks=chunks, no_answer=best_cosine < ws.min_score)
+    return RetrievalResult(
+        chunks=chunks,
+        no_answer=best_cosine < ws.min_score,
+        query_count=len(queries),
+    )
 
 
 _SCROLL_PAGE = 256
