@@ -251,7 +251,7 @@ async def set_embedding_model(
 _RETRIEVAL_SETTINGS_FIELDS = {
     "top_k", "min_score", "rerank_enabled", "system_prompt_override", "fallback_policy",
     "web_search_enabled", "strict_mode", "enrichment_enabled", "chunk_method",
-    "generative_ui_enabled",
+    "generative_ui_enabled", "multi_query_enabled",
 }
 
 # Task 12 (§6): the subset of _RETRIEVAL_SETTINGS_FIELDS that actually changes
@@ -259,7 +259,7 @@ _RETRIEVAL_SETTINGS_FIELDS = {
 # web_search_enabled/system_prompt_override/enrichment_enabled/
 # generative_ui_enabled, which affect generation-time or ingestion-time
 # behavior, not retrieval itself.
-_RANKING_FIELDS = {"top_k", "min_score", "rerank_enabled"}
+_RANKING_FIELDS = {"top_k", "min_score", "rerank_enabled", "multi_query_enabled"}
 
 
 async def update_retrieval_settings(
