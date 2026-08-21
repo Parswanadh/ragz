@@ -260,11 +260,10 @@ and ambient Redis/Celery/KEK test leakage were fixed in merged PR #2.
 
 ## Verification snapshot
 
-- Full backend pytest before the final benchmark-only harness correction: 1,707
-  passed, 14 skipped, 0 failed
+- Final full backend pytest after the harness correction: 1,708 passed, 14 skipped,
+  0 failed
 - Final benchmark-tooling focused suite: 13 passed
 - Tenant/workspace/group-ACL focused suite: 3 passed
-- Fresh full backend rerun after the final harness correction: pending
 - Frontend Vitest: 698 passed, 0 failed
 - Ruff: passed
 - mypy: 158 source files passed
