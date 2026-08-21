@@ -226,6 +226,8 @@ class Retriever(Protocol):
         query: str,
         top_k: int | None = None,
         metadata_clauses: Sequence[MetadataClause] | None = None,
+        *,
+        multi_query_enabled_override: bool | None = None,
     ) -> RetrievalResult: ...
 
 
