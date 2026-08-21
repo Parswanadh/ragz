@@ -582,6 +582,10 @@ async def _run_mode(
         f"- Recall@{top_k}: `{format_metric(summary['mean_recall_at_k'])}`\n"
         f"- MRR@{top_k}: `{format_metric(summary['mean_reciprocal_rank'])}`\n"
         f"- nDCG@{top_k}: `{format_metric(summary['mean_ndcg_at_k'])}`\n"
+        "- Abstention precision/recall/F1: "
+        f"`{format_metric(summary['abstention']['precision'], 3)}` / "
+        f"`{format_metric(summary['abstention']['recall'], 3)}` / "
+        f"`{format_metric(summary['abstention']['f1'], 3)}`\n"
         f"- p50/p95/p99: `{summary['latency_ms']['p50']:.3f}` / "
         f"`{summary['latency_ms']['p95']:.3f}` / "
         f"`{summary['latency_ms']['p99']:.3f}` ms\n"
@@ -671,7 +675,7 @@ async def run(args: argparse.Namespace) -> None:
     manifest["no_answer_threshold"] = {
         "value": args.min_score,
         "score_space": "maximum_dense_cosine",
-        "calibration": "explicit pilot threshold; not production calibrated",
+        "calibration": args.threshold_calibration,
     }
     manifest["conditions"] = summaries
     paired = paired_summary(output, seed=args.seed)
@@ -683,6 +687,7 @@ async def run(args: argparse.Namespace) -> None:
         f"- Commit: `{git_commit}`\n"
         f"- Condition order: `{args.order}`\n"
         f"- Seed: `{args.seed}`\n"
+        f"- No-answer threshold: `{args.min_score}` (maximum dense cosine)\n"
         f"- Single Recall@{args.top_k}: "
         f"`{format_metric(summaries['single']['mean_recall_at_k'])}`\n"
         f"- Multi Recall@{args.top_k}: "
@@ -709,6 +714,11 @@ def main() -> None:
         type=float,
         required=True,
         help="Explicit maximum-dense-cosine threshold for no-answer evaluation",
+    )
+    parser.add_argument(
+        "--threshold-calibration",
+        required=True,
+        help="Non-secret provenance for selecting --min-score",
     )
     parser.add_argument(
         "--order",
