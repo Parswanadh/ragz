@@ -11,6 +11,7 @@ if str(SCRIPTS) not in sys.path:
 from build_networking_anythingllm_dataset import segment_id  # noqa: E402
 from build_networking_benchmark import load_query_set  # noqa: E402
 from run_multi_query_benchmark import (  # noqa: E402
+    bootstrap_ci,
     create_output_directory,
     percentile,
     ranking_metrics,
@@ -66,6 +67,29 @@ def test_query_set_rejects_incomplete_or_unbounded_records(
         load_query_set(path)
 
 
+def test_query_set_allows_explicit_unanswerable_without_qrels(tmp_path: Path) -> None:
+    path = tmp_path / "queries.json"
+    path.write_text(
+        json.dumps(
+            [
+                {
+                    "query_id": "q-off",
+                    "query": "Which chapter specifies a protocol absent from the corpus?",
+                    "alternatives": ["absent protocol specification", "unsupported protocol"],
+                    "answerable": False,
+                    "relevant": [],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_query_set(path)
+
+    assert loaded[0]["answerable"] is False
+    assert loaded[0]["relevant"] == []
+
+
 def test_ranking_metrics_use_page_level_evidence() -> None:
     result = ranking_metrics(
         retrieved=["book-1:99", "book-1:10", "book-2:20", "book-1:11"],
@@ -98,6 +122,14 @@ def test_percentile_uses_linear_interpolation() -> None:
     assert percentile([], 0.95) is None
 
 
+def test_bootstrap_interval_is_deterministic_for_seed() -> None:
+    first = bootstrap_ci([0.0, 0.1, 0.2], seed=42, samples=1_000)
+    second = bootstrap_ci([0.0, 0.1, 0.2], seed=42, samples=1_000)
+
+    assert first == second
+    assert first is not None and first[0] <= first[1]
+
+
 def test_output_directory_must_be_new(tmp_path: Path) -> None:
     output = tmp_path / "run"
     create_output_directory(output)
@@ -122,6 +154,8 @@ def test_safe_record_never_contains_query_or_alternatives() -> None:
     assert "alternatives" not in record
     assert record["query_id"] == "q01"
     assert record["expansion_count"] == 3
+    assert record["answerable"] is True
+    assert record["no_answer"] is False
 
 
 def test_anythingllm_segment_ids_are_stable_at_boundaries() -> None:

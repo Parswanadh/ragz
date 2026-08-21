@@ -10,11 +10,17 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
+import importlib.metadata
 import json
 import math
+import platform
+import random
 import shutil
+import statistics
 import subprocess
 import time
+from collections import defaultdict
 from contextlib import ExitStack
 from datetime import UTC, datetime
 from pathlib import Path
@@ -86,6 +92,8 @@ def safe_query_record(
     expansion_count: int,
     error: str | None,
     repetition: int = 1,
+    answerable: bool = True,
+    no_answer: bool = False,
 ) -> dict[str, Any]:
     return {
         "query_id": query_id,
@@ -95,8 +103,55 @@ def safe_query_record(
         "metrics": metrics,
         "elapsed_ms": round(elapsed_ms, 4),
         "expansion_count": expansion_count,
+        "answerable": answerable,
+        "no_answer": no_answer,
         "error": error,
     }
+
+
+def bootstrap_ci(
+    values: list[float], *, seed: int, samples: int = 10_000
+) -> tuple[float, float] | None:
+    if not values:
+        return None
+    # This RNG drives a reproducible statistical resample, never a secret.
+    rng = random.Random(seed)  # noqa: S311
+    means = sorted(
+        statistics.mean(rng.choice(values) for _ in values)
+        for _ in range(samples)
+    )
+    return means[int(samples * 0.025)], means[int(samples * 0.975) - 1]
+
+
+def paired_summary(output: Path, *, seed: int) -> dict[str, Any]:
+    by_mode: dict[str, dict[str, list[dict[str, Any]]]] = {}
+    for mode in ("single", "multi"):
+        grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for line in (output / mode / "per_query.jsonl").read_text(encoding="utf-8").splitlines():
+            row = json.loads(line)
+            grouped[str(row["query_id"])].append(row)
+        by_mode[mode] = grouped
+    metrics: dict[str, Any] = {}
+    for metric in ("recall_at_k", "reciprocal_rank", "ndcg_at_k"):
+        deltas: list[float] = []
+        for query_id in sorted(by_mode["single"]):
+            single = statistics.mean(
+                float(row["metrics"][metric])
+                for row in by_mode["single"][query_id]
+            )
+            multi = statistics.mean(
+                float(row["metrics"][metric])
+                for row in by_mode["multi"][query_id]
+            )
+            deltas.append(multi - single)
+        metrics[metric] = {
+            "mean_delta": statistics.mean(deltas),
+            "bootstrap_ci95": bootstrap_ci(deltas, seed=seed),
+            "improved": sum(delta > 1e-12 for delta in deltas),
+            "regressed": sum(delta < -1e-12 for delta in deltas),
+            "tied": sum(abs(delta) <= 1e-12 for delta in deltas),
+        }
+    return {"seed": seed, "bootstrap_samples": 10_000, "metrics": metrics}
 
 
 class StaticQueryExpander:
@@ -393,12 +448,41 @@ async def _run_mode(
                         expansion_count=3 if mode == "multi" else 1,
                         error=error,
                         repetition=repetition,
+                        answerable=bool(record["answerable"]),
+                        no_answer=bool(result.no_answer) if result is not None else False,
                     )
                 )
     with (output / "per_query.jsonl").open("w", encoding="utf-8") as handle:
         for record in records:
             handle.write(json.dumps(record, sort_keys=True) + "\n")
     latencies = [float(item["elapsed_ms"]) for item in records if item["error"] is None]
+    abstention_tp = sum(
+        not item["answerable"] and item["no_answer"] for item in records
+    )
+    abstention_fp = sum(
+        item["answerable"] and item["no_answer"] for item in records
+    )
+    abstention_fn = sum(
+        not item["answerable"] and not item["no_answer"] for item in records
+    )
+    abstention_precision = (
+        abstention_tp / (abstention_tp + abstention_fp)
+        if abstention_tp + abstention_fp
+        else None
+    )
+    abstention_recall = (
+        abstention_tp / (abstention_tp + abstention_fn)
+        if abstention_tp + abstention_fn
+        else None
+    )
+    abstention_f1 = (
+        2 * abstention_precision * abstention_recall
+        / (abstention_precision + abstention_recall)
+        if abstention_precision is not None
+        and abstention_recall is not None
+        and abstention_precision + abstention_recall
+        else None
+    )
     summary: dict[str, Any] = {
         "mode": mode,
         "query_count": len(queries),
@@ -414,6 +498,14 @@ async def _run_mode(
         / len(records),
         "mean_ndcg_at_k": sum(float(item["metrics"]["ndcg_at_k"]) for item in records)
         / len(records),
+        "abstention": {
+            "true_positive": abstention_tp,
+            "false_positive": abstention_fp,
+            "false_negative": abstention_fn,
+            "precision": abstention_precision,
+            "recall": abstention_recall,
+            "f1": abstention_f1,
+        },
         "latency_ms": {
             "p50": percentile(latencies, 0.5),
             "p95": percentile(latencies, 0.95),
@@ -422,6 +514,19 @@ async def _run_mode(
     }
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (output / "summary.md").write_text(
+        "# RAGZ networking retrieval summary\n\n"
+        f"- Mode: `{mode}`\n"
+        f"- Queries: `{len(queries)}` × `{repetitions}` repetitions\n"
+        f"- Recall@{top_k}: `{summary['mean_recall_at_k']:.6f}`\n"
+        f"- MRR@{top_k}: `{summary['mean_reciprocal_rank']:.6f}`\n"
+        f"- nDCG@{top_k}: `{summary['mean_ndcg_at_k']:.6f}`\n"
+        f"- p50/p95/p99: `{summary['latency_ms']['p50']:.3f}` / "
+        f"`{summary['latency_ms']['p95']:.3f}` / "
+        f"`{summary['latency_ms']['p99']:.3f}` ms\n"
+        f"- Errors: `{summary['errors']}`\n",
+        encoding="utf-8",
     )
     return summary
 
@@ -434,18 +539,37 @@ async def run(args: argparse.Namespace) -> None:
     git_executable = shutil.which("git")
     if git_executable is None:
         raise RuntimeError("git executable not found")
+    git_commit = subprocess.check_output(  # noqa: S603 - fixed git argv
+        [git_executable, "rev-parse", "HEAD"], text=True
+    ).strip()
+    git_status = subprocess.check_output(  # noqa: S603 - fixed git argv
+        [git_executable, "status", "--porcelain"], text=True
+    )
+    tracked_diff = subprocess.check_output(  # noqa: S603 - fixed git argv
+        [git_executable, "diff", "--binary", "HEAD"]
+    )
     manifest.update(
         {
             "runner_version": "1.0",
-            "git_commit": subprocess.check_output(  # noqa: S603 - fixed git argv
-                [git_executable, "rev-parse", "HEAD"], text=True
-            ).strip(),
+            "git_commit": git_commit,
+            "git_dirty": bool(git_status),
+            "tracked_diff_sha256": hashlib.sha256(tracked_diff).hexdigest(),
+            "python_version": platform.python_version(),
+            "tool_versions": {
+                "liteparse": importlib.metadata.version("liteparse"),
+                "qdrant_client": importlib.metadata.version("qdrant-client"),
+                "fastembed": importlib.metadata.version("fastembed"),
+            },
             "top_k": args.top_k,
+            "seed": args.seed,
             "dense": "deterministic-hash-1024",
             "sparse": "fastembed-bm25",
             "fusion": "qdrant-rrf",
             "reranker": "disabled",
             "query_variants": "fixed-two-alternatives",
+            "expansion_provider_calls": 0,
+            "provider_cost_usd": 0.0,
+            "benchmark_status": "synthetic_fusion_pilot",
         }
     )
     with ExitStack() as stack:
@@ -484,6 +608,22 @@ async def run(args: argparse.Namespace) -> None:
     manifest["warmups"] = args.warmups
     manifest["repetitions"] = args.repetitions
     manifest["conditions"] = summaries
+    paired = paired_summary(output, seed=args.seed)
+    (output / "paired-summary.json").write_text(
+        json.dumps(paired, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    (output / "summary.md").write_text(
+        "# RAGZ single-query vs multi-query synthetic fusion pilot\n\n"
+        f"- Commit: `{git_commit}`\n"
+        f"- Condition order: `{args.order}`\n"
+        f"- Seed: `{args.seed}`\n"
+        f"- Single Recall@{args.top_k}: "
+        f"`{summaries['single']['mean_recall_at_k']:.6f}`\n"
+        f"- Multi Recall@{args.top_k}: "
+        f"`{summaries['multi']['mean_recall_at_k']:.6f}`\n"
+        "- Live expansion/provider latency: `not measured`\n",
+        encoding="utf-8",
+    )
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -497,6 +637,7 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
         "--order",
         choices=("single-first", "multi-first"),

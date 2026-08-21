@@ -37,7 +37,9 @@ class UsageRecord(UUIDPk, Base):
     # workspace. NEVER part of any token/units aggregation.
     workspace_id: Mapped[UUID | None] = mapped_column(default=None)
     model_id: Mapped[UUID | None] = mapped_column(default=None)
-    feature: Mapped[str]  # chat | ingestion | embedding | rerank | web_search
+    # Open vocabulary for reporting dimensions. Current token/call producers:
+    # chat | ingestion | embedding | query_expansion | rerank | web_search.
+    feature: Mapped[str]
     prompt_tokens: Mapped[int]
     completion_tokens: Mapped[int]
     # Per-call features (rerank search-units, web_search calls) count here.
