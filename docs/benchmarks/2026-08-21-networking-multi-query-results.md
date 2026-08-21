@@ -138,6 +138,8 @@ production embeddings need a larger held-out calibration set.
   `ragz-networking-mq-threshold-calibration-20260821-48ff9ec-*` prefix.
 - Committed compact evidence, configurations, hashes, metrics and CIs:
   `docs/benchmarks/artifacts/2026-08-21-networking-multi-query-synthetic-pilot-v2.json`
+- Committed privacy-scanned raw `r12`/`r13` JSONL/summaries and calibration
+  manifests: `docs/benchmarks/artifacts/raw/2026-08-21/`
 
 Earlier `r2`–`r4` pilot values are superseded because their page-level nDCG
 calculation counted duplicate chunks from the same PDF page. The corrected runner

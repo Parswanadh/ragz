@@ -1,0 +1,143 @@
+{
+  "benchmark_status": "synthetic_fusion_pilot",
+  "condition_order": "single-first",
+  "conditions": {
+    "multi": {
+      "abstention": {
+        "f1": 0.3333333333333333,
+        "false_negative": 6,
+        "false_positive": 6,
+        "precision": 0.3333333333333333,
+        "recall": 0.3333333333333333,
+        "true_positive": 3
+      },
+      "abstention_observations": 45,
+      "answerable_queries": 12,
+      "errors": 0,
+      "latency_ms": {
+        "p50": 46.3203,
+        "p95": 57.328939999999996,
+        "p99": 58.710972000000005
+      },
+      "mean_ndcg_at_k": 0.4754541978758646,
+      "mean_recall_at_k": 0.21651797276797277,
+      "mean_reciprocal_rank": 0.6986111111111111,
+      "mode": "multi",
+      "observations": 45,
+      "quality_observations": 36,
+      "query_count": 15,
+      "repetitions": 3,
+      "unanswerable_queries": 3,
+      "warmups": 2
+    },
+    "single": {
+      "abstention": {
+        "f1": 0.5,
+        "false_negative": 3,
+        "false_positive": 9,
+        "precision": 0.4,
+        "recall": 0.6666666666666666,
+        "true_positive": 6
+      },
+      "abstention_observations": 45,
+      "answerable_queries": 12,
+      "errors": 0,
+      "latency_ms": {
+        "p50": 32.808,
+        "p95": 50.16101999999999,
+        "p99": 54.385376
+      },
+      "mean_ndcg_at_k": 0.3312962278109373,
+      "mean_recall_at_k": 0.15007908757908758,
+      "mean_reciprocal_rank": 0.5833333333333334,
+      "mode": "single",
+      "observations": 45,
+      "quality_observations": 36,
+      "query_count": 15,
+      "repetitions": 3,
+      "unanswerable_queries": 3,
+      "warmups": 2
+    }
+  },
+  "copyright_safe": true,
+  "corpus_stats": {
+    "books": [
+      {
+        "book_id": "forouzan-2022",
+        "chunks": 3500,
+        "pages": 861,
+        "parse_ms": 8709.6559
+      },
+      {
+        "book_id": "kurose-2021",
+        "chunks": 1851,
+        "pages": 775,
+        "parse_ms": 5895.85
+      },
+      {
+        "book_id": "tanenbaum-2021",
+        "chunks": 3023,
+        "pages": 946,
+        "parse_ms": 8457.8394
+      }
+    ],
+    "chunks": 8374
+  },
+  "dataset_id": "networking-pdfs-v1",
+  "dense": "deterministic-hash-1024",
+  "document_text_persisted": false,
+  "expansion_provider_calls": 0,
+  "fusion": "qdrant-rrf",
+  "git_commit": "c020ef1826cd9d9aef9b5846fb5758ad2a583cd4",
+  "git_dirty": false,
+  "no_answer_threshold": {
+    "calibration": "development sweep 0.25,0.35,0.40,0.42,0.50; selected 0.42 as the lower-false-positive midpoint; not held-out or production calibrated",
+    "score_space": "maximum_dense_cosine",
+    "value": 0.42
+  },
+  "pdfs": [
+    {
+      "book_id": "forouzan-2022",
+      "filename": "1_Behrouz A. Forouzan - Data Communications and Networking with TCP_IP Protocol Suite-McGraw-Hill (2022).pdf",
+      "pages": 861,
+      "sha256": "fec3e7c7d583018633cbba69510cdb9bba01622f4eed6ef894f571b909c59f25",
+      "size_bytes": 33719680
+    },
+    {
+      "book_id": "kurose-2021",
+      "filename": "2_James W. Kurose, Keith W. Ross - Computer Networking_ A Top-Down Approach-Pearson (2021).pdf",
+      "pages": 775,
+      "sha256": "7599e188b2645104576b5502400565aff7892ef02abb866ed6899ef9b5865a9a",
+      "size_bytes": 19972617
+    },
+    {
+      "book_id": "tanenbaum-2021",
+      "filename": "3_Andrew S. Tanenbaum, Nick Feamster, David J. Wetherall - Computer Networks-Pearson (2021).pdf",
+      "pages": 946,
+      "sha256": "dca8648949db3f7f95f29917a32718d98a06888083c7f86712c9aa070cfebcb8",
+      "size_bytes": 35186267
+    }
+  ],
+  "provider_cost_usd": 0.0,
+  "python_version": "3.13.13",
+  "query_set": {
+    "count": 15,
+    "filename": "networking-multi-query-queries.json",
+    "sha256": "dc44eabf6842f80bd0c3800e5f40e7e07f6e3a6c7ce0ab68051b42ee15de1906"
+  },
+  "query_variants": "fixed-two-alternatives",
+  "repetitions": 3,
+  "reranker": "disabled",
+  "runner_version": "1.0",
+  "schema_version": "1.0",
+  "seed": 42,
+  "sparse": "fastembed-bm25",
+  "tool_versions": {
+    "fastembed": "0.8.0",
+    "liteparse": "2.12.0",
+    "qdrant_client": "1.18.0"
+  },
+  "top_k": 5,
+  "tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "warmups": 2
+}

@@ -1,0 +1,39 @@
+{
+  "bootstrap_samples": 10000,
+  "metrics": {
+    "ndcg_at_k": {
+      "bootstrap_ci95": [
+        0.06191931253769462,
+        0.22474515288878616
+      ],
+      "improved": 10,
+      "mean_delta": 0.1441579700649273,
+      "paired_query_count": 12,
+      "regressed": 1,
+      "tied": 1
+    },
+    "recall_at_k": {
+      "bootstrap_ci95": [
+        0.024560778727445397,
+        0.10456973581973582
+      ],
+      "improved": 9,
+      "mean_delta": 0.06643888518888519,
+      "paired_query_count": 12,
+      "regressed": 1,
+      "tied": 2
+    },
+    "reciprocal_rank": {
+      "bootstrap_ci95": [
+        -0.020833333333333332,
+        0.2263888888888889
+      ],
+      "improved": 8,
+      "mean_delta": 0.11527777777777778,
+      "paired_query_count": 12,
+      "regressed": 1,
+      "tied": 3
+    }
+  },
+  "seed": 42
+}
