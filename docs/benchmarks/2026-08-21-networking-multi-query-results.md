@@ -4,7 +4,7 @@
 **Feature branch:** `codex/multi-query-retrieval`
 **Fork:** <https://github.com/Parswanadh/ragz/tree/codex/multi-query-retrieval>
 **Base:** upstream `b23949853fa2c76584218d68ec619685525568ab`
-**Scored feature commit:** `cfe7d1a105c153fd069af83a2091ba350d0c120f`
+**Scored feature commit:** `c020ef1826cd9d9aef9b5846fb5758ad2a583cd4`
 **Benchmark status:** synthetic fusion pilot; live expansion/provider cell pending
 
 ## Executive result
@@ -22,7 +22,7 @@ filter and Qdrant RRF fuses them. Reranking runs once against the original user
 query. Missing utility configuration, malformed output, or provider failure
 degrades to single-query retrieval.
 
-On a 12-question page-labeled networking pilot with 8,374 locally parsed chunks,
+On a 12-answerable-question, 3-off-corpus-probe networking pilot with 8,374 locally parsed chunks,
 fixed alternatives improved every mean ranking metric at the cost of additional
 retrieval latency. Recall@5 and nDCG@5 had positive paired bootstrap intervals in
 both condition orders; MRR@5 remained uncertain. This is evidence about retrieval
@@ -52,10 +52,10 @@ live-expansion evaluation; it does not justify enabling it by default.
 
 | Book ID | PDF pages | Parsed chunks | LiteParse time in clean repeated run |
 |---|---:|---:|---:|
-| `forouzan-2022` | 861 | 3,500 | 6.645 s |
-| `kurose-2021` | 775 | 1,851 | 4.361 s |
-| `tanenbaum-2021` | 946 | 3,023 | 6.478 s |
-| **Total** | **2,582** | **8,374** | **17.483 s** |
+| `forouzan-2022` | 861 | 3,500 | 8.710 s |
+| `kurose-2021` | 775 | 1,851 | 5.896 s |
+| `tanenbaum-2021` | 946 | 3,023 | 8.458 s |
+| **Total** | **2,582** | **8,374** | **23.063 s** |
 
 The books were parsed locally with LiteParse. Committed artifacts contain only
 independently authored questions, alternatives, SHA-256 hashes and PDF page
@@ -82,26 +82,28 @@ support was excluded (for example, the Forouzan NAT pages are not qrels).
 - Two warmups and three repetitions
 - Fixed two alternatives for reproducible retrieval/fusion comparison
 - No hosted provider calls or cost in this scored cell
+- Three post-publication off-corpus probes; retrieval metrics exclude those probes
+- Explicit no-answer threshold `0.42` in maximum-dense-cosine score space
 
 ### Clean repeated result (`single-first`, 36 observations/condition)
 
 | Metric | Single query | Multi-query | Absolute delta | Relative delta |
 |---|---:|---:|---:|---:|
-| Mean page Recall@5 | 0.1501 | 0.2134 | +0.0634 | +42.2% |
-| Mean MRR@5 | 0.6204 | 0.6986 | +0.0782 | +12.6% |
-| Mean nDCG@5 | 0.3427 | 0.4714 | +0.1287 | +37.6% |
-| Retrieval p50 | 23.67 ms | 33.93 ms | +10.25 ms | +43.3% |
-| Retrieval p95 | 25.69 ms | 44.25 ms | +18.55 ms | +72.2% |
-| Retrieval p99 | 26.86 ms | 59.50 ms | +32.65 ms | +121.6% |
+| Mean page Recall@5 | 0.1501 | 0.2165 | +0.0664 | +44.3% |
+| Mean MRR@5 | 0.5833 | 0.6986 | +0.1153 | +19.8% |
+| Mean nDCG@5 | 0.3313 | 0.4755 | +0.1442 | +43.5% |
+| Retrieval p50 | 32.81 ms | 46.32 ms | +13.51 ms | +41.2% |
+| Retrieval p95 | 50.16 ms | 57.33 ms | +7.17 ms | +14.3% |
+| Retrieval p99 | 54.39 ms | 58.71 ms | +4.33 ms | +8.0% |
 | Errors | 0 | 0 | 0 | — |
 
 Query-level paired bootstrap (10,000 resamples, seed 42):
 
 | Metric delta | Improved / regressed / tied queries | 95% bootstrap CI |
 |---|---:|---:|
-| Recall@5 | 8 / 1 / 3 | +0.0208 to +0.1036 |
-| MRR@5 | 7 / 1 / 4 | -0.0509 to +0.1852 |
-| nDCG@5 | 9 / 1 / 2 | +0.0466 to +0.2137 |
+| Recall@5 | 9 / 1 / 2 | +0.0246 to +0.1046 |
+| MRR@5 | 8 / 1 / 3 | -0.0208 to +0.2264 |
+| nDCG@5 | 10 / 1 / 1 | +0.0619 to +0.2247 |
 
 Recall and nDCG improvements are positive in this small pilot's bootstrap interval;
 MRR remains uncertain. One query regressed, demonstrating why the toggle should
@@ -110,24 +112,39 @@ remain default-off.
 ### Reverse-order sensitivity run
 
 The clean `multi-first` run, executed without a competing benchmark, reproduced
-the quality direction: Recall@5 0.1526 → 0.2231, MRR@5 0.5741 → 0.7014, and
-nDCG@5 0.3327 → 0.4850. Its paired Recall@5 CI was +0.0266 to +0.1093 and nDCG@5
-CI was +0.0699 to +0.2357; MRR@5 again crossed zero (-0.0185 to +0.2523).
+the quality direction: Recall@5 0.1526 → 0.2200, MRR@5 0.6250 → 0.6986, and
+nDCG@5 0.3476 → 0.4814. Its paired Recall@5 CI was +0.0239 to +0.1077 and nDCG@5
+CI was +0.0529 to +0.2140; MRR@5 again crossed zero (-0.0542 to +0.1722).
+
+### Off-corpus abstention result
+
+A development sweep tested maximum-dense-cosine thresholds 0.25, 0.35, 0.40,
+0.42, and 0.50. Low thresholds missed all off-corpus probes; 0.50 caught them but
+falsely abstained on most answerable queries. The selected 0.42 midpoint is not
+held out or production calibrated. In the repeated single-first cell, single-query
+precision/recall/F1 was 0.40/0.67/0.50; multi-query was 0.33/0.33/0.33. Multi-query
+uses the best dense score across variants, so an alternative can make abstention
+less likely. This baseline does not support a production no-answer threshold;
+production embeddings need a larger held-out calibration set.
 
 ### Run artifacts
 
-- Clean single-first run:
-  `no_rel/benchmarks/results/runs/ragz-networking-mq-synthetic-20260821-cfe7d1a-r5/`
-- Clean multi-first run:
-  `no_rel/benchmarks/results/runs/ragz-networking-mq-synthetic-20260821-cfe7d1a-r6/`
+- Final clean single-first run:
+  `no_rel/benchmarks/results/runs/ragz-networking-mq-synthetic-20260821-c020ef1-r12/`
+- Final clean multi-first run:
+  `no_rel/benchmarks/results/runs/ragz-networking-mq-synthetic-20260821-c020ef1-r13/`
+- Threshold calibration runs: `r7` (`0.25`), `r8` (`0.35`), `r11` (`0.40`),
+  `r10` (`0.42`), and `r9` (`0.50`) under the immutable
+  `ragz-networking-mq-threshold-calibration-20260821-48ff9ec-*` prefix.
 - Committed compact evidence, configurations, hashes, metrics and CIs:
-  `docs/benchmarks/artifacts/2026-08-21-networking-multi-query-synthetic-pilot.json`
+  `docs/benchmarks/artifacts/2026-08-21-networking-multi-query-synthetic-pilot-v2.json`
 
 Earlier `r2`–`r4` pilot values are superseded because their page-level nDCG
 calculation counted duplicate chunks from the same PDF page. The corrected runner
 deduplicates page evidence before Recall/MRR/nDCG and warms every query in each
-condition. The successful `r5`/`r6` manifests record a clean Git tree and the exact
-scored commit.
+condition. The `r5`/`r6` cells corrected that issue; `r12`/`r13` additionally
+separate answerable retrieval metrics from unanswerable abstention metrics. Their
+manifests record a clean Git tree and the exact scored commit.
 
 Privacy scans found no query, alternative, document text, API key or authorization
 field in the successful raw run artifacts.
@@ -232,7 +249,7 @@ and ambient Redis/Celery/KEK test leakage were fixed in merged PR #2.
   fusion quality but excludes native expansion latency, tokens, cost and variance.
 - Hash dense embeddings are a deterministic benchmark baseline, not the production
   bge-m3/OpenAI configuration.
-- The question set is a 12-query pilot with initial page annotations, not a public
+- The question set is a 12-answerable-query plus 3-off-corpus-probe pilot with initial page annotations, not a public
   benchmark standard. A second human adjudicator and held-out queries are required.
 - Approximate retrieval/ties produced small repetition-level variation.
 - Page recall is strict: a relevant concept retrieved on an adjacent unlabeled page
@@ -243,8 +260,11 @@ and ambient Redis/Celery/KEK test leakage were fixed in merged PR #2.
 
 ## Verification snapshot
 
-- Full backend pytest after all review fixes: 1,707 passed, 14 skipped, 0 failed
-- Focused tenant/workspace/group-ACL and benchmark-tooling review suite: 15 passed
+- Full backend pytest before the final benchmark-only harness correction: 1,707
+  passed, 14 skipped, 0 failed
+- Final benchmark-tooling focused suite: 13 passed
+- Tenant/workspace/group-ACL focused suite: 3 passed
+- Fresh full backend rerun after the final harness correction: pending
 - Frontend Vitest: 698 passed, 0 failed
 - Ruff: passed
 - mypy: 158 source files passed

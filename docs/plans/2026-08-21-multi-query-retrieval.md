@@ -24,9 +24,10 @@ LiteParse, existing `no_rel/benchmarks` result contracts.
 
 - Implemented and pushed Tasks 1–5 plus the default-off UI/API toggle, retrieval
   fusion, accounting, transaction hardening, and tenant/workspace/group-ACL tests.
-- Completed two clean synthetic fusion runs at
-  `cfe7d1a105c153fd069af83a2091ba350d0c120f`, one per condition order, with 12
-  page-labeled questions × 3 repetitions and zero retrieval errors.
+- Completed two final clean synthetic fusion runs at
+  `c020ef1826cd9d9aef9b5846fb5758ad2a583cd4`, one per condition order, with 12
+  page-labeled answerable questions plus 3 off-corpus probes × 3 repetitions and
+  zero retrieval errors.
 - Corrected the page-level metric implementation after independent review: chunks
   from one PDF page now count once. The earlier `r2`–`r4` scores are superseded by
   `r5` and `r6`.
@@ -35,6 +36,9 @@ LiteParse, existing `no_rel/benchmarks` result contracts.
   assigned and the temporary extracted-text dataset was deleted.
 - Preserved compact copyright-safe benchmark evidence under
   `docs/benchmarks/artifacts/`; raw local run files contain no query/book text.
+- Calibrated hash-dense no-answer thresholds across 0.25–0.50. No production-grade
+  operating point emerged; the reported 0.42 pilot threshold has weak abstention
+  and requires replacement with held-out production-embedding calibration.
 - Pending before merge readiness: fresh full backend/frontend gates, rebase after
   upstream PRs #3/#8 and #6/#7, live-provider expansion/production embeddings,
   and any draft PR publication decision.
