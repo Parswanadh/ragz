@@ -100,7 +100,7 @@ export function WorkspaceSettingsDialog({
       <DialogContent
         title={`Retrieval settings — ${workspace.name}`}
         description="Tuning applies to every chat and search in this workspace."
-        className="max-w-lg"
+        className={tab === 'evals' ? 'max-w-[calc(100vw-2rem)] xl:max-w-7xl' : 'max-w-lg'}
       >
         <div className="mb-3 flex gap-1">
           {(['settings', 'members', 'evals'] as const).map((t) => (
@@ -141,8 +141,8 @@ export function WorkspaceSettingsDialog({
                   <option value="table_qa">Table Q&amp;A (tabular data)</option>
                 </select>
                 <p className="text-[12px] text-muted">
-                  How new uploads are split into chunks. Applies to documents ingested after
-                  this change — re-index existing docs to apply it to them.
+                  How new uploads are split into chunks. Applies to documents ingested after this
+                  change — re-index existing docs to apply it to them.
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -195,8 +195,8 @@ export function WorkspaceSettingsDialog({
                 Expand each question into multiple searches
               </label>
               <p className="text-[12px] text-muted">
-                Uses the utility model to generate up to two alternative searches, then fuses
-                all results. This can improve recall but adds one model call and extra retrieval
+                Uses the utility model to generate up to two alternative searches, then fuses all
+                results. This can improve recall but adds one model call and extra retrieval
                 latency.
               </p>
               <div className="space-y-1">
@@ -240,9 +240,9 @@ export function WorkspaceSettingsDialog({
                   onChange={(e) => setEnrichment(e.target.checked)}
                   aria-label="Enable search-recall enrichment"
                 />
-                Enrich chunks for better search recall (uses the utility model) — turning this
-                off stops new enrichment but does not remove enrichment already applied to
-                existing documents
+                Enrich chunks for better search recall (uses the utility model) — turning this off
+                stops new enrichment but does not remove enrichment already applied to existing
+                documents
               </label>
               <div className="space-y-1">
                 <Label htmlFor="ws-prompt-override">System prompt additions</Label>
@@ -272,7 +272,10 @@ export function WorkspaceSettingsDialog({
         ) : tab === 'members' ? (
           <MembersSection workspaceId={workspace.id} />
         ) : (
-          <EvalsSection workspaceId={workspace.id} />
+          <EvalsSection
+            workspaceId={workspace.id}
+            defaultModelId={workspace.default_model_id ?? null}
+          />
         )}
       </DialogContent>
     </Dialog>

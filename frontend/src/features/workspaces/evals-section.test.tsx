@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 vi.mock('@/components/ui/toaster', () => ({
@@ -36,6 +36,8 @@ const GOLDEN_QUERY = {
   created_at: '2026-07-18T00:00:00Z',
 };
 
+const MODEL = { id: '00000000-0000-4000-8000-000000000111', display_name: 'Local model' };
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(body === null ? null : JSON.stringify(body), {
     status,
@@ -63,7 +65,7 @@ test('question textarea has an accessible name', async () => {
   const fetchMock = vi.fn(async () => jsonResponse([]));
   renderSection(fetchMock);
 
-  const textarea = await screen.findByLabelText(/question/i);
+  const textarea = await screen.findByLabelText(/^Question$/i);
   expect(textarea).toBeInTheDocument();
   expect(textarea.tagName).toBe('TEXTAREA');
   expect(textarea).toHaveAttribute('maxlength', '2000');
@@ -93,7 +95,7 @@ test('creates a golden query with selected expected documents and lists it', asy
 
   expect(await screen.findByText('policy.pdf')).toBeInTheDocument();
 
-  await user.type(screen.getByLabelText(/question/i), 'Where is the muster point?');
+  await user.type(screen.getByLabelText(/^Question$/i), 'Where is the muster point?');
   await user.click(screen.getByRole('checkbox', { name: 'policy.pdf' }));
   await user.click(screen.getByRole('button', { name: 'Add golden query' }));
 
@@ -137,4 +139,99 @@ test('deletes a golden query after confirm', async () => {
   await waitFor(() =>
     expect(screen.queryByText('Where is the muster point?')).not.toBeInTheDocument(),
   );
+});
+
+test('renders single and multi-query answers side by side with sources and timings', async () => {
+  let capturedBody: unknown = null;
+  const fetchMock = vi.fn(async (req: Request) => {
+    const url = req.url;
+    if (url.endsWith('/api/v1/models')) return jsonResponse([MODEL]);
+    if (url.includes('/documents')) return jsonResponse([DOC]);
+    if (url.includes('/golden-queries')) return jsonResponse([]);
+    if (url.includes('/evals/compare') && req.method === 'POST') {
+      capturedBody = await req.clone().json();
+      return jsonResponse({
+        variants: [
+          {
+            mode: 'single',
+            answer: 'Single-path answer [1].',
+            sources: [
+              {
+                marker: 1,
+                document_id: 'd1',
+                filename: 'policy.pdf',
+                page: 7,
+                chunk_index: 0,
+                score: 0.7,
+                snippet: 'single evidence',
+                section: null,
+                version: 1,
+              },
+            ],
+            citation_markers: [1],
+            no_answer: false,
+            query_count: 1,
+            retrieval_ms: 4,
+            generation_ms: 8,
+            total_ms: 12,
+            prompt_tokens: 100,
+            completion_tokens: 20,
+          },
+          {
+            mode: 'multi',
+            answer: 'Multi-path answer [1].',
+            sources: [
+              {
+                marker: 1,
+                document_id: 'd1',
+                filename: 'policy.pdf',
+                page: 9,
+                chunk_index: 1,
+                score: 0.8,
+                snippet: 'multi evidence',
+                section: 'TCP windows',
+                version: 1,
+              },
+            ],
+            citation_markers: [1],
+            no_answer: false,
+            query_count: 3,
+            retrieval_ms: 7,
+            generation_ms: 9,
+            total_ms: 16,
+            prompt_tokens: 120,
+            completion_tokens: 24,
+          },
+        ],
+      });
+    }
+    return jsonResponse([]);
+  });
+  const user = userEvent.setup();
+  renderSection(fetchMock);
+
+  await screen.findByRole('option', { name: 'Local model' });
+  await user.type(screen.getByLabelText('Comparison question'), 'Why does TCP need a window?');
+  await user.click(screen.getByRole('button', { name: 'Compare answers' }));
+
+  await waitFor(() =>
+    expect(capturedBody).toEqual({
+      question: 'Why does TCP need a window?',
+      model_id: MODEL.id,
+    }),
+  );
+  const singleHeading = await screen.findByRole('heading', { name: 'Single query' });
+  const multiHeading = screen.getByRole('heading', { name: 'Multi-query' });
+  const singleCard = singleHeading.closest('article');
+  const multiCard = multiHeading.closest('article');
+  expect(singleCard).not.toBeNull();
+  expect(multiCard).not.toBeNull();
+  expect(within(singleCard as HTMLElement).getByText(/Single-path answer/)).toBeInTheDocument();
+  expect(within(multiCard as HTMLElement).getByText(/Multi-path answer/)).toBeInTheDocument();
+  expect(screen.getByText('1 retrieval query')).toBeInTheDocument();
+  expect(screen.getByText('3 retrieval queries')).toBeInTheDocument();
+  expect(within(singleCard as HTMLElement).getByText('policy.pdf')).toBeInTheDocument();
+  expect(within(multiCard as HTMLElement).getByText('policy.pdf')).toBeInTheDocument();
+  expect(screen.getByText('12.0 ms total')).toBeInTheDocument();
+  expect(screen.getByText('16.0 ms total')).toBeInTheDocument();
 });
