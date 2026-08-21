@@ -505,6 +505,17 @@ async def retrieve(
     ws = await get_workspace_checked(session, ctx, workspace_id)
     k = top_k if top_k is not None else ws.top_k
     embedding_model = await models_service.get_model(session, ws.embedding_model_id)
+    utility_model = (
+        await models_service.resolve_utility_model(session)
+        if ws.multi_query_enabled
+        else None
+    )
+    # Workspace/model resolution above is read-only. End that transaction before
+    # waiting on Qdrant setup, the expansion LLM, and embedding providers so a
+    # slow external service never pins an otherwise-idle pooled DB connection.
+    # All production callers enter retrieve() with prior writes already committed;
+    # retrieve owns the usage rows it stages after this boundary.
+    await session.commit()
     collection_name = embedding_model.collection_name
     assert collection_name is not None  # embedding-modality models always set this
     await ensure_collection(collection_name, embedding_model.dimension)  # type: ignore[arg-type]
@@ -514,7 +525,6 @@ async def retrieve(
     )
     queries: tuple[str, ...] = (query,)
     if ws.multi_query_enabled:
-        utility_model = await models_service.resolve_utility_model(session)
         if utility_model is None:
             structlog.get_logger().warning(
                 "multi_query_no_utility_model",

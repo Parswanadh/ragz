@@ -171,3 +171,39 @@ async def test_network_error_raises_upstream_error() -> None:
 
     with pytest.raises(UpstreamError, match="query expansion gateway unreachable"):
         await expander.expand("original", model="utility-model")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("prompt_tokens", "completion_tokens"),
+    [
+        ("unknown", 2),
+        ({"not": "a count"}, 2),
+        (-1, 2),
+        (2, -1),
+        (10**12, 2),
+        (True, 2),
+    ],
+)
+async def test_invalid_usage_metadata_is_safely_treated_as_zero(
+    prompt_tokens: object, completion_tokens: object
+) -> None:
+    body = {
+        "choices": [{"message": {"content": '{"queries":[]}'}}],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+        },
+    }
+    expander = LiteLLMQueryExpander(
+        base_url="http://litellm.test",
+        master_key="sk-test",
+        transport=httpx.MockTransport(lambda _: httpx.Response(200, json=body)),
+    )
+
+    result = await expander.expand("original", model="utility-model")
+
+    expected_prompt = 2 if prompt_tokens == 2 else 0
+    expected_completion = 2 if completion_tokens == 2 else 0
+    assert result.prompt_tokens == expected_prompt
+    assert result.completion_tokens == expected_completion

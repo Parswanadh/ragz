@@ -19,6 +19,7 @@ from ragz.core.errors import UpstreamError
 
 _MAX_ALTERNATIVES = 2
 _MAX_QUERY_CHARS = 2_000
+_MAX_USAGE_TOKENS = 1_000_000_000
 _SPACE_RE = re.compile(r"\s+")
 
 _SYSTEM_PROMPT = (
@@ -96,6 +97,21 @@ def _expanded_queries(original: str, completion_text: str) -> tuple[str, ...]:
     return tuple(result)
 
 
+def _usage_tokens(value: object) -> int:
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int):
+        count = value
+    elif isinstance(value, str):
+        try:
+            count = int(value)
+        except (ValueError, OverflowError):
+            return 0
+    else:
+        return 0
+    return count if 0 <= count <= _MAX_USAGE_TOKENS else 0
+
+
 class LiteLLMQueryExpander:
     """Non-streaming LiteLLM client dedicated to retrieval query expansion."""
 
@@ -157,8 +173,8 @@ class LiteLLMQueryExpander:
         usage_dict = usage if isinstance(usage, dict) else {}
         return ExpandedQueries(
             queries=_expanded_queries(query, content),
-            prompt_tokens=int(usage_dict.get("prompt_tokens") or 0),
-            completion_tokens=int(usage_dict.get("completion_tokens") or 0),
+            prompt_tokens=_usage_tokens(usage_dict.get("prompt_tokens")),
+            completion_tokens=_usage_tokens(usage_dict.get("completion_tokens")),
         )
 
 
