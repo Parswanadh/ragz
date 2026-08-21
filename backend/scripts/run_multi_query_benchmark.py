@@ -54,6 +54,10 @@ def percentile(values: list[float], quantile: float) -> float | None:
     return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)
 
 
+def format_metric(value: float | None, digits: int = 6) -> str:
+    return f"{value:.{digits}f}" if value is not None else "not measured"
+
+
 def ranking_metrics(
     *, retrieved: list[str], relevant: set[str], k: int
 ) -> dict[str, float]:
@@ -87,13 +91,13 @@ def safe_query_record(
     query_id: str,
     mode: str,
     retrieved: list[dict[str, object]],
-    metrics: dict[str, float],
+    metrics: dict[str, float] | None,
     elapsed_ms: float,
     expansion_count: int,
     error: str | None,
     repetition: int = 1,
     answerable: bool = True,
-    no_answer: bool = False,
+    no_answer: bool | None = False,
 ) -> dict[str, Any]:
     return {
         "query_id": query_id,
@@ -134,18 +138,35 @@ def paired_summary(output: Path, *, seed: int) -> dict[str, Any]:
     metrics: dict[str, Any] = {}
     for metric in ("recall_at_k", "reciprocal_rank", "ndcg_at_k"):
         deltas: list[float] = []
-        for query_id in sorted(by_mode["single"]):
+        for query_id in sorted(by_mode["single"].keys() & by_mode["multi"].keys()):
+            single_rows = [
+                row
+                for row in by_mode["single"][query_id]
+                if row["answerable"]
+                and row["error"] is None
+                and row["metrics"] is not None
+            ]
+            multi_rows = [
+                row
+                for row in by_mode["multi"][query_id]
+                if row["answerable"]
+                and row["error"] is None
+                and row["metrics"] is not None
+            ]
+            if not single_rows or not multi_rows:
+                continue
             single = statistics.mean(
                 float(row["metrics"][metric])
-                for row in by_mode["single"][query_id]
+                for row in single_rows
             )
             multi = statistics.mean(
                 float(row["metrics"][metric])
-                for row in by_mode["multi"][query_id]
+                for row in multi_rows
             )
             deltas.append(multi - single)
         metrics[metric] = {
-            "mean_delta": statistics.mean(deltas),
+            "paired_query_count": len(deltas),
+            "mean_delta": statistics.mean(deltas) if deltas else None,
             "bootstrap_ci95": bootstrap_ci(deltas, seed=seed),
             "improved": sum(delta > 1e-12 for delta in deltas),
             "regressed": sum(delta < -1e-12 for delta in deltas),
@@ -190,6 +211,7 @@ async def _seed_corpus(
     pdfs: list[tuple[str, Path]],
     database_url: str,
     qdrant_url: str,
+    min_score: float,
 ) -> tuple[Any, Any, Any, Any, dict[UUID, str], dict[str, object]]:
     from ragz.core.config import Settings
     from ragz.core.db import Base, build_engine, build_session_factory
@@ -257,7 +279,7 @@ async def _seed_corpus(
                 name="Networking benchmark",
                 embedding_model_id=LOCAL_EMBEDDING_MODEL_ID,
                 top_k=5,
-                min_score=0.0,
+                min_score=min_score,
                 rerank_enabled=False,
                 multi_query_enabled=False,
                 chunk_method="heading",
@@ -433,10 +455,15 @@ async def _run_mode(
                                 "score": round(float(chunk.score), 8),
                             }
                         )
-                metrics = ranking_metrics(
-                    retrieved=evidence_ids,
-                    relevant=_relevant_keys(record),
-                    k=top_k,
+                answerable = bool(record["answerable"])
+                metrics = (
+                    ranking_metrics(
+                        retrieved=evidence_ids,
+                        relevant=_relevant_keys(record),
+                        k=top_k,
+                    )
+                    if answerable and error is None
+                    else None
                 )
                 records.append(
                     safe_query_record(
@@ -448,22 +475,35 @@ async def _run_mode(
                         expansion_count=3 if mode == "multi" else 1,
                         error=error,
                         repetition=repetition,
-                        answerable=bool(record["answerable"]),
-                        no_answer=bool(result.no_answer) if result is not None else False,
+                        answerable=answerable,
+                        no_answer=(
+                            bool(result.no_answer) if result is not None else None
+                        ),
                     )
                 )
     with (output / "per_query.jsonl").open("w", encoding="utf-8") as handle:
         for record in records:
             handle.write(json.dumps(record, sort_keys=True) + "\n")
     latencies = [float(item["elapsed_ms"]) for item in records if item["error"] is None]
+    abstention_records = [item for item in records if item["error"] is None]
+    quality_records = [
+        item
+        for item in records
+        if item["answerable"]
+        and item["error"] is None
+        and item["metrics"] is not None
+    ]
     abstention_tp = sum(
-        not item["answerable"] and item["no_answer"] for item in records
+        not item["answerable"] and item["no_answer"] is True
+        for item in abstention_records
     )
     abstention_fp = sum(
-        item["answerable"] and item["no_answer"] for item in records
+        item["answerable"] and item["no_answer"] is True
+        for item in abstention_records
     )
     abstention_fn = sum(
-        not item["answerable"] and not item["no_answer"] for item in records
+        not item["answerable"] and item["no_answer"] is False
+        for item in abstention_records
     )
     abstention_precision = (
         abstention_tp / (abstention_tp + abstention_fp)
@@ -487,17 +527,37 @@ async def _run_mode(
         "mode": mode,
         "query_count": len(queries),
         "observations": len(records),
+        "quality_observations": len(quality_records),
+        "abstention_observations": len(abstention_records),
+        "answerable_queries": sum(bool(item["answerable"]) for item in queries),
+        "unanswerable_queries": sum(not bool(item["answerable"]) for item in queries),
         "warmups": warmups,
         "repetitions": repetitions,
         "errors": sum(item["error"] is not None for item in records),
-        "mean_recall_at_k": sum(float(item["metrics"]["recall_at_k"]) for item in records)
-        / len(records),
-        "mean_reciprocal_rank": sum(
-            float(item["metrics"]["reciprocal_rank"]) for item in records
-        )
-        / len(records),
-        "mean_ndcg_at_k": sum(float(item["metrics"]["ndcg_at_k"]) for item in records)
-        / len(records),
+        "mean_recall_at_k": (
+            statistics.mean(
+                float(item["metrics"]["recall_at_k"])
+                for item in quality_records
+            )
+            if quality_records
+            else None
+        ),
+        "mean_reciprocal_rank": (
+            statistics.mean(
+                float(item["metrics"]["reciprocal_rank"])
+                for item in quality_records
+            )
+            if quality_records
+            else None
+        ),
+        "mean_ndcg_at_k": (
+            statistics.mean(
+                float(item["metrics"]["ndcg_at_k"])
+                for item in quality_records
+            )
+            if quality_records
+            else None
+        ),
         "abstention": {
             "true_positive": abstention_tp,
             "false_positive": abstention_fp,
@@ -519,9 +579,9 @@ async def _run_mode(
         "# RAGZ networking retrieval summary\n\n"
         f"- Mode: `{mode}`\n"
         f"- Queries: `{len(queries)}` × `{repetitions}` repetitions\n"
-        f"- Recall@{top_k}: `{summary['mean_recall_at_k']:.6f}`\n"
-        f"- MRR@{top_k}: `{summary['mean_reciprocal_rank']:.6f}`\n"
-        f"- nDCG@{top_k}: `{summary['mean_ndcg_at_k']:.6f}`\n"
+        f"- Recall@{top_k}: `{format_metric(summary['mean_recall_at_k'])}`\n"
+        f"- MRR@{top_k}: `{format_metric(summary['mean_reciprocal_rank'])}`\n"
+        f"- nDCG@{top_k}: `{format_metric(summary['mean_ndcg_at_k'])}`\n"
         f"- p50/p95/p99: `{summary['latency_ms']['p50']:.3f}` / "
         f"`{summary['latency_ms']['p95']:.3f}` / "
         f"`{summary['latency_ms']['p99']:.3f}` ms\n"
@@ -584,6 +644,7 @@ async def run(args: argparse.Namespace) -> None:
             pdfs=args.pdf,
             database_url=database_url,
             qdrant_url=qdrant_url,
+            min_score=args.min_score,
         )
         try:
             summaries: dict[str, dict[str, Any]] = {}
@@ -607,6 +668,11 @@ async def run(args: argparse.Namespace) -> None:
     manifest["condition_order"] = args.order
     manifest["warmups"] = args.warmups
     manifest["repetitions"] = args.repetitions
+    manifest["no_answer_threshold"] = {
+        "value": args.min_score,
+        "score_space": "maximum_dense_cosine",
+        "calibration": "explicit pilot threshold; not production calibrated",
+    }
     manifest["conditions"] = summaries
     paired = paired_summary(output, seed=args.seed)
     (output / "paired-summary.json").write_text(
@@ -618,9 +684,9 @@ async def run(args: argparse.Namespace) -> None:
         f"- Condition order: `{args.order}`\n"
         f"- Seed: `{args.seed}`\n"
         f"- Single Recall@{args.top_k}: "
-        f"`{summaries['single']['mean_recall_at_k']:.6f}`\n"
+        f"`{format_metric(summaries['single']['mean_recall_at_k'])}`\n"
         f"- Multi Recall@{args.top_k}: "
-        f"`{summaries['multi']['mean_recall_at_k']:.6f}`\n"
+        f"`{format_metric(summaries['multi']['mean_recall_at_k'])}`\n"
         "- Live expansion/provider latency: `not measured`\n",
         encoding="utf-8",
     )
@@ -639,6 +705,12 @@ def main() -> None:
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument(
+        "--min-score",
+        type=float,
+        required=True,
+        help="Explicit maximum-dense-cosine threshold for no-answer evaluation",
+    )
+    parser.add_argument(
         "--order",
         choices=("single-first", "multi-first"),
         default="single-first",
@@ -650,6 +722,8 @@ def main() -> None:
         raise ValueError("top-k must be between 1 and 50")
     if args.warmups < 0 or args.repetitions < 1:
         raise ValueError("warmups must be non-negative and repetitions positive")
+    if not 0.0 <= args.min_score <= 1.0:
+        raise ValueError("min-score must be between 0 and 1")
     asyncio.run(run(args))
 
 

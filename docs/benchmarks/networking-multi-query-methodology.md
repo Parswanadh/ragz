@@ -46,6 +46,14 @@ copied from the books.
 - native expansion latency, input/output tokens, cost and fallback rate;
 - indexing parse time, chunk count and total indexing time.
 
+Recall/MRR/nDCG and their paired bootstrap deltas include only successful,
+answerable queries. Unanswerable probes have no relevance labels and are evaluated
+only through abstention precision/recall/F1; failed calls are excluded from both
+quality and abstention denominators and reported separately as errors. Every run
+must supply and record an explicit no-answer threshold in the maximum-dense-cosine
+score space. Pilot threshold selection must be labeled as development-set
+calibration rather than a production default.
+
 ## Open-source comparison policy
 
 Use the same corpus and query order, but keep tracks separate:

@@ -13,6 +13,7 @@ from build_networking_benchmark import load_query_set  # noqa: E402
 from run_multi_query_benchmark import (  # noqa: E402
     bootstrap_ci,
     create_output_directory,
+    paired_summary,
     percentile,
     ranking_metrics,
     safe_query_record,
@@ -156,6 +157,59 @@ def test_safe_record_never_contains_query_or_alternatives() -> None:
     assert record["expansion_count"] == 3
     assert record["answerable"] is True
     assert record["no_answer"] is False
+
+
+def test_paired_summary_excludes_unanswerable_and_error_rows(tmp_path: Path) -> None:
+    for mode, answerable_score in (("single", 0.25), ("multi", 0.75)):
+        output = tmp_path / mode
+        output.mkdir()
+        rows = [
+            safe_query_record(
+                query_id="q-answerable",
+                mode=mode,
+                retrieved=[],
+                metrics={
+                    "recall_at_k": answerable_score,
+                    "reciprocal_rank": answerable_score,
+                    "ndcg_at_k": answerable_score,
+                },
+                elapsed_ms=1.0,
+                expansion_count=1,
+                error=None,
+                answerable=True,
+            ),
+            safe_query_record(
+                query_id="q-off-corpus",
+                mode=mode,
+                retrieved=[],
+                metrics=None,
+                elapsed_ms=1.0,
+                expansion_count=1,
+                error=None,
+                answerable=False,
+                no_answer=True,
+            ),
+            safe_query_record(
+                query_id="q-error",
+                mode=mode,
+                retrieved=[],
+                metrics=None,
+                elapsed_ms=1.0,
+                expansion_count=1,
+                error="UpstreamError",
+                answerable=True,
+                no_answer=None,
+            ),
+        ]
+        (output / "per_query.jsonl").write_text(
+            "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+        )
+
+    summary = paired_summary(tmp_path, seed=42)
+
+    for metric in summary["metrics"].values():
+        assert metric["paired_query_count"] == 1
+        assert metric["mean_delta"] == pytest.approx(0.5)
 
 
 def test_anythingllm_segment_ids_are_stable_at_boundaries() -> None:

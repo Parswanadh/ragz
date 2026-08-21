@@ -165,5 +165,38 @@
       {"book_id": "kurose-2021", "pages": [355, 356, 357]},
       {"book_id": "tanenbaum-2021", "pages": [480, 482, 483, 484]}
     ]
+  },
+  {
+    "query_id": "q13",
+    "query_type": "off-corpus",
+    "query": "Which lattice-based key-encapsulation mechanism did NIST standardize in FIPS 203 in 2024, and what parameter sets does it define?",
+    "alternatives": [
+      "FIPS 203 post-quantum lattice KEM parameter sets",
+      "NIST 2024 ML-KEM standardized algorithm variants"
+    ],
+    "answerable": false,
+    "relevant": []
+  },
+  {
+    "query_id": "q14",
+    "query_type": "off-corpus",
+    "query": "How does the Messaging Layer Security protocol standardized in RFC 9420 represent and validate a KeyPackage?",
+    "alternatives": [
+      "RFC 9420 MLS KeyPackage fields validation",
+      "Messaging Layer Security credential leaf node key package"
+    ],
+    "answerable": false,
+    "relevant": []
+  },
+  {
+    "query_id": "q15",
+    "query_type": "off-corpus",
+    "query": "What BBRv3 congestion-control changes were introduced in Linux kernel 6.8, and how do they alter loss response?",
+    "alternatives": [
+      "Linux 6.8 BBRv3 congestion control loss response",
+      "BBRv3 kernel implementation changes packet loss behavior"
+    ],
+    "answerable": false,
+    "relevant": []
   }
 ]
