@@ -1,0 +1,13 @@
+{
+  "error_type": "InsufficientOfficialResources",
+  "failed_requirements": [
+    "effective_runtime_memory",
+    "docker_disk_unverified",
+    "docker_vm.max_map_count_unverified"
+  ],
+  "provider_calls": 0,
+  "quality_score_emitted": false,
+  "stack_started": false,
+  "stage": "pre_deployment",
+  "status": "resource_gated"
+}

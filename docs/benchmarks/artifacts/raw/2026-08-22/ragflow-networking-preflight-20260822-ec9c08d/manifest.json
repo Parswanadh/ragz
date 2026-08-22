@@ -1,0 +1,54 @@
+{
+  "commit": "ec9c08d809f63ba2815090182fa225899d2437d5",
+  "created_at_utc": "2026-08-22T14:07:29.841159+00:00",
+  "intended_model_parity": {
+    "embedding_dimension": 1536,
+    "embedding_model": "text-embedding-3-small",
+    "generation_model": "gpt-5.4-mini",
+    "provider": "openai"
+  },
+  "multi_query_capabilities": {
+    "advanced_agentic_implementation_available": true,
+    "benchmark_note": "native advanced/agentic and adapter fan-out must be separate rows",
+    "ordinary_public_retrieval": "single_question",
+    "stable_public_multi_query_api": false
+  },
+  "official_requirements_source": "https://github.com/infiniflow/ragflow/blob/v0.27.0/docs/quickstart.mdx",
+  "provider_calls": 0,
+  "quality_score_emitted": false,
+  "repository": "https://github.com/infiniflow/ragflow",
+  "resource_evidence": {
+    "compose_container_memory_limit_bytes": 8073741824,
+    "effective_memory_deficit_bytes": 12135636992,
+    "eligible": false,
+    "failed_requirements": [
+      "effective_runtime_memory",
+      "docker_disk_unverified",
+      "docker_vm.max_map_count_unverified"
+    ],
+    "measured": {
+      "cpus": 22,
+      "daemon_disk_bytes": null,
+      "daemon_vm_max_map_count": null,
+      "docker_memory_bytes": 3864363008,
+      "effective_runtime_memory_bytes": 3864363008,
+      "host_disk_bytes": 222503329792,
+      "host_memory_bytes": 16246616064,
+      "host_vm_max_map_count": 1048576
+    },
+    "namespace_note": "host disk/sysctl are contextual only; eligibility requires explicit Docker-daemon/VM measurements",
+    "required": {
+      "cpus": 4,
+      "daemon_disk_bytes": 50000000000,
+      "daemon_vm_max_map_count": 262144,
+      "effective_runtime_memory_bytes": 16000000000
+    }
+  },
+  "runner_version": "1.0",
+  "schema_version": 1,
+  "stack_started": false,
+  "status": "resource_gated",
+  "system_id": "ragflow",
+  "track": "native-docker-networking-preflight",
+  "version": "v0.27.0"
+}
