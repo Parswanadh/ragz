@@ -9,6 +9,7 @@ if str(SCRIPTS) not in sys.path:
 
 from run_networking_anythingllm import (  # noqa: E402
     batches,
+    embedding_configuration,
     ranking_metrics,
     summarize,
     validate_storage_path,
@@ -72,3 +73,14 @@ def test_storage_must_be_unique_child_of_explicit_root(tmp_path: Path) -> None:
         validate_storage_path(tmp_path, tmp_path)
     with pytest.raises(ValueError):
         validate_storage_path(tmp_path.parent / "outside", tmp_path)
+
+
+def test_embedding_configuration_labels_hosted_and_native_tracks() -> None:
+    native = embedding_configuration("native")
+    hosted = embedding_configuration("litellm")
+    assert "native-minilm" in native[1]
+    assert native[2:] == (0, 0.0)
+    assert "openai" in hosted[1]
+    assert hosted[2:] == ("not_exposed_nonzero", None)
+    with pytest.raises(ValueError):
+        embedding_configuration("unknown")

@@ -197,6 +197,40 @@ def validate_storage_path(storage: Path, allowed_root: Path) -> tuple[Path, Path
     return storage, allowed_root
 
 
+def embedding_configuration(engine: str) -> tuple[list[str], str, object, object]:
+    if engine == "native":
+        return (
+            [
+                "-e",
+                "EMBEDDING_ENGINE=native",
+                "-e",
+                "EMBEDDING_MODEL_PREF=Xenova/all-MiniLM-L6-v2",
+            ],
+            "common-20-page-segments-native-minilm-lancedb",
+            0,
+            0.0,
+        )
+    if engine == "litellm":
+        return (
+            [
+                "--add-host",
+                "host.docker.internal:host-gateway",
+                "-e",
+                "EMBEDDING_ENGINE=litellm",
+                "-e",
+                "EMBEDDING_MODEL_PREF=text-embedding-3-small",
+                "-e",
+                "LITE_LLM_BASE_PATH=http://host.docker.internal:54000/v1",
+                "-e",
+                "LITE_LLM_API_KEY=sk-ragz-dev-master",
+            ],
+            "common-20-page-segments-openai-lancedb",
+            "not_exposed_nonzero",
+            None,
+        )
+    raise ValueError("embedding engine must be native or litellm")
+
+
 async def run(args: argparse.Namespace) -> Path:
     import httpx
 
@@ -216,7 +250,10 @@ async def run(args: argparse.Namespace) -> Path:
     if storage.exists():
         raise FileExistsError(f"refusing existing storage {storage}")
     storage.mkdir(parents=True)
-    if args.model_cache:
+    embedding_args, track, provider_calls, hosted_cost = embedding_configuration(
+        args.embedding_engine
+    )
+    if args.embedding_engine == "native" and args.model_cache:
         shutil.copytree(args.model_cache.resolve(), storage / "models")
     container = f"ragz-networking-anything-{uuid4().hex[:8]}"
     port = _port()
@@ -247,10 +284,7 @@ async def run(args: argparse.Namespace) -> Path:
                 "STORAGE_DIR=/app/server/storage",
                 "-e",
                 "DISABLE_TELEMETRY=true",
-                "-e",
-                "EMBEDDING_ENGINE=native",
-                "-e",
-                "EMBEDDING_MODEL_PREF=Xenova/all-MiniLM-L6-v2",
+                *embedding_args,
                 "-e",
                 "VECTOR_DB=lancedb",
                 "-e",
@@ -430,7 +464,7 @@ async def run(args: argparse.Namespace) -> Path:
         "image": IMAGE,
         "image_digest": IMAGE_DIGEST,
         "release_commit": RELEASE_COMMIT,
-        "track": "common-20-page-segments-native-minilm-lancedb",
+        "track": track,
         "dataset_hash_sha256": _dataset_hash(dataset),
         "document_count": len(documents),
         "query_count": len(queries),
@@ -439,8 +473,8 @@ async def run(args: argparse.Namespace) -> Path:
         "repetitions": args.repetitions,
         "index_batch_size": args.index_batch_size,
         "container_limits": {"memory": args.memory_limit, "cpus": args.cpus},
-        "provider_calls": 0,
-        "hosted_cost_usd": 0.0,
+        "provider_calls": provider_calls,
+        "hosted_cost_usd": hosted_cost,
         "temporary_storage_removed": not storage.exists(),
         "query_or_document_text_persisted": False,
     }
@@ -474,6 +508,7 @@ def main() -> None:
     parser.add_argument("--storage", required=True, type=Path)
     parser.add_argument("--allowed-storage-root", required=True, type=Path)
     parser.add_argument("--model-cache", type=Path)
+    parser.add_argument("--embedding-engine", choices=("native", "litellm"), default="native")
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repetitions", type=int, default=3)
