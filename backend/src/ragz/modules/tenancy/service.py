@@ -268,6 +268,11 @@ async def update_retrieval_settings(
 ) -> Workspace:
     """ADM-3 tuning knobs. `system_prompt_override` is the only nullable field —
     explicit null clears it; null for any other field is a 409."""
+    # Defense in depth for workers/tests/direct service callers. The route
+    # performs the same check before any sibling mutation, but this service is
+    # also a public module boundary and must not rely on one HTTP entrypoint.
+    if "multi_query_enabled" in updates and ctx.role != "superadmin":
+        raise AuthorizationError("multi-query retrieval requires superadmin")
     ws = await get_workspace(session, ctx, workspace_id)
     for field, value in updates.items():
         if field not in _RETRIEVAL_SETTINGS_FIELDS:

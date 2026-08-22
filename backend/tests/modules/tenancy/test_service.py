@@ -9,6 +9,7 @@ from uuid import UUID
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ragz.core.errors import AuthorizationError
 from ragz.modules.evals import service as evals_service
 from ragz.modules.outbox import service as outbox_service
 from ragz.modules.tenancy import service
@@ -66,6 +67,24 @@ async def test_fallback_policy_change_does_not_trigger_eval_run(
     )
     await service.update_retrieval_settings(session, ctx, ws.id, {"fallback_policy": "decline"})
     assert enqueued == []
+
+
+async def test_admin_cannot_mutate_multi_query_or_sibling_setting(
+    session: AsyncSession, ctx: TenantContext, ws: Workspace
+) -> None:
+    original_top_k = ws.top_k
+
+    with pytest.raises(AuthorizationError, match="requires superadmin"):
+        await service.update_retrieval_settings(
+            session,
+            ctx,
+            ws.id,
+            {"top_k": 12, "multi_query_enabled": True},
+        )
+
+    await session.refresh(ws)
+    assert ws.top_k == original_top_k
+    assert ws.multi_query_enabled is False
 
 
 async def test_assign_custom_role_now_allows_admin_target(session: AsyncSession) -> None:
