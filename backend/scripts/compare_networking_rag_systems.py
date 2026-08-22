@@ -156,9 +156,19 @@ def _fmt(value: object, digits: int = 4) -> str:
 
 def build(args: argparse.Namespace) -> dict[str, Any]:
     qrels = qrels_map(args.qrels)
+    ragz_manifests = [
+        json.loads((run_root / "manifest.json").read_text()) for run_root in args.ragz_run
+    ]
     single = aggregate(ragz_records(args.ragz_run, "single", qrels))
     multi = aggregate(ragz_records(args.ragz_run, "multi", qrels))
     anything_manifest = json.loads((args.anythingllm / "manifest.json").read_text())
+    anything_summary = json.loads((args.anythingllm / "summary.json").read_text())
+    anything_native_manifest = json.loads(
+        (args.anythingllm_native_failure / "manifest.json").read_text()
+    )
+    anything_native_failure = json.loads(
+        (args.anythingllm_native_failure / "failure.json").read_text()
+    )
     anything = (
         aggregate(_jsonl(args.anythingllm / "per_query.jsonl"))
         if anything_manifest["status"] == "completed"
@@ -181,17 +191,38 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
                 "status": "completed",
                 "track": "hash-dense+bm25+qdrant-rrf-single-query",
                 "metrics": single,
+                "native_candidate_depth": ragz_manifests[0]["top_k"],
+                "abstention_policy": ragz_manifests[0]["no_answer_threshold"],
             },
             "ragz_multi": {
                 "status": "completed",
                 "track": "hash-dense+bm25+qdrant-rrf-fixed-three-query",
                 "metrics": multi,
+                "native_candidate_depth": ragz_manifests[0]["top_k"],
+                "abstention_policy": ragz_manifests[0]["no_answer_threshold"],
             },
             "anythingllm": {
                 "status": anything_manifest["status"],
                 "track": anything_manifest["track"],
                 "metrics": anything,
                 "container_limits": anything_manifest["container_limits"],
+                "indexing_ms": anything_summary.get("indexing_ms"),
+                "peak_container_memory_bytes": anything_summary.get(
+                    "peak_container_memory_bytes"
+                ),
+                "provider_calls": anything_manifest.get("provider_calls"),
+                "hosted_cost_usd": anything_manifest.get("hosted_cost_usd"),
+                "native_candidate_depth": anything_manifest.get(
+                    "native_candidate_depth"
+                ),
+                "abstention_policy": anything_manifest.get("abstention_policy"),
+            },
+            "anythingllm_native_minilm": {
+                "status": anything_native_manifest["status"],
+                "track": anything_native_manifest["track"],
+                "metrics": None,
+                "container_limits": anything_native_manifest["container_limits"],
+                "failure": anything_native_failure,
             },
             "onyx": {
                 "status": onyx_manifest["status"],
@@ -208,7 +239,7 @@ def markdown(result: dict[str, Any]) -> str:
     systems = result["systems"]
     rows = []
     for key, label in (
-        ("anythingllm", "AnythingLLM v1.16.0"),
+        ("anythingllm", "AnythingLLM OpenAI + LanceDB"),
         ("ragz_single", "RAGZ single-query"),
         ("ragz_multi", "RAGZ multi-query"),
         ("onyx", "Onyx v4.6.0 Standard"),
@@ -225,25 +256,87 @@ def markdown(result: dict[str, Any]) -> str:
                     _fmt(metrics["mrr_at_5"] if metrics else None),
                     _fmt(metrics["ndcg_at_5"] if metrics else None),
                     _fmt(metrics["segment_hit_at_5"] if metrics else None),
-                    _fmt(metrics["abstention"]["f1"] if metrics else None),
                     _fmt(metrics["latency_ms"]["p50"] if metrics else None, 2),
                     _fmt(metrics["latency_ms"]["p95"] if metrics else None, 2),
                 ]
             )
             + " |"
         )
+    anything = systems["anythingllm"]
+    native_failure = systems["anythingllm_native_minilm"]
+    onyx = systems["onyx"]
+    ragz_delta = result["ragz_multi_minus_single"]
     return (
         "# Four-way networking RAG retrieval comparison\n\n"
+        "Date: 2026-08-22\n\n"
         "Primary evidence unit: unique 20-physical-PDF-page interval. Quality "
         "uses 12 answerable queries; abstention uses all 15 successful queries.\n\n"
         "| System | Status | Recall@5 | MRR@5 | nDCG@5 | Segment hit@5 | "
-        "Abstention F1 | p50 ms | p95 ms |\n"
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|\n"
+        "p50 ms | p95 ms |\n"
+        "|---|---|---:|---:|---:|---:|---:|---:|\n"
         + "\n".join(rows)
         + "\n\n"
-        "RAGZ multi-query uses two fixed alternatives, not live expansion. "
-        "AnythingLLM uses native MiniLM/LanceDB over the common text segments. "
-        "Onyx receives no numeric score when its official Standard resource floor is unmet.\n"
+        "## Configuration and eligibility\n\n"
+        "| Variant | Retrieval configuration | Resource/result |\n"
+        "|---|---|---|\n"
+        "| AnythingLLM numeric | Native raw-text collector/chunker → "
+        "OpenAI `text-embedding-3-small` → LanceDB | "
+        f"2 CPU / 2 GiB; indexing {_fmt(anything['indexing_ms'], 2)} ms; "
+        f"peak {_fmt(anything['peak_container_memory_bytes'], 0)} bytes |\n"
+        "| AnythingLLM native MiniLM | Native raw-text collector/chunker → "
+        "MiniLM → LanceDB | "
+        f"`{native_failure['status']}` at `{native_failure['failure']['stage']}`; "
+        f"OOM flag `{native_failure['failure']['container_state']['oom_killed']}` |\n"
+        "| RAGZ single | Hash dense + BM25 → Qdrant RRF; one query | Completed |\n"
+        "| RAGZ multi | Same index; original + two fixed alternatives → Qdrant RRF | "
+        "Completed |\n"
+        "| Onyx Standard | Native vector/keyword search | "
+        f"`{onyx['status']}`: Docker RAM "
+        f"{onyx['resource_evidence']['measured']['memory_bytes']} / required "
+        f"{onyx['resource_evidence']['required']['memory_bytes']} bytes |\n\n"
+        "## Abstention observations—not cross-system comparable\n\n"
+        "| Variant | Decision rule | Calibrated here? | Observed F1 |\n"
+        "|---|---|---|---:|\n"
+        "| AnythingLLM | Empty result only; similarity/score threshold `0.0` | No | "
+        f"{_fmt(anything['metrics']['abstention']['f1'])} |\n"
+        "| RAGZ single | Maximum dense cosine `< 0.42` | Development sweep, not held out | "
+        f"{_fmt(systems['ragz_single']['metrics']['abstention']['f1'])} |\n"
+        "| RAGZ multi | Maximum variant dense cosine `< 0.42` | Development sweep, not held out | "
+        f"{_fmt(systems['ragz_multi']['metrics']['abstention']['f1'])} |\n"
+        "| Onyx | Unavailable—system not started | No | unavailable |\n\n"
+        "These values describe each configured product policy and must not be ranked as a "
+        "fair abstention leaderboard.\n\n"
+        "## RAGZ paired effect\n\n"
+        "| Delta | Mean | 95% query-bootstrap CI |\n"
+        "|---|---:|---:|\n"
+        f"| Recall@5 | {_fmt(ragz_delta['recall_at_k']['mean_delta'])} | "
+        f"{_fmt(ragz_delta['recall_at_k']['ci95'][0])} to "
+        f"{_fmt(ragz_delta['recall_at_k']['ci95'][1])} |\n"
+        f"| MRR@5 | {_fmt(ragz_delta['mrr_at_k']['mean_delta'])} | "
+        f"{_fmt(ragz_delta['mrr_at_k']['ci95'][0])} to "
+        f"{_fmt(ragz_delta['mrr_at_k']['ci95'][1])} |\n"
+        f"| nDCG@5 | {_fmt(ragz_delta['ndcg_at_k']['mean_delta'])} | "
+        f"{_fmt(ragz_delta['ndcg_at_k']['ci95'][0])} to "
+        f"{_fmt(ragz_delta['ndcg_at_k']['ci95'][1])} |\n\n"
+        "## Interpretation limits\n\n"
+        "- RAGZ multi-query uses two fixed alternatives, not live expansion.\n"
+        "- AnythingLLM and RAGZ use different embedders/chunkers; this is a common-locator "
+        "product comparison, not a controlled model ablation.\n"
+        "- AnythingLLM provider call/token counts and hosted embedding cost are not exposed "
+        "by the pinned public API, so cost is unavailable rather than zero.\n"
+        "- Onyx receives no numeric score because its official Standard memory floor is unmet. "
+        "Onyx Lite is not substituted because it omits the RAG index/workers.\n"
+        "- Exact page quality remains available only for RAGZ. A 20-page interval hit cannot "
+        "be presented as an exact-page citation.\n"
+        "- Answer-quality comparison is unavailable: the query set has relevance pages but no "
+        "reference-answer/atomic-claim rubric.\n"
+        "- p99 is descriptive because these cells have fewer than 100 observations per "
+        "AnythingLLM condition.\n\n"
+        "- The historical AnythingLLM MiniLM OOM attempt used the pinned local v1.16.0 "
+        "tag, but that runner did not enforce the digest at `docker run`; the successful "
+        "numeric rerun executes the digest-qualified image reference.\n\n"
+        "Official Onyx resource guidance: "
+        "<https://docs.onyx.app/deployment/getting_started/resourcing>\n"
     )
 
 
@@ -251,6 +344,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ragz-run", action="append", required=True, type=Path)
     parser.add_argument("--anythingllm", required=True, type=Path)
+    parser.add_argument("--anythingllm-native-failure", required=True, type=Path)
     parser.add_argument("--onyx", required=True, type=Path)
     parser.add_argument("--qrels", required=True, type=Path)
     parser.add_argument("--output-json", required=True, type=Path)

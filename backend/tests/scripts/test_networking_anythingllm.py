@@ -12,6 +12,7 @@ from run_networking_anythingllm import (  # noqa: E402
     embedding_configuration,
     ranking_metrics,
     summarize,
+    unique_document_ids,
     validate_storage_path,
 )
 
@@ -100,3 +101,11 @@ def test_abstention_f1_is_zero_when_every_off_corpus_probe_is_missed() -> None:
         top_k=5,
     )
     assert result["abstention"]["f1"] == 0.0
+
+
+def test_unique_intervals_are_filled_from_deeper_native_candidates() -> None:
+    results = [
+        {"metadata": {"docSource": value}}
+        for value in ("a", "a", "a", "b", "b", "c", "d", "e", "f")
+    ]
+    assert unique_document_ids(results, 5) == ["a", "b", "c", "d", "e"]

@@ -26,6 +26,7 @@ from uuid import uuid4
 
 IMAGE = "mintplexlabs/anythingllm:1.16.0"
 IMAGE_DIGEST = "sha256:68bcedecb720e3fadde986bcc4f3aad20059fa64805bc9b306a3023244947515"
+IMAGE_REF = f"mintplexlabs/anythingllm@{IMAGE_DIGEST}"
 RELEASE_COMMIT = "55b6ebcea132f0d7ac146da99a0cd0db507b9030"
 RUNNER_VERSION = "2.0"
 
@@ -59,6 +60,16 @@ def ranking_metrics(retrieved: list[str], relevant: set[str], k: int) -> dict[st
         for rank in range(1, min(len(relevant), k) + 1)
     )
     return {"recall_at_k": recall, "mrr_at_k": mrr, "ndcg_at_k": dcg / ideal}
+
+
+def unique_document_ids(results: list[dict[str, Any]], top_k: int) -> list[str]:
+    return list(
+        dict.fromkeys(
+            str(item.get("metadata", {}).get("docSource", ""))
+            for item in results
+            if item.get("metadata", {}).get("docSource")
+        )
+    )[:top_k]
 
 
 def summarize(records: list[dict[str, Any]], *, top_k: int) -> dict[str, Any]:
@@ -260,6 +271,9 @@ async def run(args: argparse.Namespace) -> Path:
     stage = "startup"
     memory_samples: list[int] = []
     records: list[dict[str, Any]] = []
+    uploads_completed = 0
+    index_batches_completed = 0
+    locations_indexed = 0
     indexing_started = time.perf_counter()
     indexing_ms: float | None = None
     try:
@@ -293,7 +307,7 @@ async def run(args: argparse.Namespace) -> Path:
                 "OLLAMA_BASE_PATH=http://127.0.0.1:11434",
                 "-e",
                 "OLLAMA_MODEL_PREF=benchmark-unused",
-                IMAGE,
+                IMAGE_REF,
             ]
         )
         async with httpx.AsyncClient(
@@ -317,7 +331,7 @@ async def run(args: argparse.Namespace) -> Path:
                 json={
                     "name": f"networking-{uuid4().hex[:8]}",
                     "similarityThreshold": 0.0,
-                    "topN": args.top_k,
+                    "topN": args.candidate_depth,
                 },
             )
             workspace_response.raise_for_status()
@@ -341,6 +355,7 @@ async def run(args: argparse.Namespace) -> Path:
                 if not body.get("success") or not body.get("documents"):
                     raise RuntimeError("AnythingLLM raw-text upload failed")
                 locations.append(str(body["documents"][0]["location"]))
+                uploads_completed += 1
                 if index % 25 == 0:
                     print(f"anythingllm uploaded {index}/{len(documents)}", flush=True)
             stage = "batched_native_indexing"
@@ -352,6 +367,8 @@ async def run(args: argparse.Namespace) -> Path:
                     json={"adds": list(location_batch), "deletes": []},
                 )
                 response.raise_for_status()
+                index_batches_completed += 1
+                locations_indexed += len(location_batch)
                 memory = _memory_bytes(container)
                 if memory is not None:
                     memory_samples.append(memory)
@@ -368,7 +385,7 @@ async def run(args: argparse.Namespace) -> Path:
                         f"/api/v1/workspace/{slug}/vector-search",
                         json={
                             "query": str(query["query"]),
-                            "topN": args.top_k,
+                            "topN": args.candidate_depth,
                             "scoreThreshold": 0.0,
                         },
                     )
@@ -384,7 +401,7 @@ async def run(args: argparse.Namespace) -> Path:
                             f"/api/v1/workspace/{slug}/vector-search",
                             json={
                                 "query": str(query["query"]),
-                                "topN": args.top_k,
+                                "topN": args.candidate_depth,
                                 "scoreThreshold": 0.0,
                             },
                         )
@@ -393,13 +410,7 @@ async def run(args: argparse.Namespace) -> Path:
                     except Exception as exc:  # noqa: BLE001 - typed in artifact
                         error = type(exc).__name__
                     latency_ms = (time.perf_counter() - started_at) * 1000
-                    retrieved = list(
-                        dict.fromkeys(
-                            str(item.get("metadata", {}).get("docSource", ""))
-                            for item in results
-                            if item.get("metadata", {}).get("docSource")
-                        )
-                    )[: args.top_k]
+                    retrieved = unique_document_ids(results, args.top_k)
                     answerable = bool(query.get("answerable", True))
                     metrics = (
                         ranking_metrics(
@@ -428,6 +439,11 @@ async def run(args: argparse.Namespace) -> Path:
         summary = summarize(records, top_k=args.top_k)
         summary["indexing_ms"] = indexing_ms
         summary["peak_container_memory_bytes"] = max(memory_samples, default=None)
+        summary["ingestion_progress"] = {
+            "uploads_completed": uploads_completed,
+            "index_batches_completed": index_batches_completed,
+            "locations_indexed": locations_indexed,
+        }
         status = "completed"
     except Exception as exc:
         status = "failed"
@@ -440,6 +456,11 @@ async def run(args: argparse.Namespace) -> Path:
             "indexing_ms": indexing_ms,
             "peak_container_memory_bytes": max(memory_samples, default=None),
             "container_state": container_state,
+            "ingestion_progress": {
+                "uploads_completed": uploads_completed,
+                "index_batches_completed": index_batches_completed,
+                "locations_indexed": locations_indexed,
+            },
         }
         (output / "failure.json").write_text(
             json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -462,6 +483,7 @@ async def run(args: argparse.Namespace) -> Path:
         "status": status,
         "system_id": "anythingllm-v1.16.0",
         "image": IMAGE,
+        "executed_image_ref": IMAGE_REF,
         "image_digest": IMAGE_DIGEST,
         "release_commit": RELEASE_COMMIT,
         "track": track,
@@ -469,6 +491,7 @@ async def run(args: argparse.Namespace) -> Path:
         "document_count": len(documents),
         "query_count": len(queries),
         "top_k": args.top_k,
+        "native_candidate_depth": args.candidate_depth,
         "warmups_per_query": args.warmups,
         "repetitions": args.repetitions,
         "index_batch_size": args.index_batch_size,
@@ -477,6 +500,12 @@ async def run(args: argparse.Namespace) -> Path:
         "hosted_cost_usd": hosted_cost,
         "temporary_storage_removed": not storage.exists(),
         "query_or_document_text_persisted": False,
+        "abstention_policy": {
+            "similarity_threshold": 0.0,
+            "score_threshold": 0.0,
+            "no_answer_rule": "zero unique retrieved segments",
+            "calibrated": False,
+        },
     }
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -510,13 +539,18 @@ def main() -> None:
     parser.add_argument("--model-cache", type=Path)
     parser.add_argument("--embedding-engine", choices=("native", "litellm"), default="native")
     parser.add_argument("--top-k", type=int, default=5)
+    parser.add_argument("--candidate-depth", type=int, default=20)
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--index-batch-size", type=int, default=4)
     parser.add_argument("--memory-limit", default="2g")
     parser.add_argument("--cpus", type=float, default=2.0)
     args = parser.parse_args()
-    if min(args.top_k, args.repetitions, args.index_batch_size) < 1 or args.warmups < 0:
+    if (
+        min(args.top_k, args.repetitions, args.index_batch_size) < 1
+        or args.candidate_depth < args.top_k
+        or args.warmups < 0
+    ):
         parser.error("top-k/repetitions/batch size must be positive; warmups non-negative")
     output = asyncio.run(run(args))
     print(json.dumps({"output": str(output)}, sort_keys=True))

@@ -17,6 +17,21 @@ native configuration and common-locator scoring separate in the report.
 **Tech stack:** Python 3.13, pytest, Docker, AnythingLLM v1.16.0 with native MiniLM
 and LanceDB, existing RAGZ/Qdrant artifacts, official Onyx v4.6.0 resource contract.
 
+## Execution Status (2026-08-22)
+
+- Common 131-segment/15-query dataset built successfully and removed after use.
+- AnythingLLM native MiniLM failed with Docker `OOMKilled=true` during serialized
+  indexing at a 2.3 GB limit; no score was emitted. The historical attempt did
+  not persist an exact completed-batch counter, so no exact progress count is claimed.
+- AnythingLLM using its native collector/chunker/LanceDB with OpenAI embeddings
+  completed: 45 observations, zero retrieval errors, 182.55 s indexing.
+- RAGZ `r12`/`r13` single/multi results were recomputed on the identical 20-page
+  segment evidence unit.
+- Onyx v4.6.0 Standard was resource-gated at 3.864 GB Docker RAM versus its
+  official 10 GB minimum; Onyx Lite was not substituted.
+- Final JSON, Markdown and privacy-safe raw artifacts are preserved under
+  `docs/benchmarks/`; independent review and final repository gates remain.
+
 ## Global Constraints
 
 - Work only in `/tmp/ragz-multi-query-20260821` and unique `/tmp`/result paths.
