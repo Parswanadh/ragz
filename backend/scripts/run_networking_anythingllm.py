@@ -28,7 +28,7 @@ IMAGE = "mintplexlabs/anythingllm:1.16.0"
 IMAGE_DIGEST = "sha256:68bcedecb720e3fadde986bcc4f3aad20059fa64805bc9b306a3023244947515"
 IMAGE_REF = f"mintplexlabs/anythingllm@{IMAGE_DIGEST}"
 RELEASE_COMMIT = "55b6ebcea132f0d7ac146da99a0cd0db507b9030"
-RUNNER_VERSION = "2.0"
+RUNNER_VERSION = "3.0"
 
 
 def batches[T](values: Sequence[T], size: int) -> Iterator[Sequence[T]]:
@@ -264,6 +264,15 @@ async def run(args: argparse.Namespace) -> Path:
     embedding_args, track, provider_calls, hosted_cost = embedding_configuration(
         args.embedding_engine
     )
+    proxy_fingerprint = str(args.embedding_proxy_fingerprint or "")
+    if args.embedding_engine == "litellm" and (
+        len(proxy_fingerprint) != 64
+        or any(character not in "0123456789abcdef" for character in proxy_fingerprint)
+    ):
+        raise ValueError(
+            "litellm embedding runs require a lowercase SHA-256 "
+            "--embedding-proxy-fingerprint"
+        )
     if args.embedding_engine == "native" and args.model_cache:
         shutil.copytree(args.model_cache.resolve(), storage / "models")
     container = f"ragz-networking-anything-{uuid4().hex[:8]}"
@@ -487,6 +496,17 @@ async def run(args: argparse.Namespace) -> Path:
         "image_digest": IMAGE_DIGEST,
         "release_commit": RELEASE_COMMIT,
         "track": track,
+        "embedding_model": (
+            "text-embedding-3-small"
+            if args.embedding_engine == "litellm"
+            else "Xenova/all-MiniLM-L6-v2"
+        ),
+        "embedding_dimension": 1536 if args.embedding_engine == "litellm" else 384,
+        "embedding_provider": "openai" if args.embedding_engine == "litellm" else "native",
+        "embedding_transport": "litellm" if args.embedding_engine == "litellm" else "local",
+        "embedding_proxy_fingerprint_sha256": (
+            proxy_fingerprint if args.embedding_engine == "litellm" else None
+        ),
         "dataset_hash_sha256": _dataset_hash(dataset),
         "document_count": len(documents),
         "query_count": len(queries),
@@ -538,6 +558,10 @@ def main() -> None:
     parser.add_argument("--allowed-storage-root", required=True, type=Path)
     parser.add_argument("--model-cache", type=Path)
     parser.add_argument("--embedding-engine", choices=("native", "litellm"), default="native")
+    parser.add_argument(
+        "--embedding-proxy-fingerprint",
+        help="Non-secret SHA-256 identity of the LiteLLM instance/configuration",
+    )
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--candidate-depth", type=int, default=20)
     parser.add_argument("--warmups", type=int, default=2)

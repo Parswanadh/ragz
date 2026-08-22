@@ -12,6 +12,17 @@
   "created_at_utc": "2026-08-22T12:19:20.132308+00:00",
   "dataset_hash_sha256": "f0e6b1f2000dc0acbfe12ae80d77fdedbed07a17bfa67dda56c05c1a33e6cbe2",
   "document_count": 131,
+  "embedding_configuration_attestation": {
+    "attested_at_utc": "2026-08-22T13:29:32Z",
+    "method": "post-run verification of pinned runner configuration and continuously running LiteLLM container",
+    "proxy_started_at_utc": "2026-08-21T05:28:38.116285183Z",
+    "status": "post_run_attested"
+  },
+  "embedding_dimension": 1536,
+  "embedding_model": "text-embedding-3-small",
+  "embedding_provider": "openai",
+  "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "embedding_transport": "litellm",
   "executed_image_ref": "mintplexlabs/anythingllm@sha256:68bcedecb720e3fadde986bcc4f3aad20059fa64805bc9b306a3023244947515",
   "hosted_cost_usd": null,
   "image": "mintplexlabs/anythingllm:1.16.0",

@@ -14,6 +14,7 @@ import hashlib
 import importlib.metadata
 import json
 import math
+import os
 import platform
 import random
 import shutil
@@ -22,6 +23,7 @@ import subprocess
 import time
 from collections import defaultdict
 from contextlib import ExitStack
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -34,6 +36,71 @@ from build_networking_benchmark import (
 )
 from testcontainers.postgres import PostgresContainer  # type: ignore[import-untyped]
 from testcontainers.qdrant import QdrantContainer  # type: ignore[import-untyped]
+
+
+@dataclass(frozen=True)
+class EmbeddingTrack:
+    engine: str
+    model: str
+    dimension: int
+    provider_kind: str
+    settings_backend: str
+    dense_label: str
+    provider_calls: int | str
+    provider_cost_usd: float | None
+
+
+@dataclass
+class BenchmarkProgress:
+    stage: str = "initializing"
+    index_embedding_calls_completed: int = 0
+    index_embedding_tokens: int = 0
+    query_embedding_attempts: int = 0
+
+
+def write_progress(output: Path, progress: BenchmarkProgress) -> None:
+    (output / "progress.json").write_text(
+        json.dumps(
+            {
+                "stage": progress.stage,
+                "index_embedding_calls_completed": (
+                    progress.index_embedding_calls_completed
+                ),
+                "index_embedding_tokens": progress.index_embedding_tokens,
+                "query_embedding_attempts": progress.query_embedding_attempts,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def resolve_embedding_track(engine: str) -> EmbeddingTrack:
+    if engine == "hash":
+        return EmbeddingTrack(
+            engine="hash",
+            model="deterministic-hash",
+            dimension=1024,
+            provider_kind="tei",
+            settings_backend="hash",
+            dense_label="deterministic-hash-1024",
+            provider_calls=0,
+            provider_cost_usd=0.0,
+        )
+    if engine == "openai":
+        return EmbeddingTrack(
+            engine="openai",
+            model="text-embedding-3-small",
+            dimension=1536,
+            provider_kind="openai",
+            settings_backend="litellm",
+            dense_label="openai-text-embedding-3-small-1536",
+            provider_calls="not_exposed_nonzero",
+            provider_cost_usd=None,
+        )
+    raise ValueError("embedding engine must be hash or openai")
 
 
 def create_output_directory(path: Path) -> None:
@@ -212,6 +279,12 @@ async def _seed_corpus(
     database_url: str,
     qdrant_url: str,
     min_score: float,
+    embedding_track: EmbeddingTrack,
+    litellm_url: str,
+    litellm_master_key: str,
+    output: Path,
+    progress: BenchmarkProgress,
+    resources: dict[str, Any],
 ) -> tuple[Any, Any, Any, Any, dict[UUID, str], dict[str, object]]:
     from ragz.core.config import Settings
     from ragz.core.db import Base, build_engine, build_session_factory
@@ -231,29 +304,34 @@ async def _seed_corpus(
         environment="test",
         database_url=database_url,
         qdrant_url=qdrant_url,
-        embedding_backend="hash",
-        embedding_dim=1024,
+        embedding_backend=embedding_track.settings_backend,
+        embedding_dim=embedding_track.dimension,
         rerank_backend="lexical",
-        litellm_url="http://127.0.0.1:1",
+        litellm_url=litellm_url,
+        litellm_master_key=litellm_master_key,
         model_catalog_url="",
     )
     _install_settings(settings)
     engine = build_engine(database_url)
+    resources["engine"] = engine
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
     factory = build_session_factory(engine)
     org_id, workspace_id, user_id = uuid4(), uuid4(), uuid4()
+    embedding_model_id = (
+        LOCAL_EMBEDDING_MODEL_ID if embedding_track.engine == "hash" else uuid4()
+    )
     async with factory() as session:
         session.add(Organization(id=org_id, name=f"networking-bench-{org_id.hex[:8]}"))
         session.add_all(
             [
                 Model(
-                    id=LOCAL_EMBEDDING_MODEL_ID,
-                    litellm_model_name="local-embeddings",
-                    display_name="Hash benchmark embeddings",
-                    provider_kind="tei",
+                    id=embedding_model_id,
+                    litellm_model_name=embedding_track.model,
+                    display_name=f"{embedding_track.model} benchmark embeddings",
+                    provider_kind=embedding_track.provider_kind,
                     modality="embedding",
-                    dimension=1024,
+                    dimension=embedding_track.dimension,
                     collection_name=COLLECTION,
                     enabled=True,
                     sync_status="synced",
@@ -277,7 +355,7 @@ async def _seed_corpus(
                 id=workspace_id,
                 org_id=org_id,
                 name="Networking benchmark",
-                embedding_model_id=LOCAL_EMBEDDING_MODEL_ID,
+                embedding_model_id=embedding_model_id,
                 top_k=5,
                 min_score=min_score,
                 rerank_enabled=False,
@@ -297,15 +375,18 @@ async def _seed_corpus(
         await session.flush()
         session.add(WorkspaceMember(workspace_id=workspace_id, user_id=user_id))
         await session.commit()
-    await ensure_collection(COLLECTION, 1024)
+    await ensure_collection(COLLECTION, embedding_track.dimension)
     dense_embedder = get_dense_embedder(
-        LOCAL_EMBEDDING_MODEL_ID,
-        provider_kind="tei",
-        litellm_model_name="local-embeddings",
+        embedding_model_id,
+        provider_kind=embedding_track.provider_kind,
+        litellm_model_name=embedding_track.model,
     )
     document_map: dict[UUID, str] = {}
     corpus_stats: dict[str, Any] = {"books": [], "chunks": 0}
+    embedding_usage: list[int] = []
     for book_id, path in pdfs:
+        progress.stage = f"indexing:{book_id}"
+        write_progress(output, progress)
         data = path.read_bytes()
         parse_started = time.perf_counter()
         blocks = await LiteParseParser().parse(data, path.name)
@@ -337,11 +418,21 @@ async def _seed_corpus(
                 )
             )
             await session.commit()
-        for start in range(0, len(chunks), 64):
-            batch = chunks[start : start + 64]
+        index_batch_size = 32 if embedding_track.engine == "openai" else 64
+        for start in range(0, len(chunks), index_batch_size):
+            batch = chunks[start : start + index_batch_size]
+            usage_count_before = len(embedding_usage)
             dense, sparse = await embed_batch(
-                [chunk.text for chunk in batch], dense_embedder
+                [chunk.text for chunk in batch],
+                dense_embedder,
+                usage_sink=embedding_usage,
             )
+            if embedding_track.engine == "openai":
+                progress.index_embedding_calls_completed += 1
+                progress.index_embedding_tokens += sum(
+                    embedding_usage[usage_count_before:]
+                )
+                write_progress(output, progress)
             await upsert_points(
                 org_id=org_id,
                 workspace_id=workspace_id,
@@ -366,6 +457,10 @@ async def _seed_corpus(
             }
         )
         corpus_stats["chunks"] = int(corpus_stats["chunks"]) + len(chunks)
+    corpus_stats["index_embedding_tokens"] = sum(embedding_usage)
+    corpus_stats["index_embedding_calls_completed"] = (
+        progress.index_embedding_calls_completed
+    )
     ctx = TenantContext(
         user_id=user_id,
         org_id=org_id,
@@ -395,6 +490,9 @@ async def _run_mode(
     top_k: int,
     warmups: int,
     repetitions: int,
+    provider_backed_embeddings: bool,
+    progress: BenchmarkProgress,
+    progress_output: Path,
 ) -> dict[str, Any]:
     from ragz.modules.retrieval.service import retrieve
     from ragz.modules.tenancy.models import Workspace
@@ -406,8 +504,13 @@ async def _run_mode(
         assert workspace is not None
         workspace.multi_query_enabled = mode == "multi"
         await session.commit()
+        progress.stage = f"retrieval:{mode}:warmup"
+        write_progress(progress_output, progress)
         for _ in range(warmups):
             for record in queries:
+                if provider_backed_embeddings:
+                    progress.query_embedding_attempts += 1
+                    write_progress(progress_output, progress)
                 await retrieve(
                     session,
                     ctx,
@@ -420,6 +523,8 @@ async def _run_mode(
                         else None
                     ),
                 )
+        progress.stage = f"retrieval:{mode}:scored"
+        write_progress(progress_output, progress)
         for repetition in range(1, repetitions + 1):
             for record in queries:
                 expander = (
@@ -431,6 +536,9 @@ async def _run_mode(
                 error: str | None = None
                 result: Any = None
                 try:
+                    if provider_backed_embeddings:
+                        progress.query_embedding_attempts += 1
+                        write_progress(progress_output, progress)
                     result = await retrieve(
                         session,
                         ctx,
@@ -597,7 +705,24 @@ async def _run_mode(
 
 async def run(args: argparse.Namespace) -> None:
     output = args.output.resolve()
+    embedding_track = resolve_embedding_track(args.embedding_engine)
+    litellm_master_key = os.environ.get("RAGZ_LITELLM_MASTER_KEY", "")
+    if embedding_track.engine == "openai" and not litellm_master_key:
+        raise RuntimeError(
+            "RAGZ_LITELLM_MASTER_KEY is required for the OpenAI embedding track"
+        )
+    proxy_fingerprint = str(args.embedding_proxy_fingerprint or "")
+    if embedding_track.engine == "openai" and (
+        len(proxy_fingerprint) != 64
+        or any(character not in "0123456789abcdef" for character in proxy_fingerprint)
+    ):
+        raise ValueError(
+            "OpenAI embedding runs require a lowercase SHA-256 "
+            "--embedding-proxy-fingerprint"
+        )
     create_output_directory(output)
+    progress = BenchmarkProgress()
+    write_progress(output, progress)
     queries = load_query_set(args.queries.resolve())
     manifest = build_manifest(args.pdf, args.queries.resolve())
     git_executable = shutil.which("git")
@@ -614,7 +739,7 @@ async def run(args: argparse.Namespace) -> None:
     )
     manifest.update(
         {
-            "runner_version": "1.0",
+            "runner_version": "2.0",
             "git_commit": git_commit,
             "git_dirty": bool(git_status),
             "tracked_diff_sha256": hashlib.sha256(tracked_diff).hexdigest(),
@@ -626,15 +751,34 @@ async def run(args: argparse.Namespace) -> None:
             },
             "top_k": args.top_k,
             "seed": args.seed,
-            "dense": "deterministic-hash-1024",
+            "embedding_engine": embedding_track.engine,
+            "embedding_model": embedding_track.model,
+            "embedding_dimension": embedding_track.dimension,
+            "embedding_provider": embedding_track.provider_kind,
+            "embedding_transport": (
+                "litellm" if embedding_track.engine == "openai" else "local"
+            ),
+            "embedding_proxy_fingerprint_sha256": (
+                proxy_fingerprint if embedding_track.engine == "openai" else None
+            ),
+            "dense": embedding_track.dense_label,
             "sparse": "fastembed-bm25",
             "fusion": "qdrant-rrf",
             "reranker": "disabled",
             "query_variants": "fixed-two-alternatives",
             "expansion_provider_calls": 0,
-            "provider_cost_usd": 0.0,
-            "benchmark_status": "synthetic_fusion_pilot",
+            "embedding_provider_calls": embedding_track.provider_calls,
+            "provider_cost_usd": embedding_track.provider_cost_usd,
+            "benchmark_status": (
+                "production_embedding_fixed_fusion"
+                if embedding_track.engine == "openai"
+                else "synthetic_fusion_pilot"
+            ),
+            "status": "running",
         }
+    )
+    (output / "manifest.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     with ExitStack() as stack:
         postgres = stack.enter_context(PostgresContainer("postgres:16-alpine"))
@@ -644,12 +788,27 @@ async def run(args: argparse.Namespace) -> None:
             f"http://{qdrant.get_container_host_ip()}:"
             f"{qdrant.get_exposed_port(6333)}"
         )
-        engine, factory, ctx, workspace_id, document_map, corpus_stats = await _seed_corpus(
-            pdfs=args.pdf,
-            database_url=database_url,
-            qdrant_url=qdrant_url,
-            min_score=args.min_score,
-        )
+        seed_resources: dict[str, Any] = {}
+        try:
+            engine, factory, ctx, workspace_id, document_map, corpus_stats = (
+                await _seed_corpus(
+                    pdfs=args.pdf,
+                    database_url=database_url,
+                    qdrant_url=qdrant_url,
+                    min_score=args.min_score,
+                    embedding_track=embedding_track,
+                    litellm_url=args.litellm_url,
+                    litellm_master_key=litellm_master_key,
+                    output=output,
+                    progress=progress,
+                    resources=seed_resources,
+                )
+            )
+        except Exception:
+            leaked_engine = seed_resources.get("engine")
+            if leaked_engine is not None:
+                await leaked_engine.dispose()
+            raise
         try:
             summaries: dict[str, dict[str, Any]] = {}
             modes = ("single", "multi") if args.order == "single-first" else ("multi", "single")
@@ -665,9 +824,13 @@ async def run(args: argparse.Namespace) -> None:
                     top_k=args.top_k,
                     warmups=args.warmups,
                     repetitions=args.repetitions,
+                    provider_backed_embeddings=embedding_track.engine == "openai",
+                    progress=progress,
+                    progress_output=output,
                 )
         finally:
             await engine.dispose()
+            seed_resources.clear()
     manifest["corpus_stats"] = corpus_stats
     manifest["condition_order"] = args.order
     manifest["warmups"] = args.warmups
@@ -678,13 +841,20 @@ async def run(args: argparse.Namespace) -> None:
         "calibration": args.threshold_calibration,
     }
     manifest["conditions"] = summaries
+    manifest["provider_progress"] = {
+        "index_embedding_calls_completed": progress.index_embedding_calls_completed,
+        "index_embedding_tokens": progress.index_embedding_tokens,
+        "query_embedding_attempts": progress.query_embedding_attempts,
+    }
+    manifest["status"] = "completed"
     paired = paired_summary(output, seed=args.seed)
     (output / "paired-summary.json").write_text(
         json.dumps(paired, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     (output / "summary.md").write_text(
-        "# RAGZ single-query vs multi-query synthetic fusion pilot\n\n"
+        "# RAGZ single-query vs multi-query retrieval benchmark\n\n"
         f"- Commit: `{git_commit}`\n"
+        f"- Dense embedding: `{embedding_track.dense_label}`\n"
         f"- Condition order: `{args.order}`\n"
         f"- Seed: `{args.seed}`\n"
         f"- No-answer threshold: `{args.min_score}` (maximum dense cosine)\n"
@@ -698,6 +868,8 @@ async def run(args: argparse.Namespace) -> None:
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    progress.stage = "completed"
+    write_progress(output, progress)
 
 
 def main() -> None:
@@ -709,6 +881,21 @@ def main() -> None:
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--embedding-engine",
+        choices=("hash", "openai"),
+        default="hash",
+        help="Dense embedding track; openai is pinned to text-embedding-3-small/1536",
+    )
+    parser.add_argument(
+        "--litellm-url",
+        default="http://127.0.0.1:54000",
+        help="RAGZ LiteLLM gateway used only by the OpenAI embedding track",
+    )
+    parser.add_argument(
+        "--embedding-proxy-fingerprint",
+        help="Non-secret SHA-256 identity of the LiteLLM instance/configuration",
+    )
     parser.add_argument(
         "--min-score",
         type=float,
@@ -734,7 +921,62 @@ def main() -> None:
         raise ValueError("warmups must be non-negative and repetitions positive")
     if not 0.0 <= args.min_score <= 1.0:
         raise ValueError("min-score must be between 0 and 1")
-    asyncio.run(run(args))
+    output_preexisted = args.output.resolve().exists()
+    try:
+        asyncio.run(run(args))
+    except Exception as exc:
+        output = args.output.resolve()
+        if output.is_dir() and not output_preexisted:
+            progress_path = output / "progress.json"
+            progress_data = (
+                json.loads(progress_path.read_text(encoding="utf-8"))
+                if progress_path.is_file()
+                else {"stage": "before_progress_checkpoint"}
+            )
+            failure = {
+                "status": "failed",
+                "stage": progress_data.get("stage", "unknown"),
+                "error_type": type(exc).__name__,
+                "provider_progress": progress_data,
+                "error_message_persisted": False,
+                "credentials_persisted": False,
+            }
+            (output / "failure.json").write_text(
+                json.dumps(failure, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            manifest_path = output / "manifest.json"
+            if manifest_path.is_file():
+                failed_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            else:
+                failed_track = resolve_embedding_track(args.embedding_engine)
+                failed_manifest = {
+                    "schema_version": 1,
+                    "runner_version": "2.0",
+                    "dataset_id": "networking-pdfs-v1",
+                    "source_pdf_count": len(args.pdf),
+                    "query_set_filename": args.queries.name,
+                    "embedding_engine": failed_track.engine,
+                    "embedding_model": failed_track.model,
+                    "embedding_dimension": failed_track.dimension,
+                    "embedding_provider": failed_track.provider_kind,
+                    "embedding_transport": (
+                        "litellm" if failed_track.engine == "openai" else "local"
+                    ),
+                    "embedding_proxy_fingerprint_sha256": (
+                        args.embedding_proxy_fingerprint
+                        if failed_track.engine == "openai"
+                        else None
+                    ),
+                    "top_k": args.top_k,
+                }
+            failed_manifest["status"] = "failed"
+            failed_manifest["failure"] = failure
+            manifest_path.write_text(
+                json.dumps(failed_manifest, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+        raise
 
 
 if __name__ == "__main__":

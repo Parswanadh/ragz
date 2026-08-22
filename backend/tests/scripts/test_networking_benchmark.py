@@ -16,6 +16,7 @@ from run_multi_query_benchmark import (  # noqa: E402
     paired_summary,
     percentile,
     ranking_metrics,
+    resolve_embedding_track,
     safe_query_record,
 )
 from seed_networking_comparison_lab import validate_lab_target  # noqa: E402
@@ -139,6 +140,19 @@ def test_output_directory_must_be_new(tmp_path: Path) -> None:
 
     with pytest.raises(FileExistsError):
         create_output_directory(output)
+
+
+def test_embedding_tracks_pin_model_and_dimension() -> None:
+    hash_track = resolve_embedding_track("hash")
+    openai_track = resolve_embedding_track("openai")
+
+    assert (hash_track.model, hash_track.dimension) == ("deterministic-hash", 1024)
+    assert openai_track.model == "text-embedding-3-small"
+    assert openai_track.dimension == 1536
+    assert openai_track.provider_kind == "openai"
+    assert openai_track.settings_backend == "litellm"
+    with pytest.raises(ValueError):
+        resolve_embedding_track("other")
 
 
 def test_safe_record_never_contains_query_or_alternatives() -> None:

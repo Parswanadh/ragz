@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 import statistics
@@ -154,14 +155,166 @@ def _fmt(value: object, digits: int = 4) -> str:
     return f"{float(value):.{digits}f}" if isinstance(value, (int, float)) else "unavailable"
 
 
+def common_ragz_configuration(manifests: list[dict[str, Any]]) -> dict[str, Any]:
+    if not manifests:
+        raise ValueError("at least one RAGZ manifest is required")
+    fields = (
+        "dense",
+        "embedding_model",
+        "embedding_dimension",
+        "embedding_provider",
+        "embedding_transport",
+        "embedding_proxy_fingerprint_sha256",
+        "sparse",
+        "fusion",
+        "reranker",
+        "top_k",
+    )
+    first = {field: manifests[0].get(field) for field in fields}
+    for manifest in manifests[1:]:
+        current = {field: manifest.get(field) for field in fields}
+        if current != first:
+            raise ValueError("RAGZ source runs do not share one retrieval configuration")
+    return first
+
+
+def validate_complete_records(
+    *,
+    label: str,
+    records: list[dict[str, Any]],
+    expected_query_ids: set[str],
+    answerable_query_ids: set[str],
+    repetitions_per_query: int,
+) -> dict[str, int]:
+    if repetitions_per_query < 1:
+        raise ValueError(f"{label} has no declared repetitions")
+    counts: dict[str, int] = defaultdict(int)
+    errors = 0
+    for record in records:
+        query_id = str(record["query_id"])
+        counts[query_id] += 1
+        errors += record.get("error") is not None
+        expected_answerable = query_id in answerable_query_ids
+        if bool(record.get("answerable")) != expected_answerable:
+            raise ValueError(f"{label} has inconsistent answerable flag for {query_id}")
+        if expected_answerable and record.get("metrics") is None:
+            raise ValueError(f"{label} is missing quality metrics for {query_id}")
+    if set(counts) != expected_query_ids:
+        raise ValueError(f"{label} query IDs do not match the 15-query benchmark")
+    wrong_counts = {
+        query_id: count
+        for query_id, count in counts.items()
+        if count != repetitions_per_query
+    }
+    if wrong_counts:
+        raise ValueError(f"{label} has incomplete or uneven repetitions: {wrong_counts}")
+    if errors:
+        raise ValueError(f"{label} has {errors} scored provider/retrieval errors")
+    expected_observations = len(expected_query_ids) * repetitions_per_query
+    if len(records) != expected_observations:
+        raise ValueError(
+            f"{label} has {len(records)} observations; expected {expected_observations}"
+        )
+    return {
+        "query_count": len(expected_query_ids),
+        "answerable_query_count": len(answerable_query_ids),
+        "off_corpus_query_count": len(expected_query_ids - answerable_query_ids),
+        "repetitions_per_query": repetitions_per_query,
+        "observations": len(records),
+        "errors": errors,
+    }
+
+
+def validate_embedding_parity(
+    *,
+    path: Path | None,
+    ragz_config: dict[str, Any],
+    ragz_runs: list[Path],
+    anything_manifest: dict[str, Any],
+    anything_manifest_path: Path,
+    anything_run: Path,
+) -> dict[str, Any]:
+    if ragz_config.get("embedding_model") != "text-embedding-3-small":
+        return {"validated": False, "reason": "RAGZ track is not OpenAI model parity"}
+    if path is None:
+        raise ValueError("OpenAI RAGZ comparison requires --embedding-parity-attestation")
+    attestation = json.loads(path.read_text(encoding="utf-8"))
+    if attestation.get("schema_version") != 1:
+        raise ValueError("unsupported embedding parity attestation schema")
+    expected_runs = {
+        "anythingllm": anything_run.name,
+        "ragz": [run.name for run in ragz_runs],
+    }
+    if attestation.get("source_runs") != expected_runs:
+        raise ValueError("embedding parity attestation does not match source run IDs")
+    expected_embedding = {
+        "model": "text-embedding-3-small",
+        "dimension": 1536,
+        "provider": "openai",
+        "transport": "litellm",
+    }
+    embedding = attestation.get("embedding") or {}
+    if embedding.get("anythingllm") != expected_embedding:
+        raise ValueError("AnythingLLM embedding attestation is not the parity model")
+    if embedding.get("ragz") != expected_embedding:
+        raise ValueError("RAGZ embedding attestation is not the parity model")
+    for field, value in expected_embedding.items():
+        if ragz_config.get(f"embedding_{field}") != value:
+            raise ValueError(f"RAGZ manifests disagree with attested embedding {field}")
+        if anything_manifest.get(f"embedding_{field}") != value:
+            raise ValueError(
+                f"AnythingLLM manifest disagrees with attested embedding {field}"
+            )
+    if anything_manifest.get("track") != "common-20-page-segments-openai-lancedb":
+        raise ValueError("AnythingLLM source run is not the attested OpenAI track")
+    proxy = attestation.get("shared_proxy") or {}
+    fingerprint = str(proxy.get("instance_fingerprint_sha256") or "")
+    if (
+        proxy.get("used_by") != ["anythingllm", "ragz"]
+        or len(fingerprint) != 64
+        or any(character not in "0123456789abcdef" for character in fingerprint)
+    ):
+        raise ValueError("shared LiteLLM proxy identity is missing or malformed")
+    if ragz_config.get("embedding_proxy_fingerprint_sha256") != fingerprint:
+        raise ValueError("RAGZ manifests do not match the shared LiteLLM proxy")
+    if anything_manifest.get("embedding_proxy_fingerprint_sha256") != fingerprint:
+        raise ValueError("AnythingLLM manifest does not match the shared LiteLLM proxy")
+    manifest_sha256 = hashlib.sha256(anything_manifest_path.read_bytes()).hexdigest()
+    if (
+        (attestation.get("source_artifacts") or {}).get(
+            "anythingllm_manifest_sha256"
+        )
+        != manifest_sha256
+    ):
+        raise ValueError("attestation is not bound to the AnythingLLM manifest bytes")
+    return {
+        "validated": True,
+        "model": expected_embedding["model"],
+        "dimension": expected_embedding["dimension"],
+        "provider": expected_embedding["provider"],
+        "transport": expected_embedding["transport"],
+        "proxy_instance_fingerprint_sha256": fingerprint,
+        "attestation": path.name,
+    }
+
+
 def build(args: argparse.Namespace) -> dict[str, Any]:
     qrels = qrels_map(args.qrels)
     ragz_manifests = [
         json.loads((run_root / "manifest.json").read_text()) for run_root in args.ragz_run
     ]
-    single = aggregate(ragz_records(args.ragz_run, "single", qrels))
-    multi = aggregate(ragz_records(args.ragz_run, "multi", qrels))
+    ragz_config = common_ragz_configuration(ragz_manifests)
+    single_records = ragz_records(args.ragz_run, "single", qrels)
+    multi_records = ragz_records(args.ragz_run, "multi", qrels)
     anything_manifest = json.loads((args.anythingllm / "manifest.json").read_text())
+    embedding_parity = validate_embedding_parity(
+        path=getattr(args, "embedding_parity_attestation", None),
+        ragz_config=ragz_config,
+        ragz_runs=args.ragz_run,
+        anything_manifest=anything_manifest,
+        anything_manifest_path=args.anythingllm / "manifest.json",
+        anything_run=args.anythingllm,
+    )
     anything_summary = json.loads((args.anythingllm / "summary.json").read_text())
     anything_native_manifest = json.loads(
         (args.anythingllm_native_failure / "manifest.json").read_text()
@@ -169,11 +322,43 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     anything_native_failure = json.loads(
         (args.anythingllm_native_failure / "failure.json").read_text()
     )
-    anything = (
-        aggregate(_jsonl(args.anythingllm / "per_query.jsonl"))
+    anything_records = (
+        _jsonl(args.anythingllm / "per_query.jsonl")
         if anything_manifest["status"] == "completed"
-        else None
+        else []
     )
+    expected_query_ids = {str(row["query_id"]) for row in anything_records}
+    answerable_query_ids = set(qrels)
+    if len(expected_query_ids) != 15 or len(answerable_query_ids) != 12:
+        raise ValueError("comparison requires exactly 15 queries and 12 answerable qrels")
+    ragz_repetitions = sum(int(manifest["repetitions"]) for manifest in ragz_manifests)
+    anything_repetitions = int(anything_manifest["repetitions"])
+    denominators = {
+        "ragz_single": validate_complete_records(
+            label="RAGZ single",
+            records=single_records,
+            expected_query_ids=expected_query_ids,
+            answerable_query_ids=answerable_query_ids,
+            repetitions_per_query=ragz_repetitions,
+        ),
+        "ragz_multi": validate_complete_records(
+            label="RAGZ multi",
+            records=multi_records,
+            expected_query_ids=expected_query_ids,
+            answerable_query_ids=answerable_query_ids,
+            repetitions_per_query=ragz_repetitions,
+        ),
+        "anythingllm": validate_complete_records(
+            label="AnythingLLM",
+            records=anything_records,
+            expected_query_ids=expected_query_ids,
+            answerable_query_ids=answerable_query_ids,
+            repetitions_per_query=anything_repetitions,
+        ),
+    }
+    single = aggregate(single_records)
+    multi = aggregate(multi_records)
+    anything = aggregate(anything_records)
     onyx_manifest = json.loads((args.onyx / "manifest.json").read_text())
     return {
         "schema_version": 1,
@@ -189,14 +374,16 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         "systems": {
             "ragz_single": {
                 "status": "completed",
-                "track": "hash-dense+bm25+qdrant-rrf-single-query",
+                "track": f"{ragz_config['dense']}+bm25+qdrant-rrf-single-query",
+                "embedding": ragz_config,
                 "metrics": single,
                 "native_candidate_depth": ragz_manifests[0]["top_k"],
                 "abstention_policy": ragz_manifests[0]["no_answer_threshold"],
             },
             "ragz_multi": {
                 "status": "completed",
-                "track": "hash-dense+bm25+qdrant-rrf-fixed-three-query",
+                "track": f"{ragz_config['dense']}+bm25+qdrant-rrf-fixed-three-query",
+                "embedding": ragz_config,
                 "metrics": multi,
                 "native_candidate_depth": ragz_manifests[0]["top_k"],
                 "abstention_policy": ragz_manifests[0]["no_answer_threshold"],
@@ -232,6 +419,8 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             },
         },
         "ragz_multi_minus_single": paired_bootstrap(single, multi),
+        "embedding_parity": embedding_parity,
+        "validated_denominators": denominators,
         "source_runs": {
             "ragz": [path.name for path in args.ragz_run],
             "anythingllm": args.anythingllm.name,
@@ -273,16 +462,64 @@ def markdown(result: dict[str, Any]) -> str:
     onyx = systems["onyx"]
     ragz_delta = result["ragz_multi_minus_single"]
     sources = result["source_runs"]
+    ragz_embedding = systems["ragz_single"]["embedding"]
+    ragz_embedding_label = (
+        f"{ragz_embedding['embedding_model']} ({ragz_embedding['embedding_dimension']}d)"
+        if ragz_embedding.get("embedding_model")
+        else str(ragz_embedding["dense"])
+    )
+    same_embedding = bool(result["embedding_parity"]["validated"])
+    embedding_limit = (
+        "- AnythingLLM and RAGZ use the same embedder model, but retain their native "
+        "chunkers and retrieval engines; this is a model-parity product comparison, "
+        "not an embedding-only ablation.\n"
+        if same_embedding
+        else "- AnythingLLM and RAGZ use different embedders/chunkers; this is a "
+        "common-locator product comparison, not a controlled model ablation.\n"
+    )
+    embedding_verdict = (
+        "- AnythingLLM and RAGZ use the same OpenAI `text-embedding-3-small` model "
+        "at 1,536 dimensions in this report.\n"
+        if same_embedding
+        else "- AnythingLLM uses OpenAI `text-embedding-3-small`; this RAGZ track uses "
+        f"`{ragz_embedding['dense']}`.\n"
+    )
+    labels = {
+        "anythingllm": "AnythingLLM",
+        "ragz_single": "RAGZ single",
+        "ragz_multi": "RAGZ multi",
+    }
+    leaders: list[str] = []
+    for metric, name in (
+        ("recall_at_5", "Recall@5"),
+        ("mrr_at_5", "MRR@5"),
+        ("ndcg_at_5", "nDCG@5"),
+    ):
+        eligible = [
+            (key, systems[key]["metrics"][metric])
+            for key in labels
+            if systems[key]["metrics"] is not None
+        ]
+        winner, value = max(eligible, key=lambda item: item[1])
+        leaders.append(f"{name}: {labels[winner]} ({_fmt(value)})")
+    speed_eligible = [
+        (key, systems[key]["metrics"]["latency_ms"]["p50"])
+        for key in labels
+        if systems[key]["metrics"] is not None
+    ]
+    speed_winner, speed_value = min(speed_eligible, key=lambda item: item[1])
+    ragz_policy = systems["ragz_single"]["abstention_policy"]
     return (
         "# Four-way networking RAG retrieval comparison\n\n"
         "Date: 2026-08-22\n\n"
         "Primary evidence unit: unique 20-physical-PDF-page interval. Quality "
         "uses 12 answerable queries; abstention uses all 15 successful queries.\n\n"
         "## Executive verdict\n\n"
-        "- AnythingLLM with OpenAI embeddings achieved the highest Recall@5, MRR@5 "
-        "and nDCG@5 on the common interval evidence unit.\n"
-        "- RAGZ single-query was fastest. RAGZ multi-query increased mean Recall@5 "
-        "but reduced MRR@5; all three interval-level bootstrap intervals cross zero.\n"
+        f"{embedding_verdict}"
+        f"- Quality leaders — {'; '.join(leaders)}.\n"
+        f"- Median-latency leader: {labels[speed_winner]} ({_fmt(speed_value, 2)} ms).\n"
+        "- The paired RAGZ multi-minus-single effect and query-bootstrap intervals are "
+        "reported below without assuming the direction in advance.\n"
         "- AnythingLLM native MiniLM was OOM-killed during serialized indexing.\n"
         "- Onyx Standard was resource-gated before startup and receives no score.\n\n"
         "| System | Status | Recall@5 | MRR@5 | nDCG@5 | Segment hit@5 | "
@@ -301,8 +538,10 @@ def markdown(result: dict[str, Any]) -> str:
         "MiniLM → LanceDB | "
         f"`{native_failure['status']}` at `{native_failure['failure']['stage']}`; "
         f"OOM flag `{native_failure['failure']['container_state']['oom_killed']}` |\n"
-        "| RAGZ single | Hash dense + BM25 → Qdrant RRF; one query | Completed |\n"
-        "| RAGZ multi | Same index; original + two fixed alternatives → Qdrant RRF | "
+        f"| RAGZ single | {ragz_embedding_label} + BM25 → Qdrant RRF; one query | "
+        "Completed |\n"
+        "| RAGZ multi | Same embedding/index; original + two fixed alternatives → "
+        "Qdrant RRF | "
         "Completed |\n"
         "| Onyx Standard | Native vector/keyword search | "
         f"`{onyx['status']}`: Docker RAM "
@@ -313,9 +552,11 @@ def markdown(result: dict[str, Any]) -> str:
         "|---|---|---|---:|\n"
         "| AnythingLLM | Empty result only; similarity/score threshold `0.0` | No | "
         f"{_fmt(anything['metrics']['abstention']['f1'])} |\n"
-        "| RAGZ single | Maximum dense cosine `< 0.42` | Development sweep, not held out | "
+        f"| RAGZ single | Maximum dense cosine `< {ragz_policy['value']}` | "
+        f"{ragz_policy['calibration']} | "
         f"{_fmt(systems['ragz_single']['metrics']['abstention']['f1'])} |\n"
-        "| RAGZ multi | Maximum variant dense cosine `< 0.42` | Development sweep, not held out | "
+        f"| RAGZ multi | Maximum variant dense cosine `< {ragz_policy['value']}` | "
+        f"{ragz_policy['calibration']} | "
         f"{_fmt(systems['ragz_multi']['metrics']['abstention']['f1'])} |\n"
         "| Onyx | Unavailable—system not started | No | unavailable |\n\n"
         "These values describe each configured product policy and must not be ranked as a "
@@ -334,8 +575,7 @@ def markdown(result: dict[str, Any]) -> str:
         f"{_fmt(ragz_delta['ndcg_at_k']['ci95'][1])} |\n\n"
         "## Interpretation limits\n\n"
         "- RAGZ multi-query uses two fixed alternatives, not live expansion.\n"
-        "- AnythingLLM and RAGZ use different embedders/chunkers; this is a common-locator "
-        "product comparison, not a controlled model ablation.\n"
+        f"{embedding_limit}"
         "- AnythingLLM provider call/token counts and hosted embedding cost are not exposed "
         "by the pinned public API, so cost is unavailable rather than zero.\n"
         "- Onyx receives no numeric score because its official Standard memory floor is unmet. "
@@ -371,6 +611,7 @@ def main() -> None:
     parser.add_argument("--anythingllm-native-failure", required=True, type=Path)
     parser.add_argument("--onyx", required=True, type=Path)
     parser.add_argument("--qrels", required=True, type=Path)
+    parser.add_argument("--embedding-parity-attestation", type=Path)
     parser.add_argument("--output-json", required=True, type=Path)
     parser.add_argument("--output-md", required=True, type=Path)
     args = parser.parse_args()
