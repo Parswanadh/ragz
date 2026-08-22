@@ -1,0 +1,8 @@
+{
+  "error_type": "RemoteProtocolError",
+  "indexing_ms": null,
+  "peak_container_memory_bytes": 1586990415,
+  "quality_score_emitted": false,
+  "stage": "batched_native_indexing",
+  "status": "failed"
+}

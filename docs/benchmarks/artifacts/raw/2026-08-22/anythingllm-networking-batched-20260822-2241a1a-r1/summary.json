@@ -1,0 +1,8 @@
+{
+  "error_type": "CalledProcessError",
+  "indexing_ms": null,
+  "peak_container_memory_bytes": null,
+  "quality_score_emitted": false,
+  "stage": "startup",
+  "status": "failed"
+}

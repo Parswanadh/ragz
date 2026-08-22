@@ -232,6 +232,12 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             },
         },
         "ragz_multi_minus_single": paired_bootstrap(single, multi),
+        "source_runs": {
+            "ragz": [path.name for path in args.ragz_run],
+            "anythingllm": args.anythingllm.name,
+            "anythingllm_native_failure": args.anythingllm_native_failure.name,
+            "onyx": args.onyx.name,
+        },
     }
 
 
@@ -266,11 +272,19 @@ def markdown(result: dict[str, Any]) -> str:
     native_failure = systems["anythingllm_native_minilm"]
     onyx = systems["onyx"]
     ragz_delta = result["ragz_multi_minus_single"]
+    sources = result["source_runs"]
     return (
         "# Four-way networking RAG retrieval comparison\n\n"
         "Date: 2026-08-22\n\n"
         "Primary evidence unit: unique 20-physical-PDF-page interval. Quality "
         "uses 12 answerable queries; abstention uses all 15 successful queries.\n\n"
+        "## Executive verdict\n\n"
+        "- AnythingLLM with OpenAI embeddings achieved the highest Recall@5, MRR@5 "
+        "and nDCG@5 on the common interval evidence unit.\n"
+        "- RAGZ single-query was fastest. RAGZ multi-query increased mean Recall@5 "
+        "but reduced MRR@5; all three interval-level bootstrap intervals cross zero.\n"
+        "- AnythingLLM native MiniLM was OOM-killed during serialized indexing.\n"
+        "- Onyx Standard was resource-gated before startup and receives no score.\n\n"
         "| System | Status | Recall@5 | MRR@5 | nDCG@5 | Segment hit@5 | "
         "p50 ms | p95 ms |\n"
         "|---|---|---:|---:|---:|---:|---:|---:|\n"
@@ -331,12 +345,22 @@ def markdown(result: dict[str, Any]) -> str:
         "- Answer-quality comparison is unavailable: the query set has relevance pages but no "
         "reference-answer/atomic-claim rubric.\n"
         "- p99 is descriptive because these cells have fewer than 100 observations per "
-        "AnythingLLM condition.\n\n"
+        "AnythingLLM condition.\n"
         "- The historical AnythingLLM MiniLM OOM attempt used the pinned local v1.16.0 "
         "tag, but that runner did not enforce the digest at `docker run`; the successful "
         "numeric rerun executes the digest-qualified image reference.\n\n"
         "Official Onyx resource guidance: "
-        "<https://docs.onyx.app/deployment/getting_started/resourcing>\n"
+        "<https://docs.onyx.app/deployment/getting_started/resourcing>\n\n"
+        "## Evidence\n\n"
+        f"- RAGZ source runs: `{sources['ragz'][0]}`, `{sources['ragz'][1]}`.\n"
+        f"- AnythingLLM numeric run: `{sources['anythingllm']}`.\n"
+        f"- AnythingLLM MiniLM failure: `{sources['anythingllm_native_failure']}`.\n"
+        f"- Onyx preflight: `{sources['onyx']}`.\n"
+        "- Privacy-safe raw copies: `docs/benchmarks/artifacts/raw/2026-08-22/`.\n"
+        "- Machine-readable aggregate: "
+        "`docs/benchmarks/artifacts/2026-08-22-four-way-networking-rag.json`.\n\n"
+        "Temporary extracted textbook text and all scratch storage created by this "
+        "campaign were deleted after execution.\n"
     )
 
 

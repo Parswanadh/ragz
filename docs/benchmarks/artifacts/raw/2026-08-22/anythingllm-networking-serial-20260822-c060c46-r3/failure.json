@@ -1,0 +1,15 @@
+{
+  "container_state": {
+    "error": "",
+    "exit_code": 0,
+    "oom_killed": true,
+    "running": true,
+    "status": "running"
+  },
+  "error_type": "RemoteProtocolError",
+  "indexing_ms": null,
+  "peak_container_memory_bytes": 1869384515,
+  "quality_score_emitted": false,
+  "stage": "batched_native_indexing",
+  "status": "failed"
+}

@@ -1,0 +1,31 @@
+{
+  "commit": "b4553eb55ceb2c6a561c57892a528c65bd8626b1",
+  "created_at_utc": "2026-08-22T11:46:06.097739+00:00",
+  "official_requirements_source": "https://docs.onyx.app/deployment/getting_started/resourcing",
+  "onyx_lite_excluded": "Lite omits the vector/keyword index and background indexing workers",
+  "provider_calls": 0,
+  "quality_score_emitted": false,
+  "resource_evidence": {
+    "eligible": false,
+    "failed_requirements": [
+      "memory"
+    ],
+    "measured": {
+      "cpus": 22,
+      "disk_bytes": 227117342720,
+      "memory_bytes": 3864363008
+    },
+    "memory_deficit_bytes": 6873055232,
+    "required": {
+      "cpus": 4,
+      "disk_bytes": 34359738368,
+      "memory_bytes": 10737418240
+    }
+  },
+  "runner_version": "1.0",
+  "schema_version": 1,
+  "status": "resource_gated",
+  "system_id": "onyx",
+  "track": "standard-native-search-preflight",
+  "version": "v4.6.0"
+}

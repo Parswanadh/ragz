@@ -30,7 +30,12 @@ and LanceDB, existing RAGZ/Qdrant artifacts, official Onyx v4.6.0 resource contr
 - Onyx v4.6.0 Standard was resource-gated at 3.864 GB Docker RAM versus its
   official 10 GB minimum; Onyx Lite was not substituted.
 - Final JSON, Markdown and privacy-safe raw artifacts are preserved under
-  `docs/benchmarks/`; independent review and final repository gates remain.
+  `docs/benchmarks/`.
+- Corrected deeper-candidate results: AnythingLLM Recall@5 `0.7272`; RAGZ
+  single `0.4970`; RAGZ multi `0.6045`. Every scored observation contains five
+  unique intervals before metric truncation.
+- All 25 focused tests plus Ruff, mypy and import boundaries pass. Independent
+  read-only review found no remaining Critical or Important benchmark issue.
 
 ## Global Constraints
 

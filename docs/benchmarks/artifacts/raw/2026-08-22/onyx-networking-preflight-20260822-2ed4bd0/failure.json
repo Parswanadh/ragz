@@ -1,0 +1,10 @@
+{
+  "error_type": "InsufficientOfficialResources",
+  "failed_requirements": [
+    "memory"
+  ],
+  "provider_calls": 0,
+  "quality_score_emitted": false,
+  "stage": "pre_deployment",
+  "status": "resource_gated"
+}
