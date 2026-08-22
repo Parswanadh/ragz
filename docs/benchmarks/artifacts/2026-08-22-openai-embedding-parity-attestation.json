@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "attested_at_utc": "2026-08-22T13:29:32Z",
+  "source_runs": {
+    "anythingllm": "anythingllm-networking-openai-depth50-20260822-ad70b7f-r6",
+    "ragz": [
+      "ragz-networking-openai-parity-depth20-20260822-f341e45-r1",
+      "ragz-networking-openai-parity-depth20-20260822-f341e45-r2"
+    ]
+  },
+  "embedding": {
+    "anythingllm": {
+      "model": "text-embedding-3-small",
+      "dimension": 1536,
+      "provider": "openai",
+      "transport": "litellm"
+    },
+    "ragz": {
+      "model": "text-embedding-3-small",
+      "dimension": 1536,
+      "provider": "openai",
+      "transport": "litellm"
+    }
+  },
+  "shared_proxy": {
+    "used_by": [
+      "anythingllm",
+      "ragz"
+    ],
+    "instance_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+    "started_at_utc": "2026-08-21T05:28:38.116285183Z",
+    "image_id": "sha256:154e23bb5f31b1f10e16392a8ef299bd2cde08de3a64a6849002cfcc25ce3c63"
+  },
+  "source_artifacts": {
+    "anythingllm_manifest_sha256": "8c4eae75ae405a7248f3c7584880b74fc0e18a3305cd2f0dd1d5d005e5efb499",
+    "anythingllm_runner_commit": "ad70b7f",
+    "anythingllm_runner_sha256": "9ace5952116f2397a8408e0c8d2fa2e2255dfc1a44344bbcd8a03152e8f6bf2e",
+    "ragz_runner_commit": "f341e45e603c5d425c2c8184988fb98a3e06daaa",
+    "ragz_runner_sha256": "06f6057d39423ade0dacf7ca37cefc47862e96de02687152165d44f2b8d1394c"
+  },
+  "method": "Post-run binding of the pinned AnythingLLM runner configuration, two clean RAGZ manifests, and the continuously running shared LiteLLM container. No provider credentials are persisted."
+}

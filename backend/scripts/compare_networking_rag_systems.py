@@ -426,6 +426,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "anythingllm": args.anythingllm.name,
             "anythingllm_native_failure": args.anythingllm_native_failure.name,
             "onyx": args.onyx.name,
+            "aggregate_artifact": args.output_json.name,
         },
     }
 
@@ -598,9 +599,9 @@ def markdown(result: dict[str, Any]) -> str:
         f"- Onyx preflight: `{sources['onyx']}`.\n"
         "- Privacy-safe raw copies: `docs/benchmarks/artifacts/raw/2026-08-22/`.\n"
         "- Machine-readable aggregate: "
-        "`docs/benchmarks/artifacts/2026-08-22-four-way-networking-rag.json`.\n\n"
-        "Temporary extracted textbook text and all scratch storage created by this "
-        "campaign were deleted after execution.\n"
+        f"`docs/benchmarks/artifacts/{sources['aggregate_artifact']}`.\n\n"
+        "Temporary extracted textbook text is local-only and must be deleted after "
+        "the comparison is built; committed raw copies contain no textbook text.\n"
     )
 
 
