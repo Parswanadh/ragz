@@ -17,7 +17,6 @@ import shutil
 import socket
 import statistics
 import subprocess
-import tempfile
 import time
 from collections.abc import Iterator, Sequence
 from datetime import UTC, datetime
@@ -166,6 +165,16 @@ def _dataset_hash(dataset: Path) -> str:
     return digest.hexdigest()
 
 
+def validate_storage_path(storage: Path, allowed_root: Path) -> tuple[Path, Path]:
+    storage = storage.resolve()
+    allowed_root = allowed_root.resolve()
+    if storage == allowed_root or not storage.is_relative_to(allowed_root):
+        raise ValueError("storage must be a unique child of the explicit allowed root")
+    if storage.is_symlink() or allowed_root.is_symlink():
+        raise ValueError("storage paths must not be symlinks")
+    return storage, allowed_root
+
+
 async def run(args: argparse.Namespace) -> Path:
     import httpx
 
@@ -181,10 +190,7 @@ async def run(args: argparse.Namespace) -> Path:
     for row in qrels:
         if float(row.get("relevance", 0)) > 0:
             qrels_by_query.setdefault(str(row["query_id"]), set()).add(str(row["doc_id"]))
-    storage: Path = args.storage.resolve()
-    temp_root = Path(tempfile.gettempdir()).resolve()
-    if not storage.resolve().is_relative_to(temp_root):
-        raise ValueError("AnythingLLM storage containing textbook text must be under /tmp")
+    storage, _ = validate_storage_path(args.storage, args.allowed_storage_root)
     if storage.exists():
         raise FileExistsError(f"refusing existing storage {storage}")
     storage.mkdir(parents=True)
@@ -192,7 +198,6 @@ async def run(args: argparse.Namespace) -> Path:
         shutil.copytree(args.model_cache.resolve(), storage / "models")
     container = f"ragz-networking-anything-{uuid4().hex[:8]}"
     port = _port()
-    started = False
     stage = "startup"
     memory_samples: list[int] = []
     records: list[dict[str, Any]] = []
@@ -235,7 +240,6 @@ async def run(args: argparse.Namespace) -> Path:
                 IMAGE,
             ]
         )
-        started = True
         async with httpx.AsyncClient(
             base_url=f"http://127.0.0.1:{port}",
             timeout=httpx.Timeout(900.0, connect=30.0),
@@ -383,8 +387,7 @@ async def run(args: argparse.Namespace) -> Path:
             json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
     finally:
-        if started:
-            _command(["docker", "rm", "-f", container], check=False)
+        _command(["docker", "rm", "-f", container], check=False)
         shutil.rmtree(storage, ignore_errors=True)
 
     if records:
@@ -445,6 +448,7 @@ def main() -> None:
     parser.add_argument("--dataset", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--storage", required=True, type=Path)
+    parser.add_argument("--allowed-storage-root", required=True, type=Path)
     parser.add_argument("--model-cache", type=Path)
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--warmups", type=int, default=2)

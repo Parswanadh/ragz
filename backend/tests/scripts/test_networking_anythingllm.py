@@ -7,7 +7,12 @@ SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-from run_networking_anythingllm import batches, ranking_metrics, summarize  # noqa: E402
+from run_networking_anythingllm import (  # noqa: E402
+    batches,
+    ranking_metrics,
+    summarize,
+    validate_storage_path,
+)
 
 
 def test_batches_cover_values_once_and_reject_zero() -> None:
@@ -58,3 +63,12 @@ def test_summary_excludes_off_corpus_and_errors_from_quality() -> None:
     assert result["mean_recall_at_k"] == 1.0
     assert result["abstention"]["f1"] == 1.0
     assert result["errors"] == 1
+
+
+def test_storage_must_be_unique_child_of_explicit_root(tmp_path: Path) -> None:
+    child = tmp_path / "run-1"
+    assert validate_storage_path(child, tmp_path) == (child, tmp_path)
+    with pytest.raises(ValueError):
+        validate_storage_path(tmp_path, tmp_path)
+    with pytest.raises(ValueError):
+        validate_storage_path(tmp_path.parent / "outside", tmp_path)

@@ -21,7 +21,9 @@ and LanceDB, existing RAGZ/Qdrant artifacts, official Onyx v4.6.0 resource contr
 
 - Work only in `/tmp/ragz-multi-query-20260821` and unique `/tmp`/result paths.
 - Never read or commit textbook text, provider keys, generated alternatives, or
-  raw answers. Temporary extracted-text datasets must remain under `/tmp`.
+  raw answers. Temporary extracted-text datasets remain under `/tmp`; Docker
+  scratch storage must be a unique child of the explicitly allowed, untracked,
+  Docker-shared `no_rel/benchmarks/work/` root and is deleted on exit.
 - Use 15 total queries: 12 answerable and 3 off-corpus.
 - Ranking metrics use successful answerable queries only; abstention uses all
   successful queries; failures are reported separately.
