@@ -35,6 +35,20 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             handle.write(json.dumps(row, sort_keys=True) + "\n")
 
 
+def query_rows(query_set: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Project validated benchmark queries into the neutral adapter schema."""
+    return [
+        {
+            "query_id": row["query_id"],
+            "query": row["query"],
+            "query_type": row["query_type"],
+            "answerable": row.get("answerable", True),
+            "reference_answer": "",
+        }
+        for row in query_set
+    ]
+
+
 async def build(args: argparse.Namespace) -> None:
     from ragz.modules.documents.parsers import LiteParseParser
 
@@ -73,16 +87,7 @@ async def build(args: argparse.Namespace) -> None:
                 }
             )
     query_set = load_query_set(args.queries.resolve())
-    queries = [
-        {
-            "query_id": row["query_id"],
-            "query": row["query"],
-            "query_type": row["query_type"],
-            "answerable": row["answerable"],
-            "reference_answer": "",
-        }
-        for row in query_set
-    ]
+    queries = query_rows(query_set)
     qrels: list[dict[str, Any]] = []
     for row in query_set:
         relevant_segments = {

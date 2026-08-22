@@ -8,7 +8,7 @@ SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-from build_networking_anythingllm_dataset import segment_id  # noqa: E402
+from build_networking_anythingllm_dataset import query_rows, segment_id  # noqa: E402
 from build_networking_benchmark import load_query_set  # noqa: E402
 from run_multi_query_benchmark import (  # noqa: E402
     bootstrap_ci,
@@ -217,6 +217,22 @@ def test_anythingllm_segment_ids_are_stable_at_boundaries() -> None:
     assert segment_id("book-1", 1, pages_per_segment=20) == "book-1-pages-0001-0020"
     assert segment_id("book-1", 20, pages_per_segment=20) == "book-1-pages-0001-0020"
     assert segment_id("book-1", 21, pages_per_segment=20) == "book-1-pages-0021-0040"
+
+
+def test_anythingllm_query_projection_preserves_default_answerable() -> None:
+    projected = query_rows(
+        [
+            {"query_id": "q1", "query": "answerable", "query_type": "direct"},
+            {
+                "query_id": "q2",
+                "query": "unsupported",
+                "query_type": "off-corpus",
+                "answerable": False,
+            },
+        ]
+    )
+
+    assert [row["answerable"] for row in projected] == [True, False]
 
 
 def test_comparison_lab_requires_explicit_dedicated_database_confirmation() -> None:
