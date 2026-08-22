@@ -76,7 +76,7 @@ def summarize(records: list[dict[str, Any]], *, top_k: int) -> dict[str, Any]:
     f1 = (
         2 * precision * recall / (precision + recall)
         if precision is not None and recall is not None and precision + recall
-        else None
+        else 0.0 if tp + fp + fn else None
     )
     latencies = [float(row["latency_ms"]) for row in abstention]
 

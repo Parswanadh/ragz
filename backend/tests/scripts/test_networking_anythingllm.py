@@ -84,3 +84,19 @@ def test_embedding_configuration_labels_hosted_and_native_tracks() -> None:
     assert hosted[2:] == ("not_exposed_nonzero", None)
     with pytest.raises(ValueError):
         embedding_configuration("unknown")
+
+
+def test_abstention_f1_is_zero_when_every_off_corpus_probe_is_missed() -> None:
+    result = summarize(
+        [
+            {
+                "answerable": False,
+                "error": None,
+                "metrics": None,
+                "no_answer": False,
+                "latency_ms": 1.0,
+            }
+        ],
+        top_k=5,
+    )
+    assert result["abstention"]["f1"] == 0.0
