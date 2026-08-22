@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { WorkspaceOut } from '@/api/types';
+import { setAccessToken } from '@/lib/auth-store';
 
 import { WorkspaceSettingsDialog } from './workspace-settings-dialog';
 
@@ -23,6 +24,11 @@ const ws: WorkspaceOut = {
   chunk_method: 'heading',
   generative_ui_enabled: false,
 };
+
+const b64 = (value: object) =>
+  btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const tokenFor = (role: 'superadmin' | 'admin' | 'user') =>
+  `${b64({ alg: 'HS256' })}.${b64({ sub: 'u1', org: 'o1', role, exp: 9999999999 })}.s`;
 
 function stubFetch(responseBody: WorkspaceOut) {
   vi.stubGlobal(
@@ -79,7 +85,10 @@ function findPatch(): Request {
   return call[0] as Request;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  setAccessToken(null);
+});
 
 test('shows current values and PATCHes only the edited settings', async () => {
   const user = userEvent.setup();
@@ -106,6 +115,7 @@ test('shows current values and PATCHes only the edited settings', async () => {
 
 test('checking multi-query PATCHes only multi_query_enabled', async () => {
   const user = userEvent.setup();
+  setAccessToken(tokenFor('superadmin'));
   renderDialog(ws, { ...ws, multi_query_enabled: true });
   const toggle = screen.getByLabelText('Expand each question into multiple searches');
   expect(toggle).not.toBeChecked();
@@ -121,6 +131,19 @@ test('checking multi-query PATCHes only multi_query_enabled', async () => {
   const body = (await findPatch().clone().json()) as Record<string, unknown>;
   expect(body).toStrictEqual({ multi_query_enabled: true });
 });
+
+test.each(['admin', 'user'] as const)(
+  'hides the multi-query control from %s users',
+  (role) => {
+    setAccessToken(tokenFor(role));
+    renderDialog();
+
+    expect(
+      screen.queryByLabelText('Expand each question into multiple searches'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Superadmin control/)).not.toBeInTheDocument();
+  },
+);
 
 test('leaves an untouched field out of the PATCH body entirely', async () => {
   const user = userEvent.setup();

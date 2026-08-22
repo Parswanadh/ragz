@@ -88,10 +88,10 @@ async def test_non_admin_cannot_patch(
     assert r.status_code == 403
 
 
-async def test_multi_query_enabled_round_trips(
-    client: httpx.AsyncClient, seeded_user: User
+async def test_superadmin_multi_query_enabled_round_trips(
+    client: httpx.AsyncClient, seeded_superadmin: User
 ) -> None:
-    h = await auth(client, "a@acme.com")
+    h = await auth(client, seeded_superadmin.email)
     ws_id = await make_workspace(client, h)
 
     r = await client.patch(
@@ -105,9 +105,9 @@ async def test_multi_query_enabled_round_trips(
 
 
 async def test_multi_query_enabled_rejects_null(
-    client: httpx.AsyncClient, seeded_user: User
+    client: httpx.AsyncClient, seeded_superadmin: User
 ) -> None:
-    h = await auth(client, "a@acme.com")
+    h = await auth(client, seeded_superadmin.email)
     ws_id = await make_workspace(client, h)
 
     r = await client.patch(
@@ -117,6 +117,44 @@ async def test_multi_query_enabled_rejects_null(
     )
 
     assert r.status_code == 409
+
+
+@pytest.mark.parametrize("enabled", [True, False])
+async def test_admin_cannot_toggle_multi_query(
+    client: httpx.AsyncClient, seeded_user: User, enabled: bool
+) -> None:
+    h = await auth(client, seeded_user.email)
+    ws_id = await make_workspace(client, h)
+
+    r = await client.patch(
+        f"/api/v1/workspaces/{ws_id}",
+        json={"multi_query_enabled": enabled},
+        headers=h,
+    )
+
+    assert r.status_code == 403
+
+
+async def test_admin_mixed_patch_cannot_smuggle_multi_query_or_partially_apply(
+    client: httpx.AsyncClient, seeded_user: User
+) -> None:
+    h = await auth(client, seeded_user.email)
+    ws_id = await make_workspace(client, h)
+
+    r = await client.patch(
+        f"/api/v1/workspaces/{ws_id}",
+        json={"top_k": 12, "multi_query_enabled": True},
+        headers=h,
+    )
+
+    assert r.status_code == 403
+    workspace = next(
+        item
+        for item in (await client.get("/api/v1/workspaces", headers=h)).json()
+        if item["id"] == ws_id
+    )
+    assert workspace["top_k"] == 8
+    assert workspace["multi_query_enabled"] is False
 
 
 async def test_non_admin_cannot_enable_multi_query(
