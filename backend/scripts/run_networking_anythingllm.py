@@ -157,6 +157,28 @@ def _memory_bytes(container: str) -> int | None:
     return None
 
 
+def _container_state(container: str) -> dict[str, object] | None:
+    result = _command(
+        ["docker", "inspect", "--format", "{{json .State}}", container],
+        check=False,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+    try:
+        state = json.loads(result.stdout)
+    except ValueError:
+        return None
+    if not isinstance(state, dict):
+        return None
+    return {
+        "status": state.get("Status"),
+        "running": state.get("Running"),
+        "oom_killed": state.get("OOMKilled"),
+        "exit_code": state.get("ExitCode"),
+        "error": str(state.get("Error") or "")[:200],
+    }
+
+
 def _dataset_hash(dataset: Path) -> str:
     digest = hashlib.sha256()
     for name in ("documents.jsonl", "queries.jsonl", "qrels.jsonl"):
@@ -375,6 +397,7 @@ async def run(args: argparse.Namespace) -> Path:
         status = "completed"
     except Exception as exc:
         status = "failed"
+        container_state = _container_state(container)
         summary = {
             "status": status,
             "stage": stage,
@@ -382,6 +405,7 @@ async def run(args: argparse.Namespace) -> Path:
             "quality_score_emitted": False,
             "indexing_ms": indexing_ms,
             "peak_container_memory_bytes": max(memory_samples, default=None),
+            "container_state": container_state,
         }
         (output / "failure.json").write_text(
             json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
