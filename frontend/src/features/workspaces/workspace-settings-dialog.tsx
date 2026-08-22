@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { lazy, Suspense, useState, type FormEvent } from 'react';
 
 import type { WorkspaceOut } from '@/api/types';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,17 @@ import { toast } from '@/components/ui/toaster';
 import { useClaims } from '@/lib/use-claims';
 
 import { EmbeddingModelSection } from './embedding-model-section';
-import { EvalsSection } from './evals-section';
 import { MembersSection } from './members-section';
 import { MetadataFieldsSection } from './metadata-fields-section';
 import { usePatchWorkspace } from './queries';
+
+// Evals pulls in Markdown rendering and citation UI. It is a secondary tab in
+// a settings dialog, so keep that dependency graph out of the initial app
+// download and load it only after the user opens the tab.
+const EvalsSection = lazy(async () => {
+  const module = await import('./evals-section');
+  return { default: module.EvalsSection };
+});
 
 export function WorkspaceSettingsDialog({
   workspace,
@@ -278,10 +285,12 @@ export function WorkspaceSettingsDialog({
         ) : tab === 'members' ? (
           <MembersSection workspaceId={workspace.id} />
         ) : (
-          <EvalsSection
-            workspaceId={workspace.id}
-            defaultModelId={workspace.default_model_id ?? null}
-          />
+          <Suspense fallback={<div className="text-sm text-muted">Loading evaluations…</div>}>
+            <EvalsSection
+              workspaceId={workspace.id}
+              defaultModelId={workspace.default_model_id ?? null}
+            />
+          </Suspense>
         )}
       </DialogContent>
     </Dialog>
