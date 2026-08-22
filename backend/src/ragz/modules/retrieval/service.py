@@ -36,6 +36,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import get_settings
 from ragz.core.errors import NotFoundError, UpstreamError, WorkspaceAccessDenied
+from ragz.core.metrics import observe_stage
 from ragz.modules.documents.pipeline import Chunk
 from ragz.modules.quotas import service as quota_service
 from ragz.modules.retrieval.client import EPHEMERAL_COLLECTION, get_qdrant
@@ -568,7 +569,8 @@ async def retrieve(
                     workspace_id=str(workspace_id),
                     query_count=len(queries),
                 )
-    dense_vecs, embed_tokens = await dense_embedder.embed_with_usage(list(queries))
+    with observe_stage("embed_dense"):
+        dense_vecs, embed_tokens = await dense_embedder.embed_with_usage(list(queries))
     # Cost reporting (design 2026-08-15 §2): the query embedding's billed tokens
     # (hosted providers only; self-hosted TEI / the hash test backend report 0).
     # commit=False stages the row so it rides this turn's end-of-turn commit
@@ -581,7 +583,8 @@ async def retrieve(
             model_id=embedding_model.id, feature="embedding",
             prompt_tokens=embed_tokens, completion_tokens=0, commit=False,
         )
-    sparse_vecs = await asyncio.to_thread(embed_sparse, list(queries))
+    with observe_stage("embed_sparse"):
+        sparse_vecs = await asyncio.to_thread(embed_sparse, list(queries))
     # Fail-closed ACL projection (review P0): documents whose committed security
     # state has not reached this collection are excluded from the query. Local
     # import for the same reason as models_service above -- documents.service
@@ -618,14 +621,15 @@ async def retrieve(
             ),
         )
     ]
-    fused = await client.query_points(
-        collection_name,
-        prefetch=prefetch,
-        query=models.FusionQuery(fusion=models.Fusion.RRF),
-        query_filter=flt,  # belt and braces on top of the filtered prefetches
-        limit=fetch_k,
-        with_payload=True,
-    )
+    with observe_stage("vector_search"):
+        fused = await client.query_points(
+            collection_name,
+            prefetch=prefetch,
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            query_filter=flt,  # belt and braces on top of the filtered prefetches
+            limit=fetch_k,
+            with_payload=True,
+        )
     candidates = [_chunk_from_point(p) for p in fused.points]
     # Close the read-then-query window (Cubic P0). The pre-query exclusion above
     # is a SNAPSHOT: an ACL can commit between that read and query_points, and
@@ -656,7 +660,8 @@ async def retrieve(
     if ws.rerank_enabled:
         try:
             reranker = await get_reranker(session, get_settings())
-            scores = await reranker.rerank(query, [c.text for c in candidates])
+            with observe_stage("rerank"):
+                scores = await reranker.rerank(query, [c.text for c in candidates])
         except RerankUnavailable as exc:
             structlog.get_logger().warning(
                 "reranker_unavailable_falling_back",

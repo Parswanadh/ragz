@@ -52,7 +52,9 @@ Review bar: OWASP ASVS L2 + OWASP LLM Top 10.
 | `audit` | append-only event log |
 | `outbox` | durable intent to run background work; committed with the domain change that justifies it |
 
-Boundaries: `api/` and `worker/` are thin entrypoints that call module `service.py` only. Direction (`api`/`worker` → `modules` → `core`) is enforced by import-linter's `Layered architecture` contract, and `chat` is additionally forbidden from importing tenancy's ORM (`chat does not reach into tenancy's ORM`) — it takes `tenancy.views.WorkspaceView` instead. **Partly implemented:** no ORM *object* crosses a module boundary any more, but 27 ORM classes are still imported across modules to JOIN or query another module's tables (documents←tenancy 5, chat←models 4, auth←tenancy 3, and so on). That is cross-module data access rather than an entity crossing a boundary; closing it needs bulk accessors on the owning modules, and Phase 2 item 2 covers it. Until then only the gated boundary above is guaranteed.
+Boundaries: `api/` and `worker/` are thin entrypoints that call module `service.py` only. Direction (`api`/`worker` → `modules` → `core`) is enforced by import-linter's `Layered architecture` contract. Sibling boundaries are enforced too, which they previously were not: every business package sits in the same `ragz.modules` layer, so the layered contract is blind to module-to-module coupling. Fourteen `<module> does not import another module's ORM` contracts close that — each forbids every other module's ORM submodules, pinning **153 of the 169** module→foreign-ORM pairs so a clean boundary cannot silently regress.
+
+**Partly implemented:** no ORM *object* crosses a module boundary any more, but **11 distinct ORM classes are still imported across modules** (26 import statements, 16 module→ORM-submodule pairs) to JOIN or query another module's tables — `Workspace`/`Organization`/`Group`/`WorkspaceMember` from tenancy, `User` from auth, `Model`/`ModelCatalogEntry` from models, `Chat`/`Message`, `Document`, `ReembedJob`. That is cross-module data access rather than an entity crossing a boundary. Each one is written into the contract that allows it, so the exceptions are the backlog rather than an unwritten convention: closing one means adding a bulk accessor on the owning module, dropping the import, and deleting the line. Phase 2 item 1 covers it.
 
 ## Stack & Tooling
 
@@ -83,11 +85,23 @@ Boundaries: `api/` and `worker/` are thin entrypoints that call module `service.
 
 Typed exceptions per module → one global `application/problem+json` handler; no internal details in responses. `request_id`/`org_id`/`user_id` bound in structlog and propagated to workers. `/healthz` + `/readyz` on the API. Degradation contract: reranker down → fusion order; LLM error → fallback chain; Redis down → quotas fail closed, caches fail open.
 
-**Not implemented** (earlier revisions of this file
-asserted all of it as if built): Prometheus metrics `ragz_<module>_<metric>`, per-stage
-RAG latency histograms, OpenTelemetry tracing, trace propagation into Celery, worker
-health endpoints, and alerting/SLOs. Neither `prometheus_client` nor `opentelemetry` is
-a dependency today.
+**Implemented:** Prometheus metrics under the `ragz_<module>_<metric>` convention
+(`core/metrics.py`), covering HTTP request count/latency and the per-stage RAG latency
+histogram `ragz_retrieval_stage_duration_seconds{stage}` (`embed_dense`, `embed_sparse`,
+`vector_search`, `rerank`). Exposed at `/metrics`, which is **disabled unless
+`RAGZ_METRICS_TOKEN` is set** and requires it as a bearer token — metrics are operational
+intelligence, not a liveness bit, and an unconfigured endpoint 404s so it is
+indistinguishable from one that does not exist. HTTP metrics are labelled by ROUTE
+TEMPLATE, never request path; unmatched requests collapse to `route="unmatched"`. Both
+properties are pinned by `tests/api/test_metrics.py`, which fails if a raw path id
+reaches a label.
+
+**Not implemented** (earlier revisions of this file asserted all of it as if built):
+OpenTelemetry tracing, trace propagation into Celery, worker health endpoints, and
+alerting/SLOs. `opentelemetry` is not a dependency today. **Worker metrics do not exist
+at all**: Celery task counters were deliberately left unwritten rather than defined-but-
+never-incremented, because the worker has no exposition endpoint to scrape and a metric
+nothing observes is worse than an absent one — it reads as coverage.
 
 ## Depth Pointers
 
