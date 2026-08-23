@@ -1,0 +1,70 @@
+{"error_codes": [], "latency_ms": 1106.2679, "query_id": "q001", "ranked_doc_ids": ["python-control-flow", "python-data-structures"], "ranked_scores": [0.64556539, 0.61160898]}
+{"error_codes": [], "latency_ms": 656.2875, "query_id": "q002", "ranked_doc_ids": ["python-control-flow", "python-data-structures"], "ranked_scores": [0.64032048, 0.62970138]}
+{"error_codes": [], "latency_ms": 397.0879, "query_id": "q003", "ranked_doc_ids": ["python-control-flow", "python-data-structures"], "ranked_scores": [0.66121638, 0.62341398]}
+{"error_codes": [], "latency_ms": 392.4222, "query_id": "q004", "ranked_doc_ids": ["python-control-flow", "postgres-explain"], "ranked_scores": [0.67643648, 0.59337717]}
+{"error_codes": [], "latency_ms": 389.246, "query_id": "q005", "ranked_doc_ids": ["python-control-flow", "postgres-json-types"], "ranked_scores": [0.65959346, 0.60516852]}
+{"error_codes": [], "latency_ms": 393.0231, "query_id": "q006", "ranked_doc_ids": ["python-control-flow"], "ranked_scores": [0.66118062]}
+{"error_codes": [], "latency_ms": 381.5935, "query_id": "q007", "ranked_doc_ids": ["python-control-flow"], "ranked_scores": [0.61388546]}
+{"error_codes": [], "latency_ms": 400.3712, "query_id": "q008", "ranked_doc_ids": ["python-control-flow", "python-typing", "python-data-structures"], "ranked_scores": [0.65991372, 0.59189743, 0.586474]}
+{"error_codes": [], "latency_ms": 390.845, "query_id": "q009", "ranked_doc_ids": ["python-control-flow"], "ranked_scores": [0.68529171]}
+{"error_codes": [], "latency_ms": 385.1071, "query_id": "q010", "ranked_doc_ids": ["python-data-structures"], "ranked_scores": [0.65535206]}
+{"error_codes": [], "latency_ms": 388.5402, "query_id": "q011", "ranked_doc_ids": ["python-data-structures", "python-control-flow"], "ranked_scores": [0.63818592, 0.58802217]}
+{"error_codes": [], "latency_ms": 390.8061, "query_id": "q012", "ranked_doc_ids": ["python-data-structures"], "ranked_scores": [0.65897983]}
+{"error_codes": [], "latency_ms": 456.5204, "query_id": "q013", "ranked_doc_ids": ["python-data-structures"], "ranked_scores": [0.6713326]}
+{"error_codes": [], "latency_ms": 396.0323, "query_id": "q014", "ranked_doc_ids": ["python-data-structures", "python-typing"], "ranked_scores": [0.67077315, 0.65092403]}
+{"error_codes": [], "latency_ms": 379.6415, "query_id": "q015", "ranked_doc_ids": ["python-data-structures", "postgres-index-types"], "ranked_scores": [0.62833238, 0.60571778]}
+{"error_codes": [], "latency_ms": 376.2637, "query_id": "q016", "ranked_doc_ids": ["python-data-structures", "python-control-flow"], "ranked_scores": [0.64591879, 0.60274756]}
+{"error_codes": [], "latency_ms": 411.8567, "query_id": "q017", "ranked_doc_ids": ["python-typing"], "ranked_scores": [0.63971567]}
+{"error_codes": [], "latency_ms": 388.1202, "query_id": "q018", "ranked_doc_ids": ["python-typing"], "ranked_scores": [0.65657383]}
+{"error_codes": [], "latency_ms": 366.8845, "query_id": "q019", "ranked_doc_ids": ["python-asyncio-tasks"], "ranked_scores": [0.66917312]}
+{"error_codes": [], "latency_ms": 495.9463, "query_id": "q020", "ranked_doc_ids": ["python-asyncio-tasks"], "ranked_scores": [0.65791935]}
+{"error_codes": [], "latency_ms": 373.453, "query_id": "q021", "ranked_doc_ids": ["python-asyncio-tasks", "python-concurrent-futures"], "ranked_scores": [0.66470224, 0.6370306]}
+{"error_codes": [], "latency_ms": 307.0569, "query_id": "q022", "ranked_doc_ids": ["python-asyncio-tasks"], "ranked_scores": [0.66347873]}
+{"error_codes": [], "latency_ms": 404.3803, "query_id": "q023", "ranked_doc_ids": ["python-json"], "ranked_scores": [0.65388906]}
+{"error_codes": [], "latency_ms": 292.0277, "query_id": "q024", "ranked_doc_ids": ["python-json", "postgres-json-types"], "ranked_scores": [0.6342544, 0.62511694]}
+{"error_codes": [], "latency_ms": 318.0902, "query_id": "q025", "ranked_doc_ids": ["python-sqlite3"], "ranked_scores": [0.67522955]}
+{"error_codes": [], "latency_ms": 366.3282, "query_id": "q026", "ranked_doc_ids": ["python-subprocess"], "ranked_scores": [0.6607675]}
+{"error_codes": [], "latency_ms": 405.5295, "query_id": "q027", "ranked_doc_ids": ["python-concurrent-futures"], "ranked_scores": [0.66648102]}
+{"error_codes": [], "latency_ms": 300.9438, "query_id": "q028", "ranked_doc_ids": ["python-concurrent-futures", "python-asyncio-tasks"], "ranked_scores": [0.6352883, 0.62228894]}
+{"error_codes": [], "latency_ms": 388.9077, "query_id": "q029", "ranked_doc_ids": ["postgres-privileges"], "ranked_scores": [0.67937297]}
+{"error_codes": [], "latency_ms": 383.0348, "query_id": "q030", "ranked_doc_ids": ["postgres-privileges"], "ranked_scores": [0.67740643]}
+{"error_codes": [], "latency_ms": 299.9247, "query_id": "q031", "ranked_doc_ids": ["postgres-privileges"], "ranked_scores": [0.66992307]}
+{"error_codes": [], "latency_ms": 386.0511, "query_id": "q032", "ranked_doc_ids": ["postgres-row-security"], "ranked_scores": [0.68484271]}
+{"error_codes": [], "latency_ms": 289.0378, "query_id": "q033", "ranked_doc_ids": ["postgres-row-security"], "ranked_scores": [0.68927091]}
+{"error_codes": [], "latency_ms": 287.3898, "query_id": "q034", "ranked_doc_ids": ["postgres-index-types", "postgres-json-types"], "ranked_scores": [0.68449515, 0.65288264]}
+{"error_codes": [], "latency_ms": 380.8955, "query_id": "q035", "ranked_doc_ids": ["postgres-index-types", "postgres-json-types"], "ranked_scores": [0.66852027, 0.64408606]}
+{"error_codes": [], "latency_ms": 304.5002, "query_id": "q036", "ranked_doc_ids": ["postgres-json-types", "postgres-index-types"], "ranked_scores": [0.67923814, 0.67264885]}
+{"error_codes": [], "latency_ms": 381.8654, "query_id": "q037", "ranked_doc_ids": ["postgres-index-types", "postgres-json-types"], "ranked_scores": [0.6875301, 0.631024]}
+{"error_codes": [], "latency_ms": 920.9569, "query_id": "q038", "ranked_doc_ids": ["postgres-routine-vacuuming"], "ranked_scores": [0.68583465]}
+{"error_codes": [], "latency_ms": 379.6451, "query_id": "q039", "ranked_doc_ids": ["postgres-explain"], "ranked_scores": [0.6734376]}
+{"error_codes": [], "latency_ms": 312.6078, "query_id": "q040", "ranked_doc_ids": ["postgres-routine-vacuuming"], "ranked_scores": [0.69415522]}
+{"error_codes": [], "latency_ms": 394.8725, "query_id": "q041", "ranked_doc_ids": ["postgres-pitr", "postgres-warm-standby"], "ranked_scores": [0.68317032, 0.66842222]}
+{"error_codes": [], "latency_ms": 447.4804, "query_id": "q042", "ranked_doc_ids": ["postgres-pitr", "postgres-file-system-backup"], "ranked_scores": [0.69000447, 0.67233956]}
+{"error_codes": [], "latency_ms": 377.8473, "query_id": "q043", "ranked_doc_ids": ["postgres-pitr"], "ranked_scores": [0.7057991]}
+{"error_codes": [], "latency_ms": 284.4155, "query_id": "q044", "ranked_doc_ids": ["postgres-sql-dump"], "ranked_scores": [0.69675952]}
+{"error_codes": [], "latency_ms": 276.2067, "query_id": "q045", "ranked_doc_ids": ["postgres-sql-dump"], "ranked_scores": [0.70240408]}
+{"error_codes": [], "latency_ms": 295.8851, "query_id": "q046", "ranked_doc_ids": ["postgres-file-system-backup", "postgres-pitr"], "ranked_scores": [0.69079304, 0.68333298]}
+{"error_codes": [], "latency_ms": 292.8273, "query_id": "q047", "ranked_doc_ids": ["postgres-warm-standby", "postgres-pitr"], "ranked_scores": [0.6412586, 0.62438762]}
+{"error_codes": [], "latency_ms": 415.5549, "query_id": "q048", "ranked_doc_ids": ["postgres-warm-standby"], "ranked_scores": [0.69371712]}
+{"error_codes": [], "latency_ms": 399.3308, "query_id": "q049", "ranked_doc_ids": ["postgres-warm-standby"], "ranked_scores": [0.68734109]}
+{"error_codes": [], "latency_ms": 304.463, "query_id": "q050", "ranked_doc_ids": ["postgres-transaction-isolation"], "ranked_scores": [0.68549687]}
+{"error_codes": [], "latency_ms": 392.7874, "query_id": "q051", "ranked_doc_ids": ["postgres-transaction-isolation"], "ranked_scores": [0.6876809]}
+{"error_codes": [], "latency_ms": 377.7166, "query_id": "q052", "ranked_doc_ids": ["postgres-transaction-isolation"], "ranked_scores": [0.67085385]}
+{"error_codes": [], "latency_ms": 378.5139, "query_id": "q053", "ranked_doc_ids": ["postgres-json-types"], "ranked_scores": [0.67430943]}
+{"error_codes": [], "latency_ms": 401.4663, "query_id": "q054", "ranked_doc_ids": ["postgres-json-types"], "ranked_scores": [0.68265003]}
+{"error_codes": [], "latency_ms": 401.2038, "query_id": "q055", "ranked_doc_ids": ["postgres-text-search-controls"], "ranked_scores": [0.69685882]}
+{"error_codes": [], "latency_ms": 449.0195, "query_id": "q056", "ranked_doc_ids": ["postgres-text-search-controls"], "ranked_scores": [0.68368661]}
+{"error_codes": [], "latency_ms": 383.8456, "query_id": "q057", "ranked_doc_ids": ["postgres-text-search-controls", "postgres-explain"], "ranked_scores": [0.6924634, 0.65225577]}
+{"error_codes": [], "latency_ms": 390.9156, "query_id": "q058", "ranked_doc_ids": ["postgres-explain"], "ranked_scores": [0.68886346]}
+{"error_codes": [], "latency_ms": 431.6537, "query_id": "q059", "ranked_doc_ids": ["postgres-explain"], "ranked_scores": [0.69786388]}
+{"error_codes": [], "latency_ms": 433.1142, "query_id": "q060", "ranked_doc_ids": ["postgres-explain"], "ranked_scores": [0.69099736]}
+{"error_codes": [], "latency_ms": 396.7774, "query_id": "q061", "ranked_doc_ids": ["python-sqlite3"], "ranked_scores": [0.61857855]}
+{"error_codes": [], "latency_ms": 403.2673, "query_id": "q062", "ranked_doc_ids": ["python-asyncio-tasks"], "ranked_scores": [0.64619827]}
+{"error_codes": [], "latency_ms": 381.7839, "query_id": "q063", "ranked_doc_ids": ["python-typing", "python-json", "python-asyncio-tasks"], "ranked_scores": [0.61867517, 0.60845679, 0.60757643]}
+{"error_codes": [], "latency_ms": 389.4332, "query_id": "q064", "ranked_doc_ids": ["python-concurrent-futures", "python-asyncio-tasks"], "ranked_scores": [0.63242126, 0.62803614]}
+{"error_codes": [], "latency_ms": 383.3596, "query_id": "q065", "ranked_doc_ids": ["postgres-row-security"], "ranked_scores": [0.64749128]}
+{"error_codes": [], "latency_ms": 518.4318, "query_id": "q066", "ranked_doc_ids": ["postgres-warm-standby"], "ranked_scores": [0.65711308]}
+{"error_codes": [], "latency_ms": 388.644, "query_id": "q067", "ranked_doc_ids": ["postgres-routine-vacuuming", "postgres-explain"], "ranked_scores": [0.63355428, 0.62595212]}
+{"error_codes": [], "latency_ms": 289.2247, "query_id": "q068", "ranked_doc_ids": ["postgres-text-search-controls", "postgres-index-types"], "ranked_scores": [0.66200238, 0.66199464]}
+{"error_codes": [], "latency_ms": 399.5595, "query_id": "q069", "ranked_doc_ids": ["postgres-transaction-isolation", "postgres-routine-vacuuming", "postgres-pitr", "postgres-row-security"], "ranked_scores": [0.5898273, 0.5806433, 0.57556409, 0.57359397]}
+{"error_codes": [], "latency_ms": 384.1135, "query_id": "q070", "ranked_doc_ids": ["postgres-text-search-controls"], "ranked_scores": [0.60355657]}

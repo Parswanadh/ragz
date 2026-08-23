@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "attestation_kind": "posthoc-scored-runtime-stop-ledger",
+  "compose_project": "ragflow-swap-bench-20260823",
+  "execution_window_utc": {
+    "dependencies_started_at": "2026-08-23T16:01:39.75180612Z",
+    "app_started_at": "2026-08-23T16:02:07.466199023Z",
+    "scored_artifact_created_at": "2026-08-23T16:04:01.090625+00:00",
+    "last_container_stopped_at": "2026-08-23T16:04:25.263647282Z",
+    "verified_stopped_at": "2026-08-23T16:05:32Z"
+  },
+  "source_runtime_manifest": {
+    "path": "../ragflow-native-daemon-swap-smoke-20260823-r6/manifest.json",
+    "sha256": "0a1e6c335a6896d778c5cd0a9c1cba1836bc85112702a2b2a74dae8a31e1b2b1"
+  },
+  "scored_artifact": {
+    "manifest_sha256": "5b32c80c8ee3cb5a0c54a5d92b74155a00756feedeb180b4a6b1553fe443e0d2",
+    "summary_sha256": "de7c14bbc4ce6792894702de6360df2fe339dd1956947199bc167bc292581c8e",
+    "per_query_sha256": "97e95bcd3d493f78aa9efbb013a06b6448fb839f3a826901f009afc74bdb176f"
+  },
+  "source": {
+    "ragflow_version": "v0.27.0",
+    "commit": "ec9c08d809f63ba2815090182fa225899d2437d5",
+    "app_image_digest": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b"
+  },
+  "containers": [
+    {
+      "name": "ragflow-swap-bench-20260823-infinity-1",
+      "id": "dd02adb39565dfe6eb586039ce794d0235207cc15c7a9dfbcd74e3c0ad5f5017",
+      "image_id": "sha256:6640409359e6d515287d6255657ee78a86fdce996196fbb4d371a2e39243309f",
+      "started_at": "2026-08-23T16:01:40.174753305Z",
+      "finished_at": "2026-08-23T16:04:25.263647282Z",
+      "exit_code": 0,
+      "oom_killed": false,
+      "restart_count": 0,
+      "status": "exited"
+    },
+    {
+      "name": "ragflow-swap-bench-20260823-minio-1",
+      "id": "296a99eb1825468930678548377f0f3a1ee5f0f3f66cf96e46600e01321ec06f",
+      "image_id": "sha256:29a498b24669cae1fed11c1a2fb2b3d73c68829a0a9c0b14e71b386671d38fac",
+      "started_at": "2026-08-23T16:01:39.901283756Z",
+      "finished_at": "2026-08-23T16:04:12.697801507Z",
+      "exit_code": 0,
+      "oom_killed": false,
+      "restart_count": 0,
+      "status": "exited"
+    },
+    {
+      "name": "ragflow-swap-bench-20260823-mysql-1",
+      "id": "3dfd85e51f699a7f1bb47e006f13f27907f55c22df378e12d189d4b67b608cf0",
+      "image_id": "sha256:d58ac93387f644e4e040c636b8f50494e78e5afc27ca0a87348b2f577da2b7ff",
+      "started_at": "2026-08-23T16:01:39.75180612Z",
+      "finished_at": "2026-08-23T16:04:24.473529983Z",
+      "exit_code": 0,
+      "oom_killed": false,
+      "restart_count": 0,
+      "status": "exited"
+    },
+    {
+      "name": "ragflow-swap-bench-20260823-ragflow-cpu-1",
+      "id": "46cf3c1073f6d566310006b66acc4330a2ccb6fa91e8811e1d85fa8551cf6967",
+      "image_id": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+      "started_at": "2026-08-23T16:02:07.466199023Z",
+      "finished_at": "2026-08-23T16:04:22.823191463Z",
+      "exit_code": 137,
+      "exit_reason": "project-scoped docker stop; OOMKilled=false",
+      "oom_killed": false,
+      "restart_count": 0,
+      "status": "exited"
+    },
+    {
+      "name": "ragflow-swap-bench-20260823-redis-1",
+      "id": "1ce09e5a9e37f1f047ee231cdc07d7800bd268ddd114f855fab8f9584a9945",
+      "image_id": "sha256:f0ba225266310efba5fb33383e21c64fbd07907304224786c780606e7ebd7327",
+      "started_at": "2026-08-23T16:01:40.051316548Z",
+      "finished_at": "2026-08-23T16:04:12.76370465Z",
+      "exit_code": 0,
+      "oom_killed": false,
+      "restart_count": 0,
+      "status": "exited"
+    }
+  ],
+  "post_stop": {
+    "containers_left_running": 0,
+    "stop_scope": "compose_project_only",
+    "mem_available_bytes": 2711392256,
+    "swap_free_bytes": 6735642624,
+    "memory_psi_some_avg10": 0.0,
+    "memory_psi_full_avg10": 0.0
+  },
+  "limitations": [
+    "This ledger was assembled immediately after the scored run from Docker inspect state and artifact hashes; it is posthoc, not a runner-written start attestation.",
+    "Resource samples cover the earlier three-minute smoke, not this entire scored execution window."
+  ]
+}

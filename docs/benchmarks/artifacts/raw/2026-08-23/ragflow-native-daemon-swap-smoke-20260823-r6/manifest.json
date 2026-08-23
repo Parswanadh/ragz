@@ -1,0 +1,156 @@
+{
+  "app_service": "ragflow-cpu",
+  "benchmark_eligibility_reasons": [
+    "smoke_has_no_corpus_quality_measurement",
+    "smoke_does_not_compare_embedding_dimensions",
+    "smoke_does_not_measure_rag_stage_latency"
+  ],
+  "benchmark_eligible": false,
+  "classification": "smoke_only",
+  "commit": "ec9c08d809f63ba2815090182fa225899d2437d5",
+  "compose_project": "ragflow-swap-bench-20260823",
+  "created_at_utc": "2026-08-23T15:12:47.250328+00:00",
+  "credentials_persisted": false,
+  "dependency_services": [
+    "mysql",
+    "minio",
+    "redis",
+    "infinity"
+  ],
+  "docker_daemon": {
+    "cpus": 22,
+    "endpoint": "unix:///var/run/docker.sock",
+    "fingerprint_sha256": "1605fb9a952db68dc6c6235b63c7fb36e7327fd77bdd3b960c5b8cadf91398b4",
+    "memory_bytes": 16246616064
+  },
+  "document_engine": "infinity",
+  "generated_files": {
+    "compose_override": {
+      "path": "compose.lowmem.override.yml",
+      "runtime_mount_path": null,
+      "sha256": "7f4792abdee38c0ebb445397d053b174ffb3e1444f6ab653814a2ec5fa4eb3dd",
+      "size_bytes": 4025
+    },
+    "infinity_config": {
+      "path": "infinity.lowmem.toml",
+      "runtime_mount_path": "/infinity_conf.toml",
+      "sha256": "d009146032d7dcfc2504015db2d30848e4e2a0ce78848707ad21dc64d27e0f3c",
+      "size_bytes": 622
+    }
+  },
+  "host_port": 18080,
+  "image_provenance": [
+    {
+      "digest": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+      "id": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+      "image": "infiniflow/ragflow:v0.27.0",
+      "image_id": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+      "name": "infiniflow/ragflow:v0.27.0",
+      "repo_digests": [
+        "infiniflow/ragflow@sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b"
+      ],
+      "role": "app",
+      "service": "ragflow-cpu",
+      "size_bytes": 3427541023
+    },
+    {
+      "digest": "sha256:6640409359e6d515287d6255657ee78a86fdce996196fbb4d371a2e39243309f",
+      "id": "sha256:6640409359e6d515287d6255657ee78a86fdce996196fbb4d371a2e39243309f",
+      "image": "infiniflow/infinity:v0.7.3-x64-v3",
+      "image_id": "sha256:6640409359e6d515287d6255657ee78a86fdce996196fbb4d371a2e39243309f",
+      "name": "infiniflow/infinity:v0.7.3-x64-v3",
+      "repo_digests": [
+        "infiniflow/infinity@sha256:6640409359e6d515287d6255657ee78a86fdce996196fbb4d371a2e39243309f"
+      ],
+      "role": "document",
+      "service": "infinity",
+      "size_bytes": 322519270
+    },
+    {
+      "digest": "sha256:d58ac93387f644e4e040c636b8f50494e78e5afc27ca0a87348b2f577da2b7ff",
+      "id": "sha256:d58ac93387f644e4e040c636b8f50494e78e5afc27ca0a87348b2f577da2b7ff",
+      "image": "mysql:8.0.40",
+      "image_id": "sha256:d58ac93387f644e4e040c636b8f50494e78e5afc27ca0a87348b2f577da2b7ff",
+      "name": "mysql:8.0.40",
+      "repo_digests": [
+        "mysql@sha256:d58ac93387f644e4e040c636b8f50494e78e5afc27ca0a87348b2f577da2b7ff"
+      ],
+      "role": "dependency",
+      "service": "mysql",
+      "size_bytes": 170979582
+    },
+    {
+      "digest": "sha256:29a498b24669cae1fed11c1a2fb2b3d73c68829a0a9c0b14e71b386671d38fac",
+      "id": "sha256:29a498b24669cae1fed11c1a2fb2b3d73c68829a0a9c0b14e71b386671d38fac",
+      "image": "pgsty/silo:RELEASE.2026-08-06T00-00-00Z",
+      "image_id": "sha256:29a498b24669cae1fed11c1a2fb2b3d73c68829a0a9c0b14e71b386671d38fac",
+      "name": "pgsty/silo:RELEASE.2026-08-06T00-00-00Z",
+      "repo_digests": [
+        "pgsty/silo@sha256:29a498b24669cae1fed11c1a2fb2b3d73c68829a0a9c0b14e71b386671d38fac"
+      ],
+      "role": "dependency",
+      "service": "minio",
+      "size_bytes": 54546911
+    },
+    {
+      "digest": "sha256:f0ba225266310efba5fb33383e21c64fbd07907304224786c780606e7ebd7327",
+      "id": "sha256:f0ba225266310efba5fb33383e21c64fbd07907304224786c780606e7ebd7327",
+      "image": "valkey/valkey:8",
+      "image_id": "sha256:f0ba225266310efba5fb33383e21c64fbd07907304224786c780606e7ebd7327",
+      "name": "valkey/valkey:8",
+      "repo_digests": [
+        "valkey/valkey@sha256:f0ba225266310efba5fb33383e21c64fbd07907304224786c780606e7ebd7327"
+      ],
+      "role": "dependency",
+      "service": "redis",
+      "size_bytes": 43001106
+    }
+  ],
+  "local_model_services_started": false,
+  "memory_limit_bytes": 5000000000,
+  "model_mode": "external_api_only",
+  "preflight_existing_container_ids": [],
+  "provider_calls": 0,
+  "post_smoke_stop": {
+    "benchmark_executed_after_smoke": true,
+    "compose_project": "ragflow-swap-bench-20260823",
+    "containers_left_running": 0,
+    "mem_available_bytes_after_stop": 2583597056,
+    "memory_psi_full_avg10_after_stop": 0.0,
+    "stop_reason": "post_benchmark_project_scoped",
+    "stop_scope": "compose_project_only",
+    "stopped_at_utc": "2026-08-23T15:52:27Z",
+    "swap_free_bytes_after_stop": 7070306304
+  },
+  "repository": "https://github.com/infiniflow/ragflow",
+  "response_bodies_persisted": false,
+  "run_kind": "low_memory_smoke",
+  "runner_version": "1.0",
+  "samples_file": "samples.jsonl",
+  "schema_version": 1,
+  "selected_services": [
+    "mysql",
+    "minio",
+    "redis",
+    "infinity",
+    "ragflow-cpu"
+  ],
+  "stack_left_running": false,
+  "stack_started": true,
+  "status": "smoke_passed",
+  "swap_guard": {
+    "baseline_swap_used_bytes": 19867480064,
+    "max_growth_bytes": 6442450944,
+    "mode": "relative_growth"
+  },
+  "system_id": "ragflow",
+  "thresholds": {
+    "host_min_available_bytes": 268435456,
+    "max_container_memory_ratio": 0.99,
+    "max_oom_kills": 0,
+    "max_psi_avg10": 30.0,
+    "max_restarts": 0,
+    "max_swap_growth_bytes": 6442450944
+  },
+  "version": "v0.27.0"
+}

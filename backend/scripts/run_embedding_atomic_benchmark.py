@@ -395,10 +395,15 @@ def _attempt(
             total_tokens=None,
         )
     validate_started = time.perf_counter()
+    # Initialize this before the typed response-shape checks.  A successful
+    # HTTP response may decode to a scalar/list (rather than an object), and
+    # the error-row path still needs to inspect the raw data without masking
+    # the intended BenchmarkValidationError with UnboundLocalError.
+    raw_data: object = None
     try:
         if not isinstance(body, Mapping):
             raise BenchmarkValidationError("response body is not an object")
-        raw_data: object = body.get("data")
+        raw_data = body.get("data")
         if not isinstance(raw_data, list):
             raise BenchmarkValidationError("response data is not a list")
         vector_count = len(raw_data)

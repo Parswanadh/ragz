@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "attestation_kind": "posthoc-ragflow-dataset-vector-contract",
+  "embedding_contract": {
+    "ragflow_model_id": "ragz-openai-text-embedding-3-large-d1024@ragz-parity@OpenAI-API-Compatible",
+    "litellm_alias": "ragz-openai-text-embedding-3-large-d1024",
+    "underlying_model": "text-embedding-3-large",
+    "expected_dimension": 1024,
+    "observed_infinity_vector_size": 1024,
+    "proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31"
+  },
+  "embedding_preflight": {
+    "path": "../openai-embedding-matrix-preflight-20260823-r3/manifest.json",
+    "sha256": "9cf51658f343701b36b9196b5067ae849d915e3342ed87580f55558b6fe7a224",
+    "cell_id": "openai-text-embedding-3-large-d1024",
+    "probe_status": "passed",
+    "requested_dimension": 1024,
+    "actual_dimension": 1024
+  },
+  "ragflow_log_evidence": {
+    "container_name": "ragflow-swap-bench-20260823-ragflow-cpu-1",
+    "container_id": "46cf3c1073f6d566310006b66acc4330a2ccb6fa91e8811e1d85fa8551cf6967",
+    "image_id": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+    "full_combined_log_sha256": "874c1cccbcc01ce3355504a08e77a9ad9ecec6a865a0d0b70dd9cba631aedd7d",
+    "embedding_alias_event_count": 22,
+    "vector_size_1024_event_count": 27,
+    "content_persisted": false
+  },
+  "final_dataset_preflight": {
+    "documents_expected": 22,
+    "documents_mapped": 22,
+    "documents_done": 22,
+    "chunks": 415,
+    "document_failure_messages": 0,
+    "retrieval_summary_sha256": "de7c14bbc4ce6792894702de6360df2fe339dd1956947199bc167bc292581c8e"
+  },
+  "limitations": [
+    "The source log hash covers the stopped RAGFlow container's combined logs; only non-secret counts and contract values are persisted here.",
+    "This attestation was assembled immediately after execution and is posthoc; the scored retrieval runner labels the proxy fingerprint source as caller_expected."
+  ]
+}

@@ -46,6 +46,8 @@ LARGE_CELL_ID = "openai-text-embedding-3-large-d1024"
 SMALL_CELL_ID = "openai-text-embedding-3-small-d1024"
 BOOTSTRAP_SAMPLES = 10_000
 SIGN_FLIP_SAMPLES = 100_000
+PUBLICATION_GENERATION_MODEL = "gpt-5.6-luna"
+PUBLICATION_JUDGE_MODEL = "gpt-5.4-mini"
 
 # Seven judge dimensions plus seven normalized/citation/retrieval dimensions.
 # Counts are retained only where the producer already defines a per-query
@@ -105,11 +107,52 @@ def _summary(values: Sequence[float]) -> dict[str, Any]:
     }
 
 
+def _sha256_value(value: object, field: str) -> str:
+    digest = str(value or "")
+    if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+        raise MatrixAnalysisError(f"{field} must be a lowercase SHA-256")
+    return digest
+
+
 def _validate_clean_cell(directory: Path) -> dict[str, Any]:
     data = _validate_cell(directory)
     cell_id = str(data["cell"]["cell_id"])
     if cell_id not in {LARGE_CELL_ID, SMALL_CELL_ID}:
         raise MatrixAnalysisError(f"clean pair only accepts large/small d1024 cells: {cell_id}")
+    models = _required_mapping(data["summary"].get("models"), "summary.models")
+    if models.get("generation") != PUBLICATION_GENERATION_MODEL:
+        raise MatrixAnalysisError(
+            f"clean pair generation model must be {PUBLICATION_GENERATION_MODEL}"
+        )
+    if models.get("judge") != PUBLICATION_JUDGE_MODEL:
+        raise MatrixAnalysisError(f"clean pair judge model must be {PUBLICATION_JUDGE_MODEL}")
+    if models.get("generation") == models.get("judge"):
+        raise MatrixAnalysisError("clean pair requires an independent judge model")
+    summary_proxy = _sha256_value(
+        data["summary"].get("proxy_fingerprint_sha256"),
+        "summary.proxy_fingerprint_sha256",
+    )
+    attestation_proxy = _sha256_value(
+        data["attestation"].get("proxy_fingerprint_sha256"),
+        "attestation.proxy_fingerprint_sha256",
+    )
+    if summary_proxy != attestation_proxy:
+        raise MatrixAnalysisError("clean cell proxy fingerprints differ")
+    summary_provenance = _required_mapping(
+        data["summary"].get("runner_provenance"), "summary.runner_provenance"
+    )
+    attestation_provenance = _required_mapping(
+        data["attestation"].get("runner_provenance"), "attestation.runner_provenance"
+    )
+    if summary_provenance != attestation_provenance:
+        raise MatrixAnalysisError("clean cell runner provenance differs")
+    _sha256_value(summary_provenance.get("wrapper_sha256"), "runner wrapper_sha256")
+    _sha256_value(
+        summary_provenance.get("upstream_runner_sha256"), "runner upstream_runner_sha256"
+    )
+    _sha256_value(summary_provenance.get("matrix_sha256"), "runner matrix_sha256")
+    _sha256_value(summary_provenance.get("dataset_sha256"), "runner dataset_sha256")
+    _sha256_value(summary_provenance.get("queries_sha256"), "runner queries_sha256")
     cache = _cache_denominators(
         data["rows"], data["calls"], cache_mode=_cache_mode(data["summary"], data["attestation"])
     )
@@ -145,7 +188,12 @@ def _validate_clean_cell(directory: Path) -> dict[str, Any]:
                 <= 0
             ):
                 raise MatrixAnalysisError(f"clean pair {query_id} has zero {endpoint} usage")
-    return {**data, "cache": cache}
+    return {
+        **data,
+        "cache": cache,
+        "proxy_fingerprint_sha256": summary_proxy,
+        "provenance": dict(summary_provenance),
+    }
 
 
 def _validate_pair(input_dirs: Sequence[Path]) -> dict[str, dict[str, Any]]:
@@ -164,14 +212,15 @@ def _validate_pair(input_dirs: Sequence[Path]) -> dict[str, dict[str, Any]]:
             raise MatrixAnalysisError(f"clean pair {field} model identity differs")
     large_mode = _cache_mode(large["summary"], large["attestation"])
     small_mode = _cache_mode(small["summary"], small["attestation"])
-    # Unlabelled legacy artifacts are accepted only after the complete-call,
-    # zero-cache validation above; both conditions are then inferred no-cache.
-    if large_mode not in {"unlabelled", "no-cache", "no_cache"} or small_mode not in {
-        "unlabelled",
+    if large_mode not in {"no-cache", "no_cache"} or small_mode not in {
         "no-cache",
         "no_cache",
     }:
         raise MatrixAnalysisError("clean pair cache mode must be no-cache")
+    if large["proxy_fingerprint_sha256"] != small["proxy_fingerprint_sha256"]:
+        raise MatrixAnalysisError("clean pair proxy fingerprint differs")
+    if large["provenance"] != small["provenance"]:
+        raise MatrixAnalysisError("clean pair runner provenance differs")
     if (
         set(large["rows"]) != set(small["rows"])
         or tuple(large["rows"]) != EXPECTED_QUERY_IDS
@@ -183,6 +232,32 @@ def _validate_pair(input_dirs: Sequence[Path]) -> dict[str, dict[str, Any]]:
         for query_id in EXPECTED_QUERY_IDS
     ):
         raise MatrixAnalysisError("clean pair answerable labels differ")
+    for label, data in (("large", large), ("small", small)):
+        for section, name, _direction in QUALITY_METRICS:
+            answerable_only = not (section == "metrics" and name == "abstention_correct")
+            if section == "metrics" and name == "citation_validity":
+                expected = sum(
+                    int(
+                        _required_float(
+                            _required_mapping(row["metrics"], "metrics").get("citation_count"),
+                            "metrics.citation_count",
+                        )
+                        > 0
+                    )
+                    for row in data["rows"].values()
+                    if row["answerable"] is True
+                )
+            else:
+                expected = 60 if answerable_only else 70
+            observations = sum(
+                _metric_value(row, section, name) is not None
+                for row in data["rows"].values()
+                if not answerable_only or row["answerable"] is True
+            )
+            if observations != expected:
+                raise MatrixAnalysisError(
+                    f"{label} {section}.{name} must have {expected} observations, got {observations}"
+                )
     return {"large": large, "small": small}
 
 
@@ -260,7 +335,11 @@ def _paired(
         "metric": f"{section}.{name}",
         "orientation": "large_minus_small",
         "direction": direction,
-        "population": "answerable_only" if answerable_only else "all_70_queries",
+        "population": (
+            "answerable_queries_with_citations_in_both_conditions"
+            if section == "metrics" and name == "citation_validity"
+            else "answerable_only" if answerable_only else "all_70_queries"
+        ),
         "paired_query_count": len(deltas),
         "mean_delta": sum(deltas) / len(deltas) if deltas else None,
         "bootstrap_samples": bootstrap_samples,
@@ -332,11 +411,12 @@ def analyze_clean_pair(
                     for query_id, row in data["rows"].items()
                     if (
                         (
-                            row["answerable"] is True
-                            or not (section == "metrics" and name == "abstention_correct")
+                            name == "abstention_correct"
+                            and section == "metrics"
                         )
-                        and (value := _metric_value(row, section, name)) is not None
+                        or row["answerable"] is True
                     )
+                    and (value := _metric_value(row, section, name)) is not None
                 ]
             )
             for section, name, _direction in QUALITY_METRICS
@@ -360,7 +440,7 @@ def analyze_clean_pair(
             "delta": "large_minus_small",
         },
         "validation": {
-            "cache_identity": "no-cache (explicit or inferred from complete 211-call/no-zero-usage rows)",
+            "cache_identity": "explicit no-cache with complete 211-call/no-zero-usage rows",
             "generation_model_identity": _required_mapping(
                 large["summary"]["models"], "large.models"
             )["generation"],
@@ -368,7 +448,7 @@ def analyze_clean_pair(
                 "judge"
             ],
             "denominator": EXPECTED_DENOMINATOR,
-            "quality_population": "60 answerable queries; abstention_correct uses all 70",
+            "quality_population": "60 answerable queries; abstention_correct uses all 70; citation_validity excludes answers with no citations",
             "latency_population": "70 queries",
         },
         "conditions": {

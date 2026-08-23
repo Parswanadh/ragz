@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "attestation_kind": "posthoc-retrieval-pass-sequence",
+  "queries_per_pass": 70,
+  "cache_reset_between_passes": false,
+  "effective_prior_passes_per_query_before_scored_r3": 3,
+  "sequence": [
+    {
+      "order": 1,
+      "role": "private_qa_context_capture_and_warmup",
+      "rows": 70,
+      "errors": 0,
+      "private_retrieval_sha256": "4f2507e579a0790daab16e420ece4de07c0941a24896376403aea45642db2a6f",
+      "qa_retrieval_input_sha256": "4481918c2ca7dec122be50ad885596be588a95222213d493fdc8b11be891dcd8",
+      "public_content_persisted": false,
+      "metric_status": "not_publication_eligible_stale_private_ndcg_rows",
+      "latency_role": "noncoincident_context_capture_latency_for_qa_composition_only"
+    },
+    {
+      "order": 2,
+      "role": "public_warmup_only",
+      "artifact": "ragflow-open-manuals-large1024-retrieval-20260823-r1",
+      "per_query_sha256": "47a53eb7710b8c8491695467f5af66fda13e5df4492471bd1e5e449f0be23f3d",
+      "summary_sha256": "298afcfe247ffbcd36708b5a37940adcfa3a5dc73d9c75fc353a1ad070bb0d2c"
+    },
+    {
+      "order": 3,
+      "role": "public_warmup_only",
+      "artifact": "ragflow-open-manuals-large1024-retrieval-20260823-r2",
+      "per_query_sha256": "bd9fbd9a57821982daae96f9937199b62f84e436e02c50dc3321fa19fc4b86a7",
+      "summary_sha256": "3223811826cbff4aa7757f835b0c09dbefe3e2779c87bc7b9af2fcdf89597b28"
+    },
+    {
+      "order": 4,
+      "role": "public_scored_retrieval",
+      "artifact": "ragflow-open-manuals-large1024-retrieval-20260823-r3",
+      "manifest_sha256": "5b32c80c8ee3cb5a0c54a5d92b74155a00756feedeb180b4a6b1553fe443e0d2",
+      "per_query_sha256": "97e95bcd3d493f78aa9efbb013a06b6448fb839f3a826901f009afc74bdb176f",
+      "summary_sha256": "de7c14bbc4ce6792894702de6360df2fe339dd1956947199bc167bc292581c8e"
+    }
+  ],
+  "interpretation": {
+    "standalone_retrieval_latency_source": "public scored r3",
+    "qa_context_source": "private pass 1",
+    "qa_combined_latency_status": "estimated_noncoincident_arithmetic_composition",
+    "warning": "The scored r3 runner records the two public warmup artifacts; this attestation additionally discloses the earlier private context-capture pass."
+  }
+}

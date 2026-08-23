@@ -243,6 +243,31 @@ def parse_project_container_ids(text: str) -> tuple[str, ...]:
     return lines
 
 
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _generated_file_provenance(
+    path: Path, *, runtime_mount_path: str | None = None
+) -> dict[str, Any]:
+    """Describe a generated file without persisting a host-specific path.
+
+    ``path`` is used only to read the file.  The manifest records its output
+    directory-relative name and content hash, while ``runtime_mount_path``
+    makes the container-side bind mount explicit for Infinity.
+    """
+    return {
+        "path": path.name,
+        "sha256": _sha256_file(path),
+        "size_bytes": path.stat().st_size,
+        "runtime_mount_path": runtime_mount_path,
+    }
+
+
 def build_config_command(spec: ComposeSpec) -> list[str]:
     return compose_command(spec, "config", "--format", "json")
 
@@ -774,6 +799,131 @@ def _compose_json(runner: CommandRunner, spec: ComposeSpec) -> Mapping[str, Any]
     return value
 
 
+def _service_image(config: Mapping[str, Any], service_name: str) -> str:
+    services = config.get("services")
+    if not isinstance(services, Mapping):
+        raise SmokeError("docker compose config did not contain a services object")
+    service = services.get(service_name)
+    if not isinstance(service, Mapping):
+        raise SmokeError(f"compose service {service_name!r} is missing")
+    image = service.get("image")
+    if not isinstance(image, str) or not image.strip():
+        raise SmokeError(
+            f"compose service {service_name!r} has no resolved image for provenance"
+        )
+    return image.strip()
+
+
+def _parse_image_inspect(text: str) -> tuple[Mapping[str, Any], ...]:
+    rows: list[Mapping[str, Any]] = []
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise SmokeError("docker image inspect did not return valid JSON") from exc
+        if isinstance(value, list):
+            values = value
+        else:
+            values = [value]
+        for item in values:
+            if not isinstance(item, Mapping):
+                raise SmokeError("docker image inspect JSON contained a non-object")
+            rows.append(item)
+    if not rows:
+        raise SmokeError("docker image inspect returned no image metadata")
+    return tuple(rows)
+
+
+def _image_digest(row: Mapping[str, Any]) -> str | None:
+    direct = row.get("Digest")
+    if isinstance(direct, str) and direct:
+        return direct
+    descriptor = row.get("Descriptor")
+    if isinstance(descriptor, Mapping):
+        digest = descriptor.get("digest")
+        if isinstance(digest, str) and digest:
+            return digest
+    repo_digests = row.get("RepoDigests")
+    if isinstance(repo_digests, list):
+        for value in repo_digests:
+            if isinstance(value, str) and "@" in value:
+                return value.rsplit("@", 1)[1]
+    return None
+
+
+def _image_provenance(
+    runner: CommandRunner,
+    spec: ComposeSpec,
+    config: Mapping[str, Any],
+    *,
+    app_service: str,
+    dependencies: Sequence[str],
+) -> list[dict[str, Any]]:
+    """Resolve every image that will execute, before Compose starts anything."""
+    document_service = DOC_ENGINE_SERVICES[spec.doc_engine]
+    service_roles: list[tuple[str, str]] = [("app", app_service)]
+    service_roles.append(("document", document_service))
+    service_roles.extend(
+        ("dependency", name)
+        for name in dependencies
+        if name != document_service
+    )
+
+    images = [_service_image(config, service) for _, service in service_roles]
+    unique_images = tuple(dict.fromkeys(images))
+    inspect_text = runner(
+        docker_command(
+            spec,
+            "image",
+            "inspect",
+            "--format",
+            "{{json .}}",
+            *unique_images,
+        ),
+        spec.checkout,
+    )
+    inspected = _parse_image_inspect(inspect_text)
+    if len(inspected) != len(unique_images):
+        raise SmokeError(
+            "docker image inspect returned metadata for a different number of images"
+        )
+    by_image = dict(zip(unique_images, inspected, strict=True))
+
+    provenance: list[dict[str, Any]] = []
+    for role, service in service_roles:
+        image = _service_image(config, service)
+        row = by_image[image]
+        raw_id = row.get("Id") or row.get("ID")
+        image_id = str(raw_id) if raw_id is not None else None
+        raw_size = row.get("Size")
+        try:
+            size_bytes = int(raw_size) if raw_size is not None else None
+        except (TypeError, ValueError) as exc:
+            raise SmokeError(f"docker image inspect returned invalid size for {image!r}") from exc
+        repo_digests = row.get("RepoDigests")
+        digest_values = (
+            [str(value) for value in repo_digests if isinstance(value, str)]
+            if isinstance(repo_digests, list)
+            else []
+        )
+        provenance.append(
+            {
+                "role": role,
+                "service": service,
+                "image": image,
+                "name": image,
+                "id": image_id,
+                "image_id": image_id,
+                "digest": _image_digest(row),
+                "repo_digests": digest_values,
+                "size_bytes": size_bytes,
+            }
+        )
+    return provenance
+
+
 def _container_snapshot(
     runner: CommandRunner, spec: ComposeSpec
 ) -> tuple[ContainerSample, ...]:
@@ -858,7 +1008,6 @@ def run(
     host_port: int = 18080,
     container_port: int = DEFAULT_CONTAINER_PORT,
     memory_limit_bytes: int = DEFAULT_MEMORY_LIMIT_BYTES,
-    reuse_project: bool = False,
     duration_seconds: float = 30.0,
     sample_interval_seconds: float = DEFAULT_SAMPLE_INTERVAL_SECONDS,
     thresholds: Thresholds | None = None,
@@ -905,7 +1054,7 @@ def run(
     preflight_container_ids = parse_project_container_ids(
         runner(build_project_snapshot_command(spec), spec.checkout)
     )
-    project_collision = bool(preflight_container_ids) and not reuse_project
+    project_collision = bool(preflight_container_ids)
 
     output.mkdir(parents=True)
     baseline_host = sample_host()
@@ -943,12 +1092,7 @@ def run(
         "response_bodies_persisted": False,
         "stack_left_running": None,
         "compose_project": project,
-        "reuse_project": reuse_project,
         "preflight_existing_container_ids": list(preflight_container_ids),
-        "project_reuse": {
-            "enabled": reuse_project,
-            "preflight_existing_container_ids": list(preflight_container_ids),
-        },
         "host_port": host_port,
         "memory_limit_bytes": memory_limit_bytes,
         "thresholds": asdict(thresholds),
@@ -966,11 +1110,10 @@ def run(
             "error_type": "ComposeProjectCollision",
             "error": (
                 f"Compose project {project!r} already owns containers; "
-                "pass --reuse-project only for a known continuation"
+                "use a new dedicated project name; project reuse is refused"
             ),
             "compose_project": project,
             "existing_container_ids": list(preflight_container_ids),
-            "reuse_project": False,
             "provider_calls": 0,
             "credentials_persisted": False,
             "stop_scope": "not_started",
@@ -1000,14 +1143,41 @@ def run(
         selected_services = (*dependencies, app_service)
         spec_override = make_override(spec, app_service, selected_services)
         spec.override_file.write_text(spec_override, encoding="utf-8")
+        generated_files: dict[str, Any] = {
+            "compose_override": _generated_file_provenance(spec.override_file)
+        }
         if doc_engine == "infinity":
-            write_infinity_config(output / "infinity.lowmem.toml")
+            infinity_config = output / "infinity.lowmem.toml"
+            write_infinity_config(infinity_config)
+            generated_files["infinity_config"] = _generated_file_provenance(
+                infinity_config, runtime_mount_path="/infinity_conf.toml"
+            )
+        image_provenance = _image_provenance(
+            runner,
+            spec,
+            config,
+            app_service=app_service,
+            dependencies=dependencies,
+        )
         manifest["app_service"] = app_service
         manifest["dependency_services"] = list(dependencies)
         manifest["document_engine"] = doc_engine
         manifest["selected_services"] = list(selected_services)
+        manifest["generated_files"] = generated_files
+        manifest["image_provenance"] = image_provenance
         _safe_json_write(output / "manifest.json", manifest)
 
+        # The project must remain empty after config generation as well as at
+        # initial preflight.  This closes the race in which another Compose
+        # invocation creates a container before this runner's first ``up``.
+        prestart_container_ids = parse_project_container_ids(
+            runner(build_project_snapshot_command(spec), spec.checkout)
+        )
+        if prestart_container_ids:
+            raise SmokeError(
+                f"Compose project {project!r} acquired containers before start; "
+                "project reuse is refused"
+            )
         project_touched = True
         runner(build_dependency_start_command(spec, dependencies), spec.checkout)
         runner(build_app_start_command(spec, app_service), spec.checkout)
@@ -1105,11 +1275,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--host-port", type=int, default=18080)
     parser.add_argument("--container-port", type=int, default=DEFAULT_CONTAINER_PORT)
     parser.add_argument("--memory-limit-bytes", type=int, default=DEFAULT_MEMORY_LIMIT_BYTES)
-    parser.add_argument(
-        "--reuse-project",
-        action="store_true",
-        help="allow a known continuation of a project that already owns containers",
-    )
     parser.add_argument("--duration-seconds", type=float, default=30.0)
     parser.add_argument(
         "--sample-interval-seconds", type=float, default=DEFAULT_SAMPLE_INTERVAL_SECONDS
@@ -1139,7 +1304,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             host_port=args.host_port,
             container_port=args.container_port,
             memory_limit_bytes=args.memory_limit_bytes,
-            reuse_project=args.reuse_project,
             duration_seconds=args.duration_seconds,
             sample_interval_seconds=args.sample_interval_seconds,
             thresholds=Thresholds(

@@ -12,6 +12,7 @@ from build_networking_anythingllm_dataset import query_rows, segment_id  # noqa:
 from build_networking_benchmark import load_query_set  # noqa: E402
 from run_multi_query_benchmark import (  # noqa: E402
     bootstrap_ci,
+    campaign_code_provenance,
     create_output_directory,
     paired_summary,
     percentile,
@@ -144,6 +145,15 @@ def test_output_directory_must_be_new(tmp_path: Path) -> None:
 
     with pytest.raises(FileExistsError):
         create_output_directory(output)
+
+
+def test_campaign_code_provenance_hashes_untracked_capable_inputs() -> None:
+    provenance = campaign_code_provenance()
+
+    assert len(provenance["aggregate_sha256"]) == 64
+    assert "scripts/run_multi_query_benchmark.py" in provenance["files_sha256"]
+    assert "scripts/embedding_benchmark_matrix.py" in provenance["files_sha256"]
+    assert "src/ragz/modules/retrieval/embeddings.py" in provenance["files_sha256"]
 
 
 def test_embedding_tracks_pin_model_and_dimension() -> None:

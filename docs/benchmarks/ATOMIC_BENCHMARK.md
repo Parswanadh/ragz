@@ -30,7 +30,7 @@ placeholder, while the RAGZ multi row used fixed alternatives. Answer generation
 was not involved in Recall/MRR/nDCG. `gpt-5.6-luna` is the target model for the
 separate answer/live-expansion smokes and future generated-query/answer tracks.
 
-## Same-embedding retrieval result
+## Same-embedding retrieval result (20-page interval qrels)
 
 | System | Recall@5 | MRR@5 | nDCG@5 | p50 | p95 |
 |---|---:|---:|---:|---:|---:|
@@ -41,6 +41,12 @@ separate answer/live-expansion smokes and future generated-query/answer tracks.
 AnythingLLM's Recall lead over RAGZ multi is only `0.0028` absolute. RAGZ
 single leads MRR by `0.0167`. These small differences should not be described
 as a universal product ranking from twelve answerable queries.
+
+These are 20-page-interval metrics, not exact physical-page metrics. The raw
+exact-page small/1,536 parity run reports Recall@20 of `0.446140` (single) and
+`0.484362` (multi). The interval Recall@5 values above (`0.6800` and
+`0.7244`) must not be presented as interchangeable with those exact-page
+values or as a regression between runs.
 
 ## Why AnythingLLM still leads some metrics
 
@@ -135,26 +141,48 @@ OpenAI/provider-network stage is the dominant latency source.
 
 A later run tested all ten valid OpenAI small/large dimension cells with 2,000
 scored atomic embedding requests. It then ran 700 exploratory Open Manuals
-query evaluations and a clean no-cache 70-query pair with Luna generation and
-a separate GPT-5.4-mini judge.
+query evaluations and an attested no-cache 70-query pair with Luna generation
+and a separate GPT-5.4-mini judge.
 
-- Large/1,024 versus small/1,024 retrieval mean: `443.4` versus `445.8 ms`.
-- Required-document hit: `60/60` versus `59/60`.
-- Answerable-query context relevance: `0.9882` versus `0.9618`.
-- Answerable-query correctness: `0.9790` versus `0.9552`.
-- Actual 70-query provider cost: `$0.12545` versus `$0.10299`.
-- No paired quality or latency delta survives Holm correction.
+- Large/1,024 versus small/1,024 retrieval mean: `403.5` versus `387.5 ms`.
+- Required-document hit: `60/60` versus `59/60` (descriptive; 60 answerable
+  queries).
+- Answerable-query context relevance: `0.9812` versus `0.9668`.
+- Answerable-query correctness: `0.9787` versus `0.9547`.
+- Actual 70-query provider cost: `$0.25521` versus `$0.23143`.
+- No paired delta among the tested judge metrics and latency stages survives
+  Holm correction. Required-document hit and abstention F1 are descriptive in
+  this short record; no Holm claim is attached to them. The judge-quality
+  denominator is 60 answerable queries, abstention is evaluated over all 70
+  queries, and citation validity is evaluated over 59 answerable queries with
+  citations in both conditions.
 
-The clean large/1,024 end-to-end mean is `5,543.9 ms`: retrieval is `8.0%`,
-Luna generation `58.8%`, and automated judging `33.2%`. Judge time is not a
+The attested large/1,024 end-to-end mean is `5,228.6 ms`: retrieval is `7.7%`,
+Luna generation `60.2%`, and automated judging `32.0%`. Judge time is not a
 user-facing production layer.
 
+The corresponding AnythingLLM large/1,024 row has 180 document-quality
+observations (60 answerable queries × 3 repetitions) and 210 total latency
+observations. These denominators are separate from RAGZ's 168 exact-page
+quality observations per mode in the networking product run.
+
 The production networking hybrid confirmation produces a different result.
-Across 210 observations per mode, large/1,024 exact-page Recall@5 is `0.2573`
-single and `0.2422` multi, materially below the earlier small/1,536 track.
-Large/1,024 improves MRR/nDCG and latency but is not a safe universal default.
-The Open Manuals qrels are document-level; networking qrels require an exact
-physical page.
+Across 210 observations per mode, with 168 answerable quality observations per
+mode (12 queries × 7 repetitions × 2 orderings), large/1,024 exact-page
+Recall@5 is `0.2573` single and `0.2422` multi. The comparison with
+small/1,536 is descriptive and uncontrolled because model, dimension,
+repetition count, commit state, and metric granularity differ. It cannot
+justify changing the default. The Open Manuals qrels are document-level;
+networking qrels require an exact physical page. A same-commit, same-corpus
+exact-page pair is required.
+
+The r2 pair is attested for no-cache operation, but both manifests record
+commit `5b9241dc7d8a05520b05953dd2a018f49d22830f` with `git_dirty=true`. Its
+dataset, matrix, wrapper, upstream-runner, and shared proxy hashes are recorded
+in the paired analysis. Imported siblings in the dirty, partly untracked
+benchmark-lab tree are not exhaustively hashed, so treat it as source-bound
+dirty-base evidence, not a fully reproducible clean-commit default-selection
+gate.
 
 ## `gpt-5.6-luna` answer-model parity
 
@@ -186,14 +214,16 @@ embedding, Qdrant, text hydration, reranking and final-authorization timings,
 but no AGNO score is included until a clean same-corpus/same-model/same-prompt
 run is frozen.
 
-## RAGFlow attempt and cloud-provider status
+## RAGFlow API-only result and cloud-provider status
 
 ### Self-hosted API-model path
 
-RAGFlow v0.27.0 was configured conceptually for cloud/API models only:
+RAGFlow v0.27.0 was executed with cloud/API models only:
 
-- Embedding: `text-embedding-3-small`
-- Generation/expansion: custom OpenAI-compatible `gpt-5.6-luna` through LiteLLM
+- Embedding: `text-embedding-3-large`, 1,024 dimensions, alias
+  `ragz-openai-text-embedding-3-large-d1024`
+- Generation: custom OpenAI-compatible `gpt-5.6-luna`
+- Judge: separate `gpt-5.4-mini`
 - Local embedding/generation model: none
 
 Two different Docker endpoints were found. Docker Desktop exposes
@@ -202,13 +232,39 @@ Two different Docker endpoints were found. Docker Desktop exposes
 pinned image through `skopeo` after Docker Desktop hit content-store commit
 errors.
 
-On the native daemon, an isolated five-service project was actually started
-under a 3 GB total budget: RAGFlow, reduced-memory Infinity, MySQL, MinIO, and
-Redis. No local model service was started. The guard stopped the project after
-about 15 seconds when the RAGFlow app reached `1,378.7 / 1,379.8 MB` and swap
-grew by `1,415.7 MB`. No container was OOM-killed or restarted. No provider was
-configured, no corpus was ingested, and no score was emitted. The status is
-`runtime_resource_limited`, not failed quality.
+The native daemon ran an isolated RAGFlow/Infinity/MySQL/MinIO/Redis project
+with no local model service. The scored r3 retrieval pass covered 70 queries
+(60 answerable, 10 off-corpus), 22 documents and 415 chunks, with zero errors:
+Recall@5 `0.983333` (59/60), MRR@5 `0.975000`, nDCG@5 `0.977182`; latency mean /
+p50 / p95 / p99 was `467.227 / 419.919 / 593.821 / 1,291.788 ms`. The
+retrieval-threshold abstention F1 was `0` at threshold zero and is not a
+calibrated abstention result.
+
+The separate triad pass scored context relevance `0.9870`, groundedness
+`0.9815`, answer relevance `0.991833`, and citation validity `0.983333` (all
+N=60 answerable). Answer abstention was TP=9, FP=0, FN=1, TN=60,
+F1=`0.947368`. Mean generation and judge stages were `3,254.878 ms` and
+`1,653.819 ms`; estimated arithmetic retrieval+generation was `3,722.106 ms`
+and with judge `5,375.967 ms`, neither measured wall time. QA cost was
+`$0.281858` for answer plus judge only; embedding ingestion/query cost was
+unavailable and excluded.
+
+This was a manually guarded quality run, not a sustained-stability test. A
+22-document concurrent ingestion exposed an Infinity first-table race; 17
+tasks were cancelled, the app was intentionally restarted once, and the
+unfinished documents were indexed sequentially. Final preflight was 22/22
+DONE with zero document failures. The r6 resource artifact is only a
+three-minute smoke. The r3 run's runtime-stop, dataset-vector, and
+measurement-protocol attestations bind the RAGFlow commit/image, embedding
+width, proxy fingerprint, vector count, recovery sequence, and project-scoped
+stop (zero containers left running). r1/r2 are warmup-only invalid provenance;
+r3 had two public warmups plus one private capture pass, with no cache reset.
+
+The user-approved 5 GB-plus-swap smoke used a `5,000,000,000`-byte aggregate
+budget. RAGFlow peaked at `2,260,226,539 / 2,299,954,987` bytes (`98.27%`),
+swap growth peaked at `4,917,555,200` bytes, minimum host `MemAvailable` was
+`824,561,664` bytes, and maximum memory PSI avg10 was `7.79`; sampled OOMs and
+restarts were both zero. These are smoke-only resource measurements.
 
 ### Official RAGFlow Cloud
 
@@ -222,7 +278,8 @@ configured, no corpus was ingested, and no score was emitted. The status is
   services were supplied and RAGFlow's own application/workers are still
   required.
 
-Therefore RAGFlow Cloud is `credential_gated`, not quality-failed and not zero.
+Therefore RAGFlow Cloud remains `credential_gated`, not quality-failed and not
+zero. The completed score above is the native API-only run, not RAGFlow Cloud.
 An authenticated API-enabled account is required before dataset creation,
 model-selection verification, ingestion or retrieval benchmarking. No account
 or paid plan was created.
@@ -243,6 +300,12 @@ or paid plan was created.
   `docs/benchmarks/artifacts/raw/2026-08-23/ragflow-cloud-model-preflight-20260823-ec9c08d-gpt56/`
 - RAGFlow Cloud API preflight:
   `docs/benchmarks/artifacts/raw/2026-08-23/ragflow-cloud-api-preflight-20260823/`
+- RAGFlow scored retrieval and attestations:
+  `docs/benchmarks/artifacts/raw/2026-08-23/ragflow-open-manuals-large1024-retrieval-20260823-r3/`
+- RAGFlow sanitized RAG-Triad:
+  `docs/benchmarks/artifacts/raw/2026-08-23/ragflow-open-manuals-large1024-triad-20260823-r1/`
+- RAGFlow resource smoke:
+  `docs/benchmarks/artifacts/raw/2026-08-23/ragflow-native-daemon-swap-smoke-20260823-r6/`
 - Complete HTML review:
   `docs/benchmarks/2026-08-22-complete-rag-review.html`
 - Professional embedding/RAG-Triad/RAGFlow report:
@@ -250,9 +313,11 @@ or paid plan was created.
 - Atomic ten-cell endpoint matrix:
   `docs/benchmarks/artifacts/raw/2026-08-23/openai-embedding-atomic-matrix-20260823-r1/`
 - Clean no-cache publication cells:
-  `docs/benchmarks/artifacts/raw/2026-08-23/open-manuals-publication-*-1024-nocache-gpt54judge-20260823-r1/`
+  `docs/benchmarks/artifacts/raw/2026-08-23/open-manuals-publication-large-1024-nocache-gpt54judge-20260823-r2/`
+  and
+  `docs/benchmarks/artifacts/raw/2026-08-23/open-manuals-publication-small-1024-nocache-gpt54judge-20260823-r2/`
 - Clean-pair statistics:
-  `docs/benchmarks/artifacts/2026-08-23-open-manuals-clean-pair-analysis.md`
+  `docs/benchmarks/artifacts/2026-08-23-open-manuals-clean-pair-analysis-r2.md`
 - RAGZ large/1,024 product confirmations:
   `docs/benchmarks/artifacts/raw/2026-08-23/ragz-networking-large1024-product-atomic-20260823-r1/`
   and `...-r2/`

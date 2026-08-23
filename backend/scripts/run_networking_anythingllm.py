@@ -19,6 +19,7 @@ import socket
 import statistics
 import subprocess
 import time
+from collections import Counter
 from collections.abc import Iterator, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -120,6 +121,37 @@ def summarize(records: list[dict[str, Any]], *, top_k: int) -> dict[str, Any]:
             "p99": percentile(latencies, 0.99),
         },
     }
+
+
+def validate_query_grid(
+    records: Sequence[Mapping[str, Any]],
+    queries: Sequence[Mapping[str, Any]],
+    repetitions: int,
+) -> None:
+    """Require the complete query-by-repetition population before scoring.
+
+    A partially populated run (or one containing a failed retrieval) is not a
+    benchmark result. Counter-based comparison also handles malformed input
+    with duplicate query IDs without silently collapsing the denominator.
+    """
+
+    if repetitions < 1:
+        raise ValueError("repetitions must be positive")
+    try:
+        expected = Counter(
+            (str(query["query_id"]), repetition)
+            for query in queries
+            for repetition in range(1, repetitions + 1)
+        )
+        actual = Counter(
+            (str(record["query_id"]), int(record["repetition"])) for record in records
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("query/repetition grid contains malformed records") from exc
+    if actual != expected:
+        raise ValueError("query/repetition grid is incomplete or duplicated")
+    if any(record.get("error") is not None for record in records):
+        raise ValueError("query/repetition grid contains failed retrievals")
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -394,16 +426,10 @@ def embedding_attestation(
         actual = match.get("actual_width")
     if actual is None:
         actual = match.get("vector_dimension")
-    # The endpoint probe's dimension is the observed response width; matrix
-    # records may also expose it as ``dimension``.
-    if actual is None and "cells" not in payload:
-        actual = match.get("dimension")
-    if actual is None and "cells" in payload:
-        status = str(match.get("probe_status") or match.get("status") or "").lower()
-        if status in {"passed", "completed", "attested", "post_run_attested"}:
-            actual = match.get("dimension") or match.get("expected_dimension")
     if actual is None:
-        raise ValueError("embedding width attestation has no actual vector width")
+        raise ValueError(
+            "embedding width attestation has no explicit measured actual vector width"
+        )
     try:
         actual_dimension = int(actual)
     except (TypeError, ValueError) as exc:
@@ -414,12 +440,12 @@ def embedding_attestation(
             f"expected {dimension}"
         )
     status = str(match.get("probe_status") or match.get("status") or "").lower()
-    if status and status not in {"passed", "completed", "attested", "post_run_attested"}:
+    if status not in {"passed", "completed", "attested", "post_run_attested"}:
         raise ValueError("embedding width attestation is not successful")
     attested_proxy = match.get("embedding_proxy_fingerprint_sha256") or match.get(
         "proxy_fingerprint_sha256"
     )
-    if attested_proxy is not None and attested_proxy != proxy_fingerprint:
+    if attested_proxy != proxy_fingerprint:
         raise ValueError("embedding width attestation proxy fingerprint does not match")
     return {
         "artifact": str(path),
@@ -745,6 +771,9 @@ async def run(args: argparse.Namespace) -> Path:
             memory = _memory_bytes(container)
             if memory is not None:
                 memory_samples.append(memory)
+        # Do not emit quality metrics for a partial or error-containing
+        # population: those observations cannot support a reliable benchmark.
+        validate_query_grid(records, queries, args.repetitions)
         summary = summarize(records, top_k=args.top_k)
         summary["indexing_ms"] = indexing_ms
         summary["peak_container_memory_bytes"] = max(memory_samples, default=None)

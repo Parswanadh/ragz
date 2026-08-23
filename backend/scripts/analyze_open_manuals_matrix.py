@@ -184,6 +184,21 @@ def _required_float(value: object, label: str) -> float:
     return result
 
 
+def _validate_usage(value: object, label: str) -> dict[str, int]:
+    usage = _required_mapping(value, label)
+    result: dict[str, int] = {}
+    for name in ("input_tokens", "cached_input_tokens", "output_tokens"):
+        parsed = _required_int(usage.get(name), f"{label}.{name}")
+        if parsed < 0:
+            raise MatrixAnalysisError(f"{label}.{name} must be non-negative")
+        result[name] = parsed
+    if result["cached_input_tokens"] > result["input_tokens"]:
+        raise MatrixAnalysisError(f"{label}.cached_input_tokens exceeds input_tokens")
+    if sum(result.values()) <= 0:
+        raise MatrixAnalysisError(f"{label} must be non-zero")
+    return result
+
+
 def _percentile(values: Sequence[float], quantile: float) -> float | None:
     if not values:
         return None
@@ -255,6 +270,56 @@ def _validate_rows(rows: Sequence[Mapping[str, Any]], label: str) -> dict[str, M
     return result
 
 
+def _declared_models(
+    summary: Mapping[str, Any], attestation: Mapping[str, Any], cell: Mapping[str, Any]
+) -> dict[str, str]:
+    """Return the cell's declared provider model policy.
+
+    The exploratory matrix intentionally supports a self-evaluation track.  In
+    that track the judge may be the same model as generation (for example
+    ``gpt-5.6-luna``), so the policy is read from the artifacts instead of
+    being compared with the clean-pair analyzer's fixed model constants.
+    """
+
+    declared: list[dict[str, str]] = []
+    for artifact, label in ((summary, "summary.models"), (attestation, "attestation.models")):
+        value = artifact.get("models")
+        if value is None:
+            continue
+        models = _required_mapping(value, label)
+        normalized = {name: str(models.get(name, "")).strip() for name in (
+            "embedding_alias",
+            "generation",
+            "judge",
+        )}
+        if any(not model for model in normalized.values()):
+            raise MatrixAnalysisError(f"{label} must declare embedding, generation, and judge models")
+        declared.append(normalized)
+    if not declared:
+        raise MatrixAnalysisError("matrix cell has no declared model policy")
+    if any(policy != declared[0] for policy in declared[1:]):
+        raise MatrixAnalysisError("summary and attestation model policies differ")
+    policy = declared[0]
+    if policy["embedding_alias"] != cell["alias"]:
+        raise MatrixAnalysisError("declared embedding alias does not match cell")
+    return policy
+
+
+def _model_policy_label(summary: Mapping[str, Any], attestation: Mapping[str, Any]) -> str:
+    """Read the optional evaluation-policy label for reporting/validation."""
+
+    for artifact in (summary, attestation):
+        for key in ("judge_independence", "model_policy", "evaluation_policy"):
+            value = artifact.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip().lower()
+            if isinstance(value, Mapping):
+                label = value.get("judge_independence") or value.get("label") or value.get("mode")
+                if isinstance(label, str) and label.strip():
+                    return label.strip().lower()
+    return "unlabelled"
+
+
 def _validate_cell(directory: Path) -> dict[str, Any]:
     if not directory.is_dir():
         raise MatrixAnalysisError(f"input is not a directory: {directory}")
@@ -271,7 +336,17 @@ def _validate_cell(directory: Path) -> dict[str, Any]:
         raise MatrixAnalysisError(f"unsupported attestation schema in {directory}")
     if summary.get("status") != "completed" or attestation.get("status") != "completed":
         raise MatrixAnalysisError(f"cell is not completed: {directory}")
+    cache_mode = _cache_mode(summary, attestation)
+    if cache_mode not in {
+        "no-cache",
+        "no_cache",
+        "shared-cache",
+        "shared-cache-exploratory",
+        "legacy-unlabelled",
+    }:
+        raise MatrixAnalysisError(f"cell cache mode is invalid: {directory}")
     cell = _cell_from_summary(summary)
+    models = _declared_models(summary, attestation, cell)
     att_cell = _required_mapping(attestation.get("cell"), "attestation.cell")
     if {
         "cell_id": str(att_cell.get("cell_id")),
@@ -295,9 +370,7 @@ def _validate_cell(directory: Path) -> dict[str, Any]:
         if endpoint_type not in {"embedding", "generation", "judge"}:
             raise MatrixAnalysisError(f"provider call {index} has an unknown endpoint type")
         usage = _required_mapping(call.get("usage"), f"provider call {index}.usage")
-        for key in ("input_tokens", "cached_input_tokens", "output_tokens"):
-            if _required_int(usage.get(key, 0), f"provider call {index}.usage.{key}") < 0:
-                raise MatrixAnalysisError(f"provider call {index} has negative usage")
+        _validate_usage(usage, f"provider call {index}.usage")
         if endpoint_type == "embedding":
             if str(call.get("model")) != cell["alias"]:
                 raise MatrixAnalysisError(
@@ -309,6 +382,10 @@ def _validate_cell(directory: Path) -> dict[str, Any]:
             )
             if observed != cell["dimension"]:
                 raise MatrixAnalysisError(f"provider call {index} has unexpected embedding width")
+        elif endpoint_type == "generation" and str(call.get("model")) != models["generation"]:
+            raise MatrixAnalysisError(f"provider call {index} generation model is invalid")
+        elif endpoint_type == "judge" and str(call.get("model")) != models["judge"]:
+            raise MatrixAnalysisError(f"provider call {index} judge model is invalid")
     if summary.get("provider_calls") != len(calls) or attestation.get("provider_calls") != len(
         calls
     ):
@@ -355,6 +432,8 @@ def _validate_cell(directory: Path) -> dict[str, Any]:
         "calls": calls,
         "summary": summary,
         "attestation": attestation,
+        "models": models,
+        "model_policy": _model_policy_label(summary, attestation),
     }
 
 
@@ -640,7 +719,13 @@ def _usage_is_zero(row: Mapping[str, Any], endpoint: str) -> bool:
 
 
 def _cache_mode(summary: Mapping[str, Any], attestation: Mapping[str, Any] | None = None) -> str:
-    """Read an optional producer cache label without inventing one."""
+    """Read a producer cache label, retaining a legacy artifact category.
+
+    The first exploratory matrix predates the cache/provenance fields and is
+    already checked in.  It is intentionally treated as legacy exploratory
+    evidence; the clean-pair analyzer remains strict about explicit no-cache
+    labeling.
+    """
 
     for artifact in (summary, attestation or {}):
         direct = artifact.get("cache_mode")
@@ -651,7 +736,7 @@ def _cache_mode(summary: Mapping[str, Any], attestation: Mapping[str, Any] | Non
             mode = cache.get("mode")
             if isinstance(mode, str) and mode.strip():
                 return mode.strip().lower()
-    return "unlabelled"
+    return "legacy-unlabelled"
 
 
 def _row_is_cached(row: Mapping[str, Any]) -> bool:

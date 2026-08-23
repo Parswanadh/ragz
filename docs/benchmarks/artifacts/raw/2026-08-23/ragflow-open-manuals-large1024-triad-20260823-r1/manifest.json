@@ -1,0 +1,64 @@
+{
+  "artifact": "private-ragflow-triad-sanitized-export",
+  "denominator": {
+    "answerable": 60,
+    "errors": 0,
+    "off_corpus": 10,
+    "total": 70
+  },
+  "output_integrity": {
+    "per_query_sha256": "da196fd109d4a89051e86d2eb44db1b2eb390177f90330bc06abb960f79e5c83",
+    "summary_sha256": "d308a7cfda5d76f90695a380895c5a138ba971b4582020e26519501cd900a442"
+  },
+  "privacy": {
+    "queries_context_answers_references_explanations_source_text_auth_and_dataset_ids": "excluded"
+  },
+  "provenance": {
+    "attestation_sha256": {
+      "dataset_vector": "6c9591b79128ee6205c172ef5376c76cc0f2b33a740b1233d4135dc8b3018efe",
+      "embedding_preflight": "9cf51658f343701b36b9196b5067ae849d915e3342ed87580f55558b6fe7a224",
+      "measurement_protocol": "7892a0e25aa61b017511cd083e936d0ceb8f588cb51d9b2173c0ac08a48fb2dd",
+      "runtime_stop": "2242dd1462021646128d6b049feb8dc0a40c0928b6735921ebbac465fb063f60"
+    },
+    "chunks": 415,
+    "documents": 22,
+    "embedding_alias": "ragz-openai-text-embedding-3-large-d1024",
+    "generation_model": "gpt-5.6-luna",
+    "ingestion_concurrency_race": "observed",
+    "intentional_app_recovery": true,
+    "judge_model": "gpt-5.4-mini",
+    "proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+    "ragflow_commit": "ec9c08d809f63ba2815090182fa225899d2437d5",
+    "ragflow_image": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+    "ragflow_version": "v0.27.0",
+    "retrieval_manifest_sha256": "5b32c80c8ee3cb5a0c54a5d92b74155a00756feedeb180b4a6b1553fe443e0d2",
+    "runtime_manifest_sha256": "0a1e6c335a6896d778c5cd0a9c1cba1836bc85112702a2b2a74dae8a31e1b2b1"
+  },
+  "schema_version": 1,
+  "sha256": {
+    "analyzer": "17c91d43c0163ae430efffb5ef521f570a83df98b1181afe9ff4b26b8707faef",
+    "dataset_vector_attestation": "6c9591b79128ee6205c172ef5376c76cc0f2b33a740b1233d4135dc8b3018efe",
+    "embedding_preflight_manifest": "9cf51658f343701b36b9196b5067ae849d915e3342ed87580f55558b6fe7a224",
+    "measurement_protocol_attestation": "7892a0e25aa61b017511cd083e936d0ceb8f588cb51d9b2173c0ac08a48fb2dd",
+    "per_query_sha256": "da196fd109d4a89051e86d2eb44db1b2eb390177f90330bc06abb960f79e5c83",
+    "public_r1_manifest": "135829ee538c748010ae251a513deeaf6417f4572e53345a3a3722694b92b028",
+    "public_r1_per_query": "47a53eb7710b8c8491695467f5af66fda13e5df4492471bd1e5e449f0be23f3d",
+    "public_r1_summary": "298afcfe247ffbcd36708b5a37940adcfa3a5dc73d9c75fc353a1ad070bb0d2c",
+    "public_r2_manifest": "2ca1dddcc343e8d7606f2eab1d1ea19a2a6bcf28a60edf4c60331995d12033b7",
+    "public_r2_per_query": "bd9fbd9a57821982daae96f9937199b62f84e436e02c50dc3321fa19fc4b86a7",
+    "public_r2_summary": "3223811826cbff4aa7757f835b0c09dbefe3e2779c87bc7b9af2fcdf89597b28",
+    "public_retrieval_manifest": "5b32c80c8ee3cb5a0c54a5d92b74155a00756feedeb180b4a6b1553fe443e0d2",
+    "public_retrieval_per_query": "97e95bcd3d493f78aa9efbb013a06b6448fb839f3a826901f009afc74bdb176f",
+    "public_retrieval_summary": "de7c14bbc4ce6792894702de6360df2fe339dd1956947199bc167bc292581c8e",
+    "qa_cost_ledger_jsonl": "1f4c839f42f0aab6df96101321a7f0aab047a3f0df3902412a60fb925672b58e",
+    "qa_manifest_json": "f93309d19a0011d40ab2f668737d3124523f8a435a031ce464b05ffea952f9e6",
+    "qa_per_query_jsonl": "95739bf43105c4a741c762b207df73ebad39b674a6d211b8e9c2d7c1579507fb",
+    "qa_summary_json": "d97335ed57f82042a68d9971e0f26db00ff1439f2a3f1f06b466d49e179b781d",
+    "qrels": "1a7234837da6f2578421e9d0130ef21900ac61ca24a47c91e0c6edb3fc8f248d",
+    "retrieval_jsonl": "4f2507e579a0790daab16e420ece4de07c0941a24896376403aea45642db2a6f",
+    "runtime_manifest": "0a1e6c335a6896d778c5cd0a9c1cba1836bc85112702a2b2a74dae8a31e1b2b1",
+    "runtime_stop_attestation": "2242dd1462021646128d6b049feb8dc0a40c0928b6735921ebbac465fb063f60",
+    "summary_sha256": "d308a7cfda5d76f90695a380895c5a138ba971b4582020e26519501cd900a442"
+  },
+  "status": "completed"
+}

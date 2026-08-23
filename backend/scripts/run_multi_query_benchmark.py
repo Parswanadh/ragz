@@ -59,6 +59,28 @@ class BenchmarkProgress:
     query_embedding_attempts: int = 0
 
 
+def campaign_code_provenance() -> dict[str, object]:
+    """Hash every campaign implementation file, including files untracked at HEAD."""
+    backend = Path(__file__).resolve().parents[1]
+    files = (
+        Path(__file__).resolve(),
+        backend / "scripts" / "build_networking_benchmark.py",
+        backend / "scripts" / "embedding_benchmark_matrix.py",
+        backend / "src" / "ragz" / "modules" / "documents" / "pipeline.py",
+        backend / "src" / "ragz" / "modules" / "retrieval" / "embeddings.py",
+        backend / "src" / "ragz" / "modules" / "retrieval" / "query_expansion.py",
+        backend / "src" / "ragz" / "modules" / "retrieval" / "service.py",
+    )
+    hashes = {
+        str(path.relative_to(backend)): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in files
+    }
+    aggregate = hashlib.sha256(
+        json.dumps(hashes, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    return {"aggregate_sha256": aggregate, "files_sha256": hashes}
+
+
 def write_progress(output: Path, progress: BenchmarkProgress) -> None:
     (output / "progress.json").write_text(
         json.dumps(
@@ -869,6 +891,7 @@ async def run(args: argparse.Namespace) -> None:
             "git_commit": git_commit,
             "git_dirty": bool(git_status),
             "tracked_diff_sha256": hashlib.sha256(tracked_diff).hexdigest(),
+            "campaign_code_provenance": campaign_code_provenance(),
             "python_version": platform.python_version(),
             "tool_versions": {
                 "liteparse": importlib.metadata.version("liteparse"),

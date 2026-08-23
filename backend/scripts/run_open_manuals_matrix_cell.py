@@ -16,6 +16,7 @@ import importlib.util
 import json
 import math
 import statistics
+import subprocess
 import sys
 import time
 from collections import Counter
@@ -50,6 +51,7 @@ JUDGE_OUTPUT_PRICE = Decimal("4.50")
 CacheMode = Literal["no-cache", "shared-cache-exploratory"]
 EXPECTED_QUERY_IDS = tuple(f"q{index:03d}" for index in range(1, 71))
 RETRY_STATUSES = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
+PROXY_FINGERPRINT_LENGTH = 64
 
 
 class CellRunError(RuntimeError):
@@ -119,6 +121,67 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _git_identity(path: Path) -> dict[str, object]:
+    """Return non-secret repository identity for a source file."""
+
+    try:
+        root = subprocess.run(  # noqa: S603, S607
+            ["git", "-C", str(path.parent), "rev-parse", "--show-toplevel"],  # noqa: S607
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        commit = subprocess.run(  # noqa: S603, S607
+            ["git", "-C", root, "rev-parse", "HEAD"],  # noqa: S607
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        dirty = bool(
+            subprocess.run(  # noqa: S603, S607
+                ["git", "-C", root, "status", "--porcelain", "--untracked-files=all"],  # noqa: S607
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+        )
+    except (OSError, subprocess.CalledProcessError):
+        raise CellRunError(f"unable to determine git provenance for {path}") from None
+    if len(commit) != 40 or any(character not in "0123456789abcdef" for character in commit):
+        raise CellRunError(f"invalid git commit provenance for {path}")
+    return {"commit": commit, "dirty": dirty}
+
+
+def _runner_provenance(
+    runner: ModuleType, dataset_dir: Path, queries_path: Path
+) -> dict[str, object]:
+    upstream_path = Path(str(getattr(runner, "__file__", DEFAULT_RUNNER))).resolve()
+    matrix_path = SCRIPT_DIR / "embedding_benchmark_matrix.py"
+    hashes = {
+        "wrapper": _sha256(Path(__file__).resolve()),
+        "upstream_runner": _sha256(upstream_path),
+        "matrix": _sha256(matrix_path),
+        "dataset": _sha256(dataset_dir / "documents.jsonl"),
+        "queries": _sha256(queries_path),
+    }
+    wrapper_git = _git_identity(Path(__file__).resolve())
+    upstream_git = _git_identity(upstream_path)
+    return {
+        "git": wrapper_git,
+        "upstream_git": upstream_git,
+        # These aliases make the provenance self-describing for consumers
+        # that only need the wrapper repository identity.
+        "git_commit": wrapper_git["commit"],
+        "git_dirty": wrapper_git["dirty"],
+        "hashes": hashes,
+        "wrapper_sha256": hashes["wrapper"],
+        "upstream_runner_sha256": hashes["upstream_runner"],
+        "matrix_sha256": hashes["matrix"],
+        "dataset_sha256": hashes["dataset"],
+        "queries_sha256": hashes["queries"],
+    }
+
+
 def _percentile(values: Sequence[float], quantile: float) -> float | None:
     if not values:
         return None
@@ -160,6 +223,70 @@ def _usage_dict(usage: object) -> dict[str, int]:
             "output_tokens": max(0, int(usage.get("output_tokens", 0) or 0)),
         }
     return {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0}
+
+
+def _validate_proxy_fingerprint(value: str) -> str:
+    fingerprint = str(value or "")
+    if (
+        len(fingerprint) != PROXY_FINGERPRINT_LENGTH
+        or any(character not in "0123456789abcdef" for character in fingerprint)
+    ):
+        raise ContractError("proxy fingerprint must be a lowercase SHA-256")
+    return fingerprint
+
+
+def _strict_usage(
+    runner: ModuleType, payload: Mapping[str, Any], endpoint_type: str
+) -> dict[str, int]:
+    """Normalize provider usage and reject unmetered calls.
+
+    A missing usage block is not equivalent to a free call for publication
+    benchmarks.  LiteLLM/OpenAI variants use either ``input_tokens`` or the
+    legacy ``prompt_tokens``/``total_tokens`` names, so those aliases are
+    accepted, but all values must be finite non-negative integers and the
+    normalized total must be positive for every endpoint.
+    """
+
+    raw = payload.get("usage")
+    if not isinstance(raw, Mapping):
+        raise ContractError(f"{endpoint_type} provider usage is missing or malformed")
+    normalized = dict(raw)
+    if "input_tokens" not in normalized:
+        normalized["input_tokens"] = normalized.get(
+            "prompt_tokens", normalized.get("total_tokens")
+        )
+    if "output_tokens" not in normalized:
+        normalized["output_tokens"] = normalized.get("completion_tokens", 0)
+    if normalized.get("input_tokens") is None:
+        raise ContractError(f"{endpoint_type} provider usage is missing input tokens")
+    if normalized.get("cached_input_tokens") is None:
+        normalized["cached_input_tokens"] = 0
+    values: dict[str, int] = {}
+    for name in ("input_tokens", "cached_input_tokens", "output_tokens"):
+        value = normalized.get(name)
+        if value is None or isinstance(value, bool):
+            raise ContractError(f"{endpoint_type} provider usage is malformed")
+        try:
+            integer = int(value)
+        except (TypeError, ValueError):
+            raise ContractError(f"{endpoint_type} provider usage is malformed") from None
+        if str(value).strip() != str(integer) or integer < 0:
+            raise ContractError(f"{endpoint_type} provider usage is malformed")
+        values[name] = integer
+    if values["cached_input_tokens"] > values["input_tokens"]:
+        raise ContractError(f"{endpoint_type} provider usage is malformed")
+    if sum(values.values()) <= 0:
+        raise ContractError(f"{endpoint_type} provider usage is zero")
+    # Keep the runner's parser in the validation path: an incompatible parser
+    # must fail closed instead of producing a misleading zero-cost record.
+    try:
+        parsed = runner.parse_usage(values)
+        parsed_values = _usage_dict(parsed)
+    except Exception as exc:  # noqa: BLE001 - map provider/parser shape only
+        raise ContractError(f"{endpoint_type} provider usage is malformed") from exc
+    if parsed_values != values or sum(parsed_values.values()) <= 0:
+        raise ContractError(f"{endpoint_type} provider usage is malformed")
+    return values
 
 
 def _parse_litellm_usage(runner: ModuleType, payload: Mapping[str, Any]) -> object:
@@ -227,6 +354,18 @@ class LiteLLMClient:
         input_count: int,
         payload: Mapping[str, object],
     ) -> tuple[Mapping[str, Any], int]:
+        expected_endpoint = {
+            "embedding": "embeddings",
+            "generation": "responses",
+            "judge": "responses",
+        }.get(endpoint_type)
+        expected_model = {
+            "embedding": self.embedding_alias,
+            "generation": self.generation_model,
+            "judge": self.judge_model,
+        }.get(endpoint_type)
+        if expected_endpoint is None or endpoint != expected_endpoint or model != expected_model:
+            raise ContractError("provider endpoint/model pair contract mismatch")
         path = self._path(endpoint)
         started = time.perf_counter()
         retries = 0
@@ -269,7 +408,14 @@ class LiteLLMClient:
         except httpx.HTTPError:
             error_code = "provider_transport"
         elapsed = (time.perf_counter() - started) * 1000
-        usage = _usage_dict(_parse_litellm_usage(self.runner, body or {}))
+        usage = {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0}
+        usage_error: ContractError | None = None
+        if body is not None:
+            try:
+                usage = _strict_usage(self.runner, body, endpoint_type)
+            except ContractError as exc:
+                usage_error = exc
+                error_code = "usage_contract"
         call = ProviderCall(
             sequence=len(self.calls) + 1,
             endpoint_type=endpoint_type,
@@ -285,6 +431,8 @@ class LiteLLMClient:
         self.calls.append(call)
         if body is None:
             raise CellRunError(error_code or "provider_request_failed")
+        if usage_error is not None:
+            raise usage_error
         # request_id is deliberately not emitted; retaining it in memory only
         # is useful when debugging an active process and cannot leak it.
         _ = request_id, status_code
@@ -328,13 +476,16 @@ class LiteLLMClient:
         schema: Mapping[str, Any],
         max_output_tokens: int,
     ) -> object:
-        expected_model = self.judge_model if name == "rag_judge" else self.generation_model
+        if name == "rag_judge":
+            endpoint_type = "judge"
+            expected_model = self.judge_model
+        elif name == "rag_answer":
+            endpoint_type = "generation"
+            expected_model = self.generation_model
+        else:
+            raise ContractError("unknown response endpoint name")
         if model != expected_model:
             raise ContractError("generation/judge model contract mismatch")
-        endpoint_type = (
-            "judge" if name == "rag_judge"
-            else "generation" if name == "rag_answer" else "response"
-        )
         payload = {
             "model": expected_model,
             "store": False,
@@ -355,7 +506,7 @@ class LiteLLMClient:
         body, _ = self._request(
             endpoint_type=endpoint_type,
             endpoint="responses",
-            model=self.generation_model,
+            model=expected_model,
             input_count=1,
             payload=payload,
         )
@@ -672,6 +823,7 @@ def run_cell(
     top_k: int = 5,
     chunk_size: int = 2000,
     overlap: int = 300,
+    proxy_fingerprint: str | None = None,
 ) -> dict[str, object]:
     """Execute one matrix cell and emit only privacy-safe public artifacts."""
 
@@ -680,8 +832,9 @@ def run_cell(
     )
     cell = matrix.cell_for(model, dimension)
     cache_mode = _validate_cache_mode(cache_mode)
-    if not judge_model.strip():
-        raise ContractError("judge model must not be empty")
+    if judge_model != JUDGE_MODEL:
+        raise ContractError(f"judge model must be the expected publication model {JUDGE_MODEL}")
+    proxy_fingerprint = _validate_proxy_fingerprint(proxy_fingerprint or "")
     dataset_dir = dataset_dir.resolve()
     queries_path = queries_path.resolve()
     private_work_dir = private_work_dir.resolve()
@@ -710,6 +863,7 @@ def run_cell(
     documents = runner.read_jsonl(dataset_dir / "documents.jsonl")
     cases = runner.load_queries(queries_path, documents)
     denominator = _validate_query_denominator(cases)
+    provenance = _runner_provenance(runner, dataset_dir, queries_path)
     values = runner.merge_non_secret_defaults(dict(env_values))
     values.update({
         "OPENAI_API_KEY": "proxy-key-configured",
@@ -793,20 +947,46 @@ def run_cell(
     if errors:
         raise ContractError("benchmark produced non-zero mapped query errors")
     source_manifest = source_summary.get("manifest")
-    if isinstance(source_manifest, Mapping):
-        models = source_manifest.get("models")
-        if isinstance(models, Mapping) and (
-            models.get("embedding") != cell.alias
-            or models.get("generation") != GENERATION_MODEL
-            or models.get("judge") != judge_model
-        ):
-            raise ContractError("target runner model contract does not match matrix cell")
+    if not isinstance(source_manifest, Mapping):
+        raise ContractError("target runner manifest is missing")
+    models = source_manifest.get("models")
+    if not isinstance(models, Mapping) or (
+        models.get("embedding") != cell.alias
+        or models.get("generation") != GENERATION_MODEL
+        or models.get("judge") != judge_model
+    ):
+        raise ContractError("target runner model contract does not match matrix cell")
     sanitized = [_sanitize_row(row) for row in raw_rows]
     client_calls = getattr(client, "calls", [])
     public_calls = [
         call.as_dict() if hasattr(call, "as_dict") else dict(call)
         for call in client_calls
     ]
+    for index, call in enumerate(public_calls, 1):
+        endpoint_type = str(call.get("endpoint_type", ""))
+        expected_model = {
+            "embedding": cell.alias,
+            "generation": GENERATION_MODEL,
+            "judge": judge_model,
+        }.get(endpoint_type)
+        if expected_model is None:
+            raise ContractError(f"provider call {index} has an unknown endpoint type")
+        expected_endpoint = "embeddings" if endpoint_type == "embedding" else "responses"
+        if str(call.get("endpoint", "")).rstrip("/").split("/")[-1] != expected_endpoint:
+            raise ContractError(f"provider call {index} endpoint does not match endpoint type")
+        if call.get("model") != expected_model:
+            raise ContractError(f"provider call {index} model does not match endpoint type")
+        usage = call.get("usage")
+        if not isinstance(usage, Mapping):
+            raise ContractError(f"provider call {index} usage is missing")
+        usage_values = []
+        for name in ("input_tokens", "cached_input_tokens", "output_tokens"):
+            value = usage.get(name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise ContractError(f"provider call {index} usage is malformed")
+            usage_values.append(value)
+        if usage_values[1] > usage_values[0] or sum(usage_values) <= 0:
+            raise ContractError(f"provider call {index} usage is zero or malformed")
     observed_dimensions = sorted(
         {
             int(call["actual_vector_dimension"])
@@ -816,6 +996,18 @@ def run_cell(
     )
     if observed_dimensions and observed_dimensions != [cell.dimension]:
         raise ContractError("provider telemetry observed an unexpected embedding width")
+    if cache_mode == "no-cache":
+        expected_call_counts = {"embedding": 71, "generation": 70, "judge": 70}
+        actual_call_counts = Counter(str(call.get("endpoint_type")) for call in public_calls)
+        if any(
+            actual_call_counts[name] != expected
+            for name, expected in expected_call_counts.items()
+        ):
+            raise ContractError(
+                "no-cache benchmark did not produce the complete endpoint denominator"
+            )
+        if observed_dimensions != [cell.dimension]:
+            raise ContractError("no-cache benchmark has no observed embedding width")
     source_accounting = source_summary.get("accounting")
     source_accounting = source_accounting if isinstance(source_accounting, Mapping) else {}
     source_cache_hits = source_accounting.get("cache_hits")
@@ -894,6 +1086,8 @@ def run_cell(
             "hard_budget_usd": str(budget_cap),
         },
         "cache": cache_summary,
+        "proxy_fingerprint_sha256": proxy_fingerprint,
+        "runner_provenance": provenance,
         "latency": {
             "query_timings": {
                 "population": "all_query_rows",
@@ -935,6 +1129,7 @@ def run_cell(
         "created_at_utc": datetime.now(UTC).isoformat(),
         "status": "completed",
         "cell": summary["cell"],
+        "models": summary["models"],
         "alias_contract": {
             "alias": cell.alias,
             "underlying_model": model,
@@ -946,6 +1141,8 @@ def run_cell(
         "judge_independence": summary["judge_independence"],
         "rag_triad": summary["rag_triad"],
         "cache": summary["cache"],
+        "proxy_fingerprint_sha256": proxy_fingerprint,
+        "runner_provenance": provenance,
         "provider_calls": len(public_calls),
         "error_count": 0,
         "artifacts_sha256": {"per_query": rows_hash, "provider_calls": calls_hash},
@@ -977,6 +1174,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--judge-model",
         default=JUDGE_MODEL,
+        choices=(JUDGE_MODEL,),
         help="judge model; defaults to a separate gpt-5.4-mini publication judge",
     )
     parser.add_argument(
@@ -986,6 +1184,11 @@ def _parser() -> argparse.ArgumentParser:
         help="explicit dotenv file for run settings and the LiteLLM key",
     )
     parser.add_argument("--litellm-base-url", required=True)
+    parser.add_argument(
+        "--proxy-fingerprint",
+        required=True,
+        help="lowercase SHA-256 fingerprint of the LiteLLM proxy configuration",
+    )
     parser.add_argument("--max-retries", type=int, default=3)
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--chunk-size", type=int, default=2000)
@@ -1013,6 +1216,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         top_k=args.top_k,
         chunk_size=args.chunk_size,
         overlap=args.overlap,
+        proxy_fingerprint=args.proxy_fingerprint,
         runner=runner,
     )
     print(json.dumps({"output": str(args.output.resolve()), "status": "completed"}, sort_keys=True))

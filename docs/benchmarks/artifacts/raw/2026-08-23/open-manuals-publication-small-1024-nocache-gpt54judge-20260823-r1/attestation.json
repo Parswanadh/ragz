@@ -44,7 +44,8 @@
     },
     "latency_comparability": "all_query_timings_comparable",
     "mode": "no-cache",
-    "publication_eligible": true
+    "publication_eligible": false,
+    "publication_invalidation_reason": "Judge calls were mislabeled and priced as gpt-5.6-luna; use the r2 artifact."
   },
   "cell": {
     "alias": "ragz-openai-text-embedding-3-small-d1024",
@@ -78,5 +79,5 @@
   "provider_calls": 211,
   "rag_triad": "exploratory_not_independent",
   "schema_version": 1,
-  "status": "completed"
+  "status": "invalidated_legacy_telemetry"
 }

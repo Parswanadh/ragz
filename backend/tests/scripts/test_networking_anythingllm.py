@@ -159,6 +159,7 @@ def test_width_attestation_binds_alias_model_dimension_and_proxy(tmp_path: Path)
                 "model": "text-embedding-3-small",
                 "dimension": 1024,
                 "actual_dimension": 1024,
+                "probe_status": "passed",
                 "embedding_proxy_fingerprint_sha256": "a" * 64,
             }
         ),
@@ -186,6 +187,7 @@ def test_width_attestation_rejects_unattested_alias(tmp_path: Path) -> None:
                 "model": "text-embedding-3-small",
                 "dimension": 1024,
                 "actual_dimension": 1024,
+                "probe_status": "passed",
                 "embedding_proxy_fingerprint_sha256": "b" * 64,
             }
         ),
@@ -193,6 +195,31 @@ def test_width_attestation_rejects_unattested_alias(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ValueError, match="proxy fingerprint"):
+        embedding_attestation(
+            path,
+            model="text-embedding-3-small",
+            dimension=1024,
+            alias="ragz-openai-text-embedding-3-small-d1024",
+            proxy_fingerprint="a" * 64,
+        )
+
+
+def test_width_attestation_rejects_missing_successful_probe(tmp_path: Path) -> None:
+    path = tmp_path / "width.json"
+    path.write_text(
+        json.dumps(
+            {
+                "alias": "ragz-openai-text-embedding-3-small-d1024",
+                "model": "text-embedding-3-small",
+                "dimension": 1024,
+                "actual_dimension": 1024,
+                "embedding_proxy_fingerprint_sha256": "a" * 64,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="not successful"):
         embedding_attestation(
             path,
             model="text-embedding-3-small",
@@ -212,7 +239,9 @@ def test_matrix_probe_manifest_can_attest_fixed_alias(tmp_path: Path) -> None:
                         "alias": "ragz-openai-text-embedding-3-large-d2096",
                         "model": "text-embedding-3-large",
                         "dimension": 2096,
+                        "actual_dimension": 2096,
                         "probe_status": "passed",
+                        "embedding_proxy_fingerprint_sha256": "a" * 64,
                     }
                 ]
             }
@@ -229,6 +258,31 @@ def test_matrix_probe_manifest_can_attest_fixed_alias(tmp_path: Path) -> None:
     )
 
     assert result["actual_dimension"] == 2096
+
+
+def test_width_attestation_rejects_missing_proxy_fingerprint(tmp_path: Path) -> None:
+    path = tmp_path / "width.json"
+    path.write_text(
+        json.dumps(
+            {
+                "alias": "ragz-openai-text-embedding-3-small-d1024",
+                "model": "text-embedding-3-small",
+                "dimension": 1024,
+                "actual_dimension": 1024,
+                "probe_status": "passed",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="proxy fingerprint"):
+        embedding_attestation(
+            path,
+            model="text-embedding-3-small",
+            dimension=1024,
+            alias="ragz-openai-text-embedding-3-small-d1024",
+            proxy_fingerprint="a" * 64,
+        )
 
 
 def test_dataset_identity_prefers_converted_manifest_metadata(tmp_path: Path) -> None:

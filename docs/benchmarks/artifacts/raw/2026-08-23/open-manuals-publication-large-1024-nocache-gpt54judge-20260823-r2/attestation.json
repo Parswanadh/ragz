@@ -1,0 +1,112 @@
+{
+  "alias_contract": {
+    "alias": "ragz-openai-text-embedding-3-large-d1024",
+    "client_sends_dimensions": false,
+    "expected_dimension": 1024,
+    "observed_dimensions": [
+      1024
+    ],
+    "underlying_model": "text-embedding-3-large"
+  },
+  "artifacts_sha256": {
+    "per_query": "3c3151ce42fc2acc03ad1bb7064ec73f6f8892da141b5d1e286686635d82dd11",
+    "provider_calls": "94fb64e5cb100b0594cd77d48568c1adabbefa64f4a1c8b00b352978c4295fb3"
+  },
+  "attestation": "open-manuals-v2-matrix-cell",
+  "cache": {
+    "denominators": {
+      "chunk_embeddings": {
+        "cached": 0,
+        "total": 467,
+        "uncached": 467
+      },
+      "generation": {
+        "cached": 0,
+        "total": 70,
+        "uncached": 70
+      },
+      "judge": {
+        "cached": 0,
+        "total": 70,
+        "uncached": 70
+      },
+      "query_embeddings": {
+        "cached": 0,
+        "total": 70,
+        "uncached": 70
+      }
+    },
+    "hit_counts": {
+      "chunk_embeddings": 0,
+      "generation": 0,
+      "judge": 0,
+      "query_embeddings": 0
+    },
+    "latency_comparability": "all_query_timings_comparable",
+    "mode": "no-cache",
+    "publication_eligible": true
+  },
+  "cell": {
+    "alias": "ragz-openai-text-embedding-3-large-d1024",
+    "cell_id": "openai-text-embedding-3-large-d1024",
+    "dimension": 1024,
+    "model": "text-embedding-3-large"
+  },
+  "created_at_utc": "2026-08-23T15:08:23.537954+00:00",
+  "denominator": {
+    "answerable": 60,
+    "off_corpus": 10,
+    "total": 70
+  },
+  "error_count": 0,
+  "judge_independence": "separate_model_same_provider",
+  "models": {
+    "embedding_alias": "ragz-openai-text-embedding-3-large-d1024",
+    "generation": "gpt-5.6-luna",
+    "judge": "gpt-5.4-mini"
+  },
+  "privacy": {
+    "credentials_persisted": false,
+    "prompts_persisted": false,
+    "public_per_query_fields": [
+      "query_id",
+      "retrieved_ids",
+      "metrics",
+      "judge",
+      "timings_ms",
+      "usage",
+      "error_codes"
+    ],
+    "raw_artifacts_private_only": true,
+    "response_bodies_persisted": false
+  },
+  "provider_calls": 211,
+  "proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "rag_triad": "exploratory_not_independent",
+  "runner_provenance": {
+    "dataset_sha256": "a7e6f35fda062cf04ab1435ffac269486f3920a6abe520f0a384673f64e9d335",
+    "git": {
+      "commit": "5b9241dc7d8a05520b05953dd2a018f49d22830f",
+      "dirty": true
+    },
+    "git_commit": "5b9241dc7d8a05520b05953dd2a018f49d22830f",
+    "git_dirty": true,
+    "hashes": {
+      "dataset": "a7e6f35fda062cf04ab1435ffac269486f3920a6abe520f0a384673f64e9d335",
+      "matrix": "136f049e5dc8f15281b8e2076ff35581c5513e13ac6217c70ac09cbf045f142e",
+      "queries": "e743da70e48aab4392744dec18330c83da232bd883ce2c0ea5a1bff34c169c57",
+      "upstream_runner": "e71a735a4ab1130edab0e7caa7e851fc9b828f5975beadbf4764dd1973da9fdd",
+      "wrapper": "6ec46a2e4d0b969e8772d838fdfb87cca0ea269b43f6498b92131e949d014946"
+    },
+    "matrix_sha256": "136f049e5dc8f15281b8e2076ff35581c5513e13ac6217c70ac09cbf045f142e",
+    "queries_sha256": "e743da70e48aab4392744dec18330c83da232bd883ce2c0ea5a1bff34c169c57",
+    "upstream_git": {
+      "commit": "90bb3b147b5da88ca704663cce09f77eab7629b7",
+      "dirty": true
+    },
+    "upstream_runner_sha256": "e71a735a4ab1130edab0e7caa7e851fc9b828f5975beadbf4764dd1973da9fdd",
+    "wrapper_sha256": "6ec46a2e4d0b969e8772d838fdfb87cca0ea269b43f6498b92131e949d014946"
+  },
+  "schema_version": 1,
+  "status": "completed"
+}

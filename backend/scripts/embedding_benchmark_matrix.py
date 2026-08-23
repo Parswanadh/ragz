@@ -375,11 +375,19 @@ def probe_vector_width(
 def build_manifest(
     requested_cells: Sequence[EmbeddingCell],
     *,
-    status: Literal["planned", "dry_run", "completed", "failed"] = "planned",
+    status: Literal[
+        "planned",
+        "dry_run",
+        "alias_ready",
+        "not_attested",
+        "completed",
+        "failed",
+    ] = "planned",
     provider_calls: int = 0,
     proxy_calls: int = 0,
     alias_status: Mapping[str, str] | None = None,
     probe_status: Mapping[str, str] | None = None,
+    actual_dimensions: Mapping[str, int] | None = None,
     proxy_fingerprint: str | None = None,
 ) -> dict[str, object]:
     """Build the privacy-safe manifest contract for a matrix run."""
@@ -391,6 +399,17 @@ def build_manifest(
         raise ValueError("proxy fingerprint must be a lowercase SHA-256")
     aliases = alias_status or {}
     probes = probe_status or {}
+    measured_dimensions = actual_dimensions or {}
+    if status == "completed":
+        if any(
+            probes.get(cell.alias) != "passed"
+            or measured_dimensions.get(cell.alias) != cell.dimension
+            for cell in requested_cells
+        ):
+            raise ValueError("completed matrix requires a passing measured probe for every cell")
+    default_probe_status = (
+        "not_attested" if status in {"alias_ready", "not_attested"} else "not_run"
+    )
     records = [
         {
             "cell_id": cell.cell_id,
@@ -400,7 +419,8 @@ def build_manifest(
             "provider": "openai",
             "embedding_proxy_fingerprint_sha256": proxy_fingerprint,
             "alias_status": aliases.get(cell.alias, "not_run"),
-            "probe_status": probes.get(cell.alias, "not_run"),
+            "probe_status": probes.get(cell.alias, default_probe_status),
+            "actual_dimension": measured_dimensions.get(cell.alias),
             "client_sends_dimensions": False,
         }
         for cell in requested_cells
@@ -466,17 +486,34 @@ def main() -> None:
     selected = cells()
     alias_results: tuple[AliasAction, ...] = ()
     probe_results: list[ProbeResult] = []
-    status: Literal["planned", "dry_run", "completed"] = "planned"
+    status: Literal["planned", "dry_run", "alias_ready", "not_attested", "completed"] = (
+        "planned"
+    )
     if args.dry_run:
         alias_results = preflight_aliases(selected, dry_run=True)
         status = "dry_run"
     elif args.preflight:
         alias_results = preflight_aliases(selected, base_url=args.base_url)
-        status = "completed"
+        status = "alias_ready"
+    probe_status: dict[str, str] = {}
+    actual_dimensions: dict[str, int] = {}
     if args.probe:
         for cell in selected:
-            probe_results.append(probe_vector_width(cell, base_url=args.base_url))
-        status = "completed"
+            try:
+                result = probe_vector_width(cell, base_url=args.base_url)
+            except VectorWidthProbeError:
+                # Preserve a manifest proving that aliases may exist while
+                # this provider width remains un-attested; never call it
+                # completed.  Remaining cells are also left not_attested.
+                probe_status[cell.alias] = "failed"
+                status = "not_attested"
+                break
+            else:
+                probe_results.append(result)
+                probe_status[result.alias] = "passed"
+                actual_dimensions[result.alias] = result.actual_dimension
+        else:
+            status = "completed"
     manifest = build_manifest(
         selected,
         status=status,
@@ -486,7 +523,8 @@ def main() -> None:
             + sum(action.status == "created" for action in alias_results)
         ),
         alias_status={action.alias: action.status for action in alias_results},
-        probe_status={result.alias: "passed" for result in probe_results},
+        probe_status=probe_status,
+        actual_dimensions=actual_dimensions,
         proxy_fingerprint=args.proxy_fingerprint,
     )
     destination = write_manifest(args.output, manifest)

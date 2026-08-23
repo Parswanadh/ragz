@@ -1,0 +1,58 @@
+{
+  "created_at_utc": "2026-08-23T15:50:18.821577+00:00",
+  "dataset_id_sha256": "b671844344f408cbb02a55e3f0c55794274541d771a08038ac220ac1f6dfeafb",
+  "dataset_sha256": {
+    "documents": "a7e6f35fda062cf04ab1435ffac269486f3920a6abe520f0a384673f64e9d335",
+    "qrels": "1a7234837da6f2578421e9d0130ef21900ac61ca24a47c91e0c6edb3fc8f248d",
+    "queries": "e743da70e48aab4392744dec18330c83da232bd883ce2c0ea5a1bff34c169c57"
+  },
+  "denominator": {
+    "answerable": 60,
+    "errors": 0,
+    "off_corpus": 10,
+    "total": 70
+  },
+  "model": {
+    "alias": "ragz-openai-text-embedding-3-large-d1024",
+    "dimension": 1024
+  },
+  "privacy": {
+    "credentials_persisted": false,
+    "document_content_persisted": false,
+    "public_per_query_fields": [
+      "query_id",
+      "ranked_doc_ids",
+      "ranked_scores",
+      "latency_ms",
+      "error_codes"
+    ],
+    "questions_persisted": false,
+    "raw_artifacts_private_only": true,
+    "response_bodies_persisted": false
+  },
+  "provenance": {
+    "config_sha256": "ca177839e7c7bc721dc0d4d702753c4ac0b5bf37a006d3046527f161d3258649",
+    "expected_image_digest": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+    "expected_source_commit": "ec9c08dbb9f1cf1e1e8d341e8918c6f2b9efae31",
+    "image_digest": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+    "image_digest_sha256": "f4bd30238f616e14d6c48ccedf3ba709f80802afcad7693a4c66b0d6f13892e5",
+    "proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+    "runner_sha256": "08619380055a766aad41d4f296d0eb1fe8172c1c3f44c5e1cbe38a19d1bbdb1d",
+    "source_commit": "ec9c08dbb9f1cf1e1e8d341e8918c6f2b9efae31",
+    "source_commit_sha256": "593cb32b296c0e517d0c6094d6da958b4697491edc97868cbe71d63a74057948"
+  },
+  "resource_recovery_caveat": "Initial 22-document concurrent ingestion exposed an Infinity first-table race; 17 unfinished tasks were cancelled, the RAGFlow app container was intentionally restarted once, and all 17 were then indexed sequentially. Final preflight required 22/22 DONE, 415 chunks, zero document failure messages.",
+  "retrieval_config": {
+    "endpoint": "/api/v1/retrieval",
+    "keyword": false,
+    "page_size": 5,
+    "similarity_threshold": 0.0,
+    "top_k": 50,
+    "vector_similarity_weight": 1.0
+  },
+  "runner": "open-manuals-ragflow-native-retrieval",
+  "schema_version": 1,
+  "publication_eligible": false,
+  "publication_invalidation_reason": "Warmup pass only; source commit was caller-mislabeled. Use the final scored r3 artifact.",
+  "status": "warmup_only"
+}

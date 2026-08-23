@@ -1,0 +1,275 @@
+{
+  "benchmark": "open-manuals-v2",
+  "budget_accounting": {
+    "basis": "upstream_budget_accounting_not_provider_cost",
+    "committed_estimated_plus_actual_usd": "0.69740236",
+    "hard_budget_usd": "3.00"
+  },
+  "cache": {
+    "denominators": {
+      "chunk_embeddings": {
+        "cached": 0,
+        "total": 467,
+        "uncached": 467
+      },
+      "generation": {
+        "cached": 0,
+        "total": 70,
+        "uncached": 70
+      },
+      "judge": {
+        "cached": 0,
+        "total": 70,
+        "uncached": 70
+      },
+      "query_embeddings": {
+        "cached": 0,
+        "total": 70,
+        "uncached": 70
+      }
+    },
+    "hit_counts": {
+      "chunk_embeddings": 0,
+      "generation": 0,
+      "judge": 0,
+      "query_embeddings": 0
+    },
+    "latency_comparability": "all_query_timings_comparable",
+    "mode": "no-cache",
+    "publication_eligible": true
+  },
+  "cell": {
+    "alias": "ragz-openai-text-embedding-3-small-d1024",
+    "cell_id": "openai-text-embedding-3-small-d1024",
+    "dimension": 1024,
+    "model": "text-embedding-3-small"
+  },
+  "cost": {
+    "actual_provider_cost_usd": "0.23142711",
+    "basis": "provider_calls_usage_only",
+    "by_endpoint": {
+      "embedding": {
+        "actual_provider_cost_usd": "0.00399006",
+        "cached_input_tokens": 0,
+        "calls": 71,
+        "input_tokens": 199503,
+        "output_tokens": 0
+      },
+      "generation": {
+        "actual_provider_cost_usd": "0.0518298",
+        "cached_input_tokens": 0,
+        "calls": 70,
+        "input_tokens": 164235,
+        "output_tokens": 15819
+      },
+      "judge": {
+        "actual_provider_cost_usd": "0.17560725",
+        "cached_input_tokens": 0,
+        "calls": 70,
+        "input_tokens": 177839,
+        "output_tokens": 9384
+      }
+    },
+    "hard_budget_usd": "3.00",
+    "rates_usd_per_million": {
+      "gpt-5.4-mini": {
+        "cached_input": "0.075",
+        "input": "0.75",
+        "output": "4.50"
+      },
+      "gpt-5.6-luna": {
+        "cached_input": "0.02",
+        "input": "0.20",
+        "output": "1.20"
+      },
+      "text-embedding-3-large": "0.13",
+      "text-embedding-3-small": "0.02"
+    }
+  },
+  "dataset_sha256": {
+    "documents": "a7e6f35fda062cf04ab1435ffac269486f3920a6abe520f0a384673f64e9d335",
+    "queries": "e743da70e48aab4392744dec18330c83da232bd883ce2c0ea5a1bff34c169c57"
+  },
+  "denominator": {
+    "answerable": 60,
+    "off_corpus": 10,
+    "total": 70
+  },
+  "judge_independence": "separate_model_same_provider",
+  "latency": {
+    "provider_calls": {
+      "comparable": true,
+      "population": "uncached_provider_calls",
+      "stages": {
+        "embedding_provider": {
+          "mean_ms": 360.1859366197183,
+          "observations": 71,
+          "p50_ms": 318.983,
+          "p95_ms": 408.76644999999996,
+          "p99_ms": 1605.7326999999905
+        },
+        "generation_provider": {
+          "mean_ms": 3280.5463714285715,
+          "observations": 70,
+          "p50_ms": 3021.8548,
+          "p95_ms": 4987.2949499999995,
+          "p99_ms": 9583.976206000021
+        },
+        "judge_provider": {
+          "mean_ms": 1665.9787957142858,
+          "observations": 70,
+          "p50_ms": 1631.4911499999998,
+          "p95_ms": 2275.91969,
+          "p99_ms": 2349.556638
+        }
+      },
+      "successful_observations": 211
+    },
+    "query_timings": {
+      "comparable": true,
+      "exclusion_reason": null,
+      "population": "all_query_rows",
+      "stages": {
+        "answer_pipeline_without_live_retrieval": {
+          "mean_ms": 3668.3638685714286,
+          "observations": 70,
+          "p50_ms": 3495.5664500000003,
+          "p95_ms": 5309.72824,
+          "p99_ms": 10001.969438000022
+        },
+        "context_select_or_dense_retrieval": {
+          "mean_ms": 387.53273285714283,
+          "observations": 70,
+          "p50_ms": 394.46000000000004,
+          "p95_ms": 482.23454,
+          "p99_ms": 557.8941890000004
+        },
+        "generation_provider": {
+          "mean_ms": 3280.6083857142858,
+          "observations": 70,
+          "p50_ms": 3021.9184,
+          "p95_ms": 4987.348205,
+          "p99_ms": 9584.02394300002
+        },
+        "generation_total": {
+          "mean_ms": 3280.789867142857,
+          "observations": 70,
+          "p50_ms": 3022.1005,
+          "p95_ms": 4987.526655,
+          "p99_ms": 9584.20105900002
+        },
+        "judge_provider": {
+          "mean_ms": 1666.0526771428572,
+          "observations": 70,
+          "p50_ms": 1631.55725,
+          "p95_ms": 2275.988915,
+          "p99_ms": 2349.643171
+        },
+        "judge_total": {
+          "mean_ms": 1666.2530842857143,
+          "observations": 70,
+          "p50_ms": 1631.7747,
+          "p95_ms": 2276.17621,
+          "p99_ms": 2349.8583560000006
+        },
+        "postprocess": {
+          "mean_ms": 0.040824285714285716,
+          "observations": 70,
+          "p50_ms": 0.03775,
+          "p95_ms": 0.061105,
+          "p99_ms": 0.068127
+        },
+        "total_with_judge": {
+          "mean_ms": 5334.662224285714,
+          "observations": 70,
+          "p50_ms": 5144.34745,
+          "p95_ms": 7102.315379999999,
+          "p99_ms": 11475.56834200002
+        }
+      },
+      "successful_observations": 70
+    }
+  },
+  "models": {
+    "embedding_alias": "ragz-openai-text-embedding-3-small-d1024",
+    "generation": "gpt-5.6-luna",
+    "judge": "gpt-5.4-mini"
+  },
+  "observed_embedding_dimensions": [
+    1024
+  ],
+  "privacy": {
+    "credentials_persisted": false,
+    "prompts_persisted": false,
+    "public_per_query_fields": [
+      "query_id",
+      "retrieved_ids",
+      "metrics",
+      "judge",
+      "timings_ms",
+      "usage",
+      "error_codes"
+    ],
+    "raw_artifacts_private_only": true,
+    "response_bodies_persisted": false
+  },
+  "provider_call_errors": {},
+  "provider_calls": 211,
+  "proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "rag_triad": "exploratory_not_independent",
+  "runner_provenance": {
+    "dataset_sha256": "a7e6f35fda062cf04ab1435ffac269486f3920a6abe520f0a384673f64e9d335",
+    "git": {
+      "commit": "5b9241dc7d8a05520b05953dd2a018f49d22830f",
+      "dirty": true
+    },
+    "git_commit": "5b9241dc7d8a05520b05953dd2a018f49d22830f",
+    "git_dirty": true,
+    "hashes": {
+      "dataset": "a7e6f35fda062cf04ab1435ffac269486f3920a6abe520f0a384673f64e9d335",
+      "matrix": "136f049e5dc8f15281b8e2076ff35581c5513e13ac6217c70ac09cbf045f142e",
+      "queries": "e743da70e48aab4392744dec18330c83da232bd883ce2c0ea5a1bff34c169c57",
+      "upstream_runner": "e71a735a4ab1130edab0e7caa7e851fc9b828f5975beadbf4764dd1973da9fdd",
+      "wrapper": "6ec46a2e4d0b969e8772d838fdfb87cca0ea269b43f6498b92131e949d014946"
+    },
+    "matrix_sha256": "136f049e5dc8f15281b8e2076ff35581c5513e13ac6217c70ac09cbf045f142e",
+    "queries_sha256": "e743da70e48aab4392744dec18330c83da232bd883ce2c0ea5a1bff34c169c57",
+    "upstream_git": {
+      "commit": "90bb3b147b5da88ca704663cce09f77eab7629b7",
+      "dirty": true
+    },
+    "upstream_runner_sha256": "e71a735a4ab1130edab0e7caa7e851fc9b828f5975beadbf4764dd1973da9fdd",
+    "wrapper_sha256": "6ec46a2e4d0b969e8772d838fdfb87cca0ea269b43f6498b92131e949d014946"
+  },
+  "schema_version": 1,
+  "source_summary_metrics": {
+    "abstention": {
+      "evaluated_queries": 70,
+      "f1": 0.9090909090909091,
+      "precision": 0.8333333333333334,
+      "recall": 1.0
+    },
+    "citation": {
+      "document_coverage": 0.9666666666666667,
+      "evidence_coverage": 0.9666666666666667,
+      "invalid_citation_rate": 0.0,
+      "validity": 1.0
+    },
+    "mean_judge_scores": {
+      "answer_relevance": 0.9318571428571429,
+      "citation_completeness": 0.8607142857142858,
+      "citation_entailment": 0.9461428571428572,
+      "citation_precision": 0.9355714285714285,
+      "context_relevance": 0.8522857142857142,
+      "correctness": 0.9575714285714286,
+      "groundedness": 0.9735714285714286
+    },
+    "reliability": {
+      "failed_queries": 0,
+      "failure_rate": 0.0,
+      "query_count": 70
+    },
+    "retrieval_required_document_hit_rate": 0.9833333333333333
+  },
+  "status": "completed"
+}

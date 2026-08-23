@@ -119,6 +119,26 @@ def _cell_dirs(tmp_path: Path) -> list[Path]:
             },
             "denominator": {"answerable": 60, "off_corpus": 10, "total": 70},
             "observed_embedding_dimensions": [dimension],
+            "models": {
+                "embedding_alias": f"ragz-{cell_id}",
+                "generation": "gpt-5.6-luna",
+                "judge": "gpt-5.4-mini",
+            },
+            "cache": {"mode": "no-cache"},
+            "proxy_fingerprint_sha256": "a" * 64,
+            "runner_provenance": {
+                "git": {"commit": "b" * 40, "dirty": False},
+                "upstream_git": {"commit": "c" * 40, "dirty": False},
+                "git_commit": "b" * 40,
+                "git_dirty": False,
+                "hashes": {
+                    "wrapper": "d" * 64,
+                    "upstream_runner": "e" * 64,
+                    "matrix": "f" * 64,
+                    "dataset": "1" * 64,
+                    "queries": "2" * 64,
+                },
+            },
             "privacy": {"prompts_persisted": False},
             "provider_call_errors": {},
             "provider_calls": 1,
@@ -141,9 +161,13 @@ def _cell_dirs(tmp_path: Path) -> list[Path]:
                     "provider_calls": _hash(provider_calls),
                 },
                 "cell": summary["cell"],
+                "models": summary["models"],
                 "denominator": summary["denominator"],
                 "error_count": 0,
                 "provider_calls": 1,
+                "proxy_fingerprint_sha256": "a" * 64,
+                "runner_provenance": summary["runner_provenance"],
+                "cache": {"mode": "no-cache"},
                 "schema_version": 1,
                 "status": "completed",
             },
@@ -228,6 +252,54 @@ def test_cache_contamination_excludes_total_latency_and_spend_from_pareto(
     assert "Observed provider spend is descriptive only" in report
     assert "total/generation/judge latency hypotheses are excluded" in report
     assert "| Cost (USD) |" not in report
+
+
+def test_explicit_shared_cache_self_evaluation_uses_declared_judge_model(
+    tmp_path: Path,
+) -> None:
+    """The exploratory matrix permits a same-model judge when it is declared."""
+
+    directories = _cell_dirs(tmp_path)
+    directory = directories[0]
+    summary_path = directory / "summary.json"
+    attestation_path = directory / "attestation.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    attestation = json.loads(attestation_path.read_text(encoding="utf-8"))
+    summary["cache"] = {"mode": "shared-cache-exploratory"}
+    summary["judge_independence"] = "self_evaluation_same_model"
+    summary["models"]["judge"] = "gpt-5.6-luna"
+    attestation["cache"] = summary["cache"]
+    attestation["judge_independence"] = summary["judge_independence"]
+    attestation["models"]["judge"] = "gpt-5.6-luna"
+
+    calls_path = directory / "provider_calls.jsonl"
+    calls = [json.loads(line) for line in calls_path.read_text(encoding="utf-8").splitlines()]
+    calls.append(
+        {
+            "actual_vector_dimension": None,
+            "endpoint": "/v1/responses",
+            "endpoint_type": "judge",
+            "error_code": None,
+            "input_count": 1,
+            "latency_ms": 5.0,
+            "model": "gpt-5.6-luna",
+            "retries": 0,
+            "sequence": 2,
+            "usage": {"cached_input_tokens": 0, "input_tokens": 10, "output_tokens": 1},
+        }
+    )
+    calls_path.write_text(
+        "".join(json.dumps(call, sort_keys=True) + "\n" for call in calls), encoding="utf-8"
+    )
+    summary["provider_calls"] = 2
+    attestation["provider_calls"] = 2
+    attestation["artifacts_sha256"]["provider_calls"] = _hash(calls_path)
+    _write_json(summary_path, summary)
+    _write_json(attestation_path, attestation)
+
+    result = analyze(directories, bootstrap_samples=100)
+    assert result["cells"][summary["cell"]["cell_id"]]["provider_call_count"] == 2
+    assert result["analysis"]["cache_contaminated_matrix"] is True
 
 
 def test_write_outputs_refuses_overwrite(tmp_path: Path) -> None:

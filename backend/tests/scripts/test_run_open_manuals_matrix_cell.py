@@ -126,7 +126,9 @@ def test_embedding_call_uses_fixed_alias_and_records_width_usage_and_latency() -
 
 def test_embedding_width_mismatch_is_rejected_and_mapped() -> None:
     def handler(_: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json={"data": [{"embedding": [1, 2]}]})
+        return httpx.Response(
+            200, json={"data": [{"embedding": [1, 2]}], "usage": {"input_tokens": 1}}
+        )
 
     client = _client(handler, dimension=3)
     with pytest.raises(ContractError, match="width"):
@@ -143,7 +145,9 @@ def test_retry_count_is_recorded_without_persisting_response_body() -> None:
         attempts += 1
         if attempts == 1:
             return httpx.Response(503, content=b"secret provider body")
-        return httpx.Response(200, json={"data": [{"embedding": [1, 2, 3]}]})
+        return httpx.Response(
+            200, json={"data": [{"embedding": [1, 2, 3]}], "usage": {"input_tokens": 1}}
+        )
 
     client = _client(handler, max_retries=1)
     client.embeddings("ragz-openai-text-embedding-3-small-d3", ["one"])
@@ -183,6 +187,36 @@ def test_response_calls_are_typed_generation_and_judge_without_prompt_telemetry(
     assert "licensed" not in json.dumps([call.as_dict() for call in client.calls])
 
 
+@pytest.mark.parametrize(
+    "usage", [None, {"input_tokens": 0}, {"input_tokens": "bad"}, {"input_tokens": -1}]
+)
+def test_every_provider_endpoint_fails_closed_on_invalid_usage(usage: object) -> None:
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={"data": [{"embedding": [1, 2, 3]}], "usage": usage},
+        )
+
+    client = _client(handler)
+    with pytest.raises(ContractError, match="usage"):
+        client.embeddings("ragz-openai-text-embedding-3-small-d3", ["one"])
+    assert client.calls[0].error_code == "usage_contract"
+
+
+def test_response_rejects_unknown_endpoint_name_and_wrong_endpoint_model_pair() -> None:
+    client = _client(lambda _: httpx.Response(200, json={"usage": {"input_tokens": 1}}))
+    with pytest.raises(ContractError, match="endpoint name"):
+        client.response(
+            model="gpt-5.6-luna", system="s", user="u", name="unknown",
+            schema={"type": "object"}, max_output_tokens=10,
+        )
+    with pytest.raises(ContractError, match="model contract"):
+        client.response(
+            model=JUDGE_MODEL, system="s", user="u", name="rag_answer",
+            schema={"type": "object"}, max_output_tokens=10,
+        )
+
+
 def test_publication_defaults_to_separate_judge_and_no_cache() -> None:
     args = _parser().parse_args(
         [
@@ -195,10 +229,24 @@ def test_publication_defaults_to_separate_judge_and_no_cache() -> None:
             "--cache-dir", "/private/cache",
             "--env", "/private/env",
             "--litellm-base-url", "http://localhost:54000",
+            "--proxy-fingerprint", "a" * 64,
         ]
     )
     assert args.cache_mode == "no-cache"
     assert args.judge_model == JUDGE_MODEL
+
+
+def test_publication_parser_requires_proxy_fingerprint() -> None:
+    with pytest.raises(SystemExit):
+        _parser().parse_args(
+            [
+                "--model", "text-embedding-3-small", "--dimension", "1024",
+                "--dataset", "/private/dataset", "--queries", "/private/queries.jsonl",
+                "--private-work-dir", "/private/work", "--output", "/public/output",
+                "--cache-dir", "/private/cache", "--env", "/private/env",
+                "--litellm-base-url", "http://localhost:54000",
+            ]
+        )
 
 
 def test_query_denominator_requires_exact_70_with_60_answerable_and_10_off_corpus() -> None:

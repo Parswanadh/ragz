@@ -1,4 +1,6 @@
 {
+  "publication_invalidation_reason": "Legacy r1 judge telemetry and cost attribution are invalid; use 2026-08-23-open-manuals-clean-pair-analysis-r2.json.",
+  "publication_status": "invalidated_legacy_telemetry",
   "actual_cost_premium": {
     "basis": "provider_calls_usage_only",
     "large_cost_usd": "0.12544859",

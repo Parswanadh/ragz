@@ -319,8 +319,10 @@ def test_smoke_run_persists_privacy_safe_manifest_and_samples(tmp_path: Path) ->
     (checkout / "docker" / "docker-compose.yml").write_text("services: {}\n")
     output = tmp_path / "result"
     calls: list[list[str]] = []
+    project_snapshot_count = 0
 
     def fake_runner(args: list[str] | tuple[str, ...], cwd: Path | None = None) -> str:
+        nonlocal project_snapshot_count
         calls.append(list(args))
         if args[:2] == ["git", "rev-parse"]:
             return "ec9c08d809f63ba2815090182fa225899d2437d5\n"
@@ -343,17 +345,36 @@ def test_smoke_run_persists_privacy_safe_manifest_and_samples(tmp_path: Path) ->
         if "config" in args:
             return json.dumps(
                 {
-                    "services": {
-                        "mysql": {},
-                        "minio": {},
-                        "redis": {},
-                        "es01": {},
-                        "ragflow-cpu": {"depends_on": {"mysql": {}}},
+                        "services": {
+                            "mysql": {"image": "mysql:8"},
+                            "minio": {"image": "minio:latest"},
+                            "redis": {"image": "redis:7"},
+                            "es01": {"image": "elasticsearch:8"},
+                            "ragflow-cpu": {
+                                "image": "ragflow:cpu",
+                                "depends_on": {"mysql": {}},
+                            },
+                        }
                     }
-                }
+                )
+        if "image" in args and "inspect" in args:
+            return "\n".join(
+                json.dumps(
+                    {
+                        "Id": f"sha256:{image.replace(':', '-')}",
+                        "RepoDigests": [f"repo/{image.split(':')[0]}@sha256:{'a' * 64}"],
+                        "Size": 123,
+                    }
+                )
+                for image in args[args.index("{{json .}}") + 1 :]
             )
         if args[-3:] == ["ps", "--all", "-q"]:
-            return "0123456789abcdef0123456789abcdef\n"
+            project_snapshot_count += 1
+            return (
+                "0123456789abcdef0123456789abcdef\n"
+                if project_snapshot_count > 2
+                else ""
+            )
         if args[:3] == ["docker", "inspect", "--format"]:
             return json.dumps(
                 {
@@ -376,7 +397,6 @@ def test_smoke_run_persists_privacy_safe_manifest_and_samples(tmp_path: Path) ->
         project="ragflow-smoke-test",
         duration_seconds=0.001,
         sample_interval_seconds=0.001,
-        reuse_project=True,
         thresholds=Thresholds(
             host_min_available_bytes=0,
             max_swap_growth_bytes=10**18,
@@ -395,11 +415,13 @@ def test_smoke_run_persists_privacy_safe_manifest_and_samples(tmp_path: Path) ->
     assert manifest["credentials_persisted"] is False
     assert manifest["docker_daemon"]["memory_bytes"] == 16_246_616_064
     assert manifest["docker_daemon"]["cpus"] == 22
-    assert manifest["reuse_project"] is True
-    assert manifest["project_reuse"]["enabled"] is True
-    assert manifest["preflight_existing_container_ids"] == [
-        "0123456789abcdef0123456789abcdef"
-    ]
+    assert manifest["preflight_existing_container_ids"] == []
+    assert len(manifest["image_provenance"]) == 5
+    assert manifest["image_provenance"][0]["image_id"].startswith("sha256:")
+    assert manifest["generated_files"]["compose_override"]["path"] == (
+        "compose.lowmem.override.yml"
+    )
+    assert len(manifest["generated_files"]["compose_override"]["sha256"]) == 64
     assert len(manifest["docker_daemon"]["fingerprint_sha256"]) == 64
     assert (output / "samples.jsonl").read_text().strip()
     assert not any("down" in " ".join(call) for call in calls)
@@ -443,88 +465,23 @@ def test_existing_project_refuses_before_any_write_or_stop(tmp_path: Path) -> No
     manifest = json.loads((output / "manifest.json").read_text())
     failure = json.loads((output / "failure.json").read_text())
     assert manifest["status"] == "failed"
-    assert manifest["reuse_project"] is False
-    assert manifest["project_reuse"]["enabled"] is False
+    assert manifest["preflight_existing_container_ids"] == [
+        "0123456789abcdef0123456789abcdef"
+    ]
     assert failure["error_type"] == "ComposeProjectCollision"
     assert failure["stop_scope"] == "not_started"
 
 
-def test_reuse_project_is_explicit_and_can_continue_existing_project(tmp_path: Path) -> None:
+def test_reuse_project_is_not_an_available_run_option(tmp_path: Path) -> None:
     checkout = tmp_path / "ragflow"
     (checkout / "docker").mkdir(parents=True)
     (checkout / ".git").mkdir()
     (checkout / "docker" / "docker-compose.yml").write_text("services: {}\n")
     output = tmp_path / "reuse"
-    calls: list[list[str]] = []
-
-    def runner(args: list[str] | tuple[str, ...], cwd: Path | None = None) -> str:
-        del cwd
-        call = list(args)
-        calls.append(call)
-        if call[:2] == ["git", "rev-parse"]:
-            return "ec9c08d809f63ba2815090182fa225899d2437d5\n"
-        if call[:3] == ["git", "describe", "--tags"]:
-            return "v0.27.0\n"
-        if call[:3] == ["git", "status", "--porcelain"]:
-            return ""
-        if call[-3:] == ["ps", "--all", "-q"]:
-            return "0123456789abcdef0123456789abcdef\n"
-        if call[:2] == ["docker", "info"]:
-            return json.dumps({"ID": "native", "MemTotal": 16_000_000_000, "NCPU": 8})
-        if "config" in call:
-            return json.dumps(
-                {
-                    "services": {
-                        "mysql": {},
-                        "minio": {},
-                        "redis": {},
-                        "es01": {},
-                        "ragflow-cpu": {"depends_on": {"mysql": {}}},
-                    }
-                }
-            )
-        if call[-3:] == ["ps", "--all", "-q"]:
-            return "0123456789abcdef0123456789abcdef\n"
-        if call[:3] == ["docker", "inspect", "--format"]:
-            return json.dumps(
-                {
-                    "Name": "/ragflow-cpu-1",
-                    "Id": "0123456789abcdef0123456789abcdef",
-                    "State": {
-                        "Status": "running",
-                        "OOMKilled": False,
-                        "RestartCount": 0,
-                    },
-                }
-            )
-        if call[:3] == ["docker", "stats", "--no-stream"]:
-            return json.dumps({"Name": "ragflow-cpu-1", "MemUsage": "10MiB / 3GiB"})
-        return ""
-
     from run_ragflow_lowmem_smoke import run
 
-    run(
-        checkout=checkout,
-        output=output,
-        project="ragflow-reuse",
-        reuse_project=True,
-        duration_seconds=0.001,
-        sample_interval_seconds=0.001,
-        thresholds=Thresholds(
-            host_min_available_bytes=0,
-            max_swap_growth_bytes=10**18,
-            max_psi_avg10=10**6,
-        ),
-        runner=runner,
-        sleep=lambda _seconds: None,
-        port_checker=lambda _port: None,
-    )
-
-    manifest = json.loads((output / "manifest.json").read_text())
-    assert manifest["status"] == "smoke_passed"
-    assert manifest["reuse_project"] is True
-    assert manifest["project_reuse"]["enabled"] is True
-    assert manifest["preflight_existing_container_ids"]
+    with pytest.raises(TypeError, match="reuse_project"):
+        run(checkout=checkout, output=output, project="ragflow-reuse", reuse_project=True)
 
 
 @pytest.mark.parametrize("fail_on_up", [1, 2], ids=["dependency-start", "app-start"])
@@ -556,13 +513,27 @@ def test_partial_start_failure_stops_touched_project(
             return json.dumps(
                 {
                     "services": {
-                        "mysql": {},
-                        "minio": {},
-                        "redis": {},
-                        "es01": {},
-                        "ragflow-cpu": {"depends_on": {"mysql": {}}},
+                        "mysql": {"image": "mysql:8"},
+                        "minio": {"image": "minio:latest"},
+                        "redis": {"image": "redis:7"},
+                        "es01": {"image": "elasticsearch:8"},
+                        "ragflow-cpu": {
+                            "image": "ragflow:cpu",
+                            "depends_on": {"mysql": {}},
+                        },
                     }
                 }
+            )
+        if "image" in call and "inspect" in call:
+            return "\n".join(
+                json.dumps(
+                    {
+                        "Id": f"sha256:{image.replace(':', '-')}",
+                        "RepoDigests": [f"repo/{image.split(':')[0]}@sha256:{'a' * 64}"],
+                        "Size": 123,
+                    }
+                )
+                for image in call[call.index("{{json .}}") + 1 :]
             )
         if "up" in call:
             up_count += 1

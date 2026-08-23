@@ -1,0 +1,95 @@
+{
+  "artifact_integrity": {
+    "per_query_sha256": "97e95bcd3d493f78aa9efbb013a06b6448fb839f3a826901f009afc74bdb176f",
+    "summary_sha256": "de7c14bbc4ce6792894702de6360df2fe339dd1956947199bc167bc292581c8e"
+  },
+  "created_at_utc": "2026-08-23T16:04:01.090625+00:00",
+  "dataset_id_sha256": "b671844344f408cbb02a55e3f0c55794274541d771a08038ac220ac1f6dfeafb",
+  "dataset_sha256": {
+    "documents": "a7e6f35fda062cf04ab1435ffac269486f3920a6abe520f0a384673f64e9d335",
+    "qrels": "1a7234837da6f2578421e9d0130ef21900ac61ca24a47c91e0c6edb3fc8f248d",
+    "queries": "e743da70e48aab4392744dec18330c83da232bd883ce2c0ea5a1bff34c169c57"
+  },
+  "denominator": {
+    "answerable": 60,
+    "errors": 0,
+    "off_corpus": 10,
+    "total": 70
+  },
+  "model": {
+    "alias": "ragz-openai-text-embedding-3-large-d1024",
+    "dimension": 1024
+  },
+  "privacy": {
+    "credentials_persisted": false,
+    "document_content_persisted": false,
+    "public_per_query_fields": [
+      "query_id",
+      "ranked_doc_ids",
+      "ranked_scores",
+      "latency_ms",
+      "error_codes"
+    ],
+    "questions_persisted": false,
+    "raw_artifacts_private_only": true,
+    "response_bodies_persisted": false
+  },
+  "provenance": {
+    "config_sha256": "9f7c543e3f423dd60670d79cba49e09963bb0dd9cb61692299e6c25de7420dc3",
+    "expected_image_digest": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+    "expected_source_commit": "ec9c08d809f63ba2815090182fa225899d2437d5",
+    "image_digest": "sha256:e9fe71c5ff14762eeb8e251b3b8ed37c02a99ae2bad3d7b11467260ced79578b",
+    "image_digest_sha256": "f4bd30238f616e14d6c48ccedf3ba709f80802afcad7693a4c66b0d6f13892e5",
+    "proxy": {
+      "fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "source": "caller_expected"
+    },
+    "proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+    "proxy_fingerprint_source": "caller_expected",
+    "qrels_sha256": "1a7234837da6f2578421e9d0130ef21900ac61ca24a47c91e0c6edb3fc8f248d",
+    "runner_sha256": "17b67a6d01f2f627224c195e6d70b25839b5b432007ff854efdb162cf0b1603e",
+    "runtime_manifest_sha256": "0a1e6c335a6896d778c5cd0a9c1cba1836bc85112702a2b2a74dae8a31e1b2b1",
+    "source_commit": "ec9c08d809f63ba2815090182fa225899d2437d5",
+    "source_commit_sha256": "f9febd86594fe25d884af75cca529a107cc3af08cfdb4b6c0035c860ce498f3a"
+  },
+  "resource_recovery_caveat": "Initial 22-document concurrent ingestion exposed an Infinity first-table race; 17 unfinished tasks were cancelled, the RAGFlow app container was intentionally restarted once, and all 17 were then indexed sequentially. Final preflight required 22/22 DONE, 415 chunks, zero document failure messages. Resource samples cover only the earlier three-minute smoke; later quality work was manually guarded.",
+  "retrieval_config": {
+    "endpoint": "/api/v1/retrieval",
+    "keyword": false,
+    "page_size": 5,
+    "similarity_threshold": 0.0,
+    "top_k": 50,
+    "vector_similarity_weight": 1.0
+  },
+  "runner": "open-manuals-ragflow-native-retrieval",
+  "schema_version": 1,
+  "status": "completed",
+  "warmup_artifacts": [
+    {
+      "name": "ragflow-open-manuals-large1024-retrieval-20260823-r1",
+      "per_query_sha256": "47a53eb7710b8c8491695467f5af66fda13e5df4492471bd1e5e449f0be23f3d",
+      "summary_sha256": "298afcfe247ffbcd36708b5a37940adcfa3a5dc73d9c75fc353a1ad070bb0d2c"
+    },
+    {
+      "name": "ragflow-open-manuals-large1024-retrieval-20260823-r2",
+      "per_query_sha256": "bd9fbd9a57821982daae96f9937199b62f84e436e02c50dc3321fa19fc4b86a7",
+      "summary_sha256": "3223811826cbff4aa7757f835b0c09dbefe3e2779c87bc7b9af2fcdf89597b28"
+    }
+  ],
+  "warmup_protocol": {
+    "artifacts": [
+      {
+        "name": "ragflow-open-manuals-large1024-retrieval-20260823-r1",
+        "per_query_sha256": "47a53eb7710b8c8491695467f5af66fda13e5df4492471bd1e5e449f0be23f3d",
+        "summary_sha256": "298afcfe247ffbcd36708b5a37940adcfa3a5dc73d9c75fc353a1ad070bb0d2c"
+      },
+      {
+        "name": "ragflow-open-manuals-large1024-retrieval-20260823-r2",
+        "per_query_sha256": "bd9fbd9a57821982daae96f9937199b62f84e436e02c50dc3321fa19fc4b86a7",
+        "summary_sha256": "3223811826cbff4aa7757f835b0c09dbefe3e2779c87bc7b9af2fcdf89597b28"
+      }
+    ],
+    "cache_reset": false
+  },
+  "warmups_per_query": 2
+}

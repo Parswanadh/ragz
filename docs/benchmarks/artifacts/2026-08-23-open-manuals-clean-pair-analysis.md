@@ -1,5 +1,8 @@
 # Open Manuals clean embedding pair analysis
 
+> **Invalidated legacy analysis:** r1 mislabeled and mispriced judge calls. Use
+> `2026-08-23-open-manuals-clean-pair-analysis-r2.md` for the corrected pair.
+
 Large 1024 minus small 1024; no-cache publication pair.
 
 - Quality population: 60 answerable queries; abstention_correct uses all 70; latency population: 70 queries.
