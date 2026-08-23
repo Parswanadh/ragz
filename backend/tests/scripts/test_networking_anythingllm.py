@@ -10,10 +10,12 @@ if str(SCRIPTS) not in sys.path:
 from run_networking_anythingllm import (  # noqa: E402
     batches,
     embedding_configuration,
+    generation_configuration,
     ranking_metrics,
     summarize,
     unique_document_ids,
     validate_storage_path,
+    workspace_configuration,
 )
 
 
@@ -85,6 +87,26 @@ def test_embedding_configuration_labels_hosted_and_native_tracks() -> None:
     assert hosted[2:] == ("not_exposed_nonzero", None)
     with pytest.raises(ValueError):
         embedding_configuration("unknown")
+
+
+def test_generation_configuration_pins_shared_litellm_answer_model() -> None:
+    configuration = generation_configuration()
+
+    assert "LLM_PROVIDER=litellm" in configuration
+    assert "LITE_LLM_MODEL_PREF=gpt-5.6-luna" in configuration
+    assert "LITE_LLM_MODEL_TOKEN_LIMIT=8192" in configuration
+    assert "host.docker.internal:host-gateway" in configuration
+
+
+def test_workspace_configuration_pins_luna_supported_temperature() -> None:
+    configuration = workspace_configuration("networking-test", 50)
+
+    assert configuration == {
+        "name": "networking-test",
+        "similarityThreshold": 0.0,
+        "topN": 50,
+        "openAiTemp": 1.0,
+    }
 
 
 def test_abstention_f1_is_zero_when_every_off_corpus_probe_is_missed() -> None:

@@ -52,6 +52,30 @@ async def test_expander_includes_original_and_two_distinct_variants() -> None:
 
 
 @pytest.mark.asyncio
+async def test_luna_expansion_uses_supported_provider_default_temperature() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(__import__("json").loads(request.content))
+        return httpx.Response(
+            200,
+            json=_completion('{"queries":["one alternative","second alternative"]}'),
+        )
+
+    expander = LiteLLMQueryExpander(
+        base_url="http://litellm.test",
+        master_key="sk-test",
+        transport=httpx.MockTransport(handler),
+    )
+
+    result = await expander.expand("original", model="openai/gpt-5.6-luna")
+
+    assert "temperature" not in captured
+    assert captured["max_tokens"] == 200
+    assert result.queries == ("original", "one alternative", "second alternative")
+
+
+@pytest.mark.asyncio
 async def test_expander_normalizes_deduplicates_and_caps_alternatives() -> None:
     response = """```json
     {"queries": [

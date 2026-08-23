@@ -37,6 +37,7 @@ from ragz.modules.tenancy.models import Organization, Workspace, WorkspaceMember
 
 WORKSPACE_NAME = "Networking Multi-Query Lab"
 ORG_NAME = "RAGZ Comparison Lab"
+DEFAULT_CHAT_MODEL = "gpt-5.6-luna"
 
 
 def parse_pdf(value: str) -> tuple[str, Path]:
@@ -404,7 +405,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pdf", action="append", required=True, type=parse_pdf)
     parser.add_argument("--admin-email", default="compare@ragz.example")
-    parser.add_argument("--chat-model", default="gpt-5.4-mini")
+    parser.add_argument("--chat-model", default=DEFAULT_CHAT_MODEL)
     args = parser.parse_args()
     if len(args.pdf) != 3 or len({book_id for book_id, _ in args.pdf}) != 3:
         raise ValueError("exactly three uniquely named PDFs are required")

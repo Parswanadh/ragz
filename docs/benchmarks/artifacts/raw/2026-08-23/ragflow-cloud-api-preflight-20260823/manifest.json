@@ -1,0 +1,39 @@
+{
+  "cloud_api_credential_present": false,
+  "cloud_datasets_status": 401,
+  "cloud_root_status": 200,
+  "created_at_utc": "2026-08-23T09:12:25.529400+00:00",
+  "credentials_persisted": false,
+  "external_dependency_options": {
+    "metadata": [
+      "managed MySQL",
+      "managed Redis"
+    ],
+    "object_storage": [
+      "S3",
+      "OSS",
+      "Azure Blob",
+      "GCS",
+      "external MinIO"
+    ],
+    "status": "not_configured; no provider credentials supplied"
+  },
+  "model_parity": {
+    "cloud_custom_provider_configuration": "unverified_without_authenticated account",
+    "embedding_model": "text-embedding-3-small",
+    "generation_model": "gpt-5.6-luna"
+  },
+  "official_sources": [
+    "https://cloud.ragflow.io/",
+    "https://cloud.ragflow.io/register",
+    "https://github.com/infiniflow/ragflow/blob/v0.27.0/helm/values.yaml",
+    "https://github.com/infiniflow/ragflow/blob/v0.27.0/docker/service_conf.yaml.template"
+  ],
+  "provider_calls": 0,
+  "quality_score_emitted": false,
+  "response_bodies_persisted": false,
+  "runner_version": "1.0",
+  "schema_version": 1,
+  "status": "credential_gated",
+  "system_id": "ragflow-cloud"
+}

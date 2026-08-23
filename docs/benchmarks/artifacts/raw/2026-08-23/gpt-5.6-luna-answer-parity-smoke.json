@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-08-23T09:16:48Z",
+  "updated_at_utc": "2026-08-23T09:25:46Z",
+  "status": "completed",
+  "model": "gpt-5.6-luna",
+  "provider": "openai",
+  "transport": "shared LiteLLM gateway",
+  "proxy_instance_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "model_registry": {
+    "litellm_model_name": "openai/gpt-5.6-luna",
+    "model_info_id": "688145b8-a767-427a-9b3e-1bccfa9aeedb",
+    "openai_model_lookup_http_status": 200
+  },
+  "temperature_contract": {
+    "value": "provider default (1)",
+    "temperature_zero_supported": false,
+    "rejected_zero_temperature_http_status": 400
+  },
+  "smokes": {
+    "gateway": {
+      "http_status": 200,
+      "response": "OK",
+      "prompt_tokens": 10,
+      "completion_tokens": 4,
+      "total_tokens": 14
+    },
+    "ragz_litellm_streamer": {
+      "git_commit": "97ad3fb9910fa032e1caca2e3e4a40e9be59e428",
+      "adapter": "ragz.modules.chat.llm.LiteLLMStreamer.complete",
+      "response": "OK",
+      "prompt_tokens": 10,
+      "completion_tokens": 4,
+      "tool_calls": 0
+    },
+    "ragz_query_expander": {
+      "adapter": "ragz.modules.retrieval.query_expansion.LiteLLMQueryExpander.expand",
+      "effective_query_count": 3,
+      "prompt_tokens": 127,
+      "completion_tokens": 50,
+      "temperature_field_sent": false,
+      "generated_alternatives_persisted": false
+    },
+    "anythingllm": {
+      "version": "v1.16.0",
+      "image_digest": "sha256:68bcedecb720e3fadde986bcc4f3aad20059fa64805bc9b306a3023244947515",
+      "endpoint": "/api/v1/workspace/{slug}/chat",
+      "http_status": 200,
+      "response": "OK",
+      "reported_model": "gpt-5.6-luna",
+      "reported_provider": "LiteLLM",
+      "workspace_open_ai_temp_configured": 1,
+      "prompt_tokens": 80,
+      "completion_tokens": 4,
+      "total_tokens": 84,
+      "duration_seconds": 1.829,
+      "source_count": 0,
+      "temporary_container_removed": true,
+      "temporary_storage_removed": true
+    }
+  },
+  "successful_generation_calls": 4,
+  "successful_generation_tokens": 289,
+  "failed_configuration_validation_attempts": 2,
+  "prompt_text_persisted": false,
+  "credentials_persisted": false,
+  "corpus_used": false,
+  "quality_score_emitted": false,
+  "note": "Synthetic connectivity/model-parity smoke only; not an answer-quality benchmark."
+}

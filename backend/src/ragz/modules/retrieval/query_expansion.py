@@ -21,6 +21,7 @@ _MAX_ALTERNATIVES = 2
 _MAX_QUERY_CHARS = 2_000
 _MAX_USAGE_TOKENS = 1_000_000_000
 _SPACE_RE = re.compile(r"\s+")
+_PROVIDER_DEFAULT_TEMPERATURE_MODELS = {"gpt-5.6-luna"}
 
 _SYSTEM_PROMPT = (
     "Generate alternative search queries that improve document retrieval for "
@@ -136,9 +137,15 @@ class LiteLLMQueryExpander:
                 {"role": "user", "content": _query_message(query)},
             ],
             "stream": False,
-            "temperature": 0.0,
             "max_tokens": 200,
         }
+        # gpt-5.6-luna rejects any explicit temperature except its provider
+        # default. Keep deterministic zero-temperature expansion for models
+        # that support it, but omit the field for exact known exceptions so an
+        # enabled workspace does not silently degrade to one query.
+        normalized_model = model.rsplit("/", 1)[-1]
+        if normalized_model not in _PROVIDER_DEFAULT_TEMPERATURE_MODELS:
+            payload["temperature"] = 0.0
         try:
             async with httpx.AsyncClient(
                 base_url=self._base_url,

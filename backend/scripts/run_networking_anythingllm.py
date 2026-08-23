@@ -28,7 +28,9 @@ IMAGE = "mintplexlabs/anythingllm:1.16.0"
 IMAGE_DIGEST = "sha256:68bcedecb720e3fadde986bcc4f3aad20059fa64805bc9b306a3023244947515"
 IMAGE_REF = f"mintplexlabs/anythingllm@{IMAGE_DIGEST}"
 RELEASE_COMMIT = "55b6ebcea132f0d7ac146da99a0cd0db507b9030"
-RUNNER_VERSION = "3.0"
+RUNNER_VERSION = "4.0"
+ANSWER_MODEL = "gpt-5.6-luna"
+ANSWER_TEMPERATURE = 1.0
 
 
 def batches[T](values: Sequence[T], size: int) -> Iterator[Sequence[T]]:
@@ -224,22 +226,43 @@ def embedding_configuration(engine: str) -> tuple[list[str], str, object, object
     if engine == "litellm":
         return (
             [
-                "--add-host",
-                "host.docker.internal:host-gateway",
                 "-e",
                 "EMBEDDING_ENGINE=litellm",
                 "-e",
                 "EMBEDDING_MODEL_PREF=text-embedding-3-small",
-                "-e",
-                "LITE_LLM_BASE_PATH=http://host.docker.internal:54000/v1",
-                "-e",
-                "LITE_LLM_API_KEY=sk-ragz-dev-master",
             ],
             "common-20-page-segments-openai-lancedb",
             "not_exposed_nonzero",
             None,
         )
     raise ValueError("embedding engine must be native or litellm")
+
+
+def generation_configuration(model: str = ANSWER_MODEL) -> list[str]:
+    return [
+        "--add-host",
+        "host.docker.internal:host-gateway",
+        "-e",
+        "LLM_PROVIDER=litellm",
+        "-e",
+        f"LITE_LLM_MODEL_PREF={model}",
+        "-e",
+        "LITE_LLM_MODEL_TOKEN_LIMIT=8192",
+        "-e",
+        "LITE_LLM_BASE_PATH=http://host.docker.internal:54000/v1",
+        "-e",
+        "LITE_LLM_API_KEY=sk-ragz-dev-master",
+    ]
+
+
+def workspace_configuration(name: str, candidate_depth: int) -> dict[str, Any]:
+    """Build a Luna-compatible AnythingLLM workspace configuration."""
+    return {
+        "name": name,
+        "similarityThreshold": 0.0,
+        "topN": candidate_depth,
+        "openAiTemp": ANSWER_TEMPERATURE,
+    }
 
 
 async def run(args: argparse.Namespace) -> Path:
@@ -307,15 +330,10 @@ async def run(args: argparse.Namespace) -> Path:
                 "STORAGE_DIR=/app/server/storage",
                 "-e",
                 "DISABLE_TELEMETRY=true",
+                *generation_configuration(args.answer_model),
                 *embedding_args,
                 "-e",
                 "VECTOR_DB=lancedb",
-                "-e",
-                "LLM_PROVIDER=ollama",
-                "-e",
-                "OLLAMA_BASE_PATH=http://127.0.0.1:11434",
-                "-e",
-                "OLLAMA_MODEL_PREF=benchmark-unused",
                 IMAGE_REF,
             ]
         )
@@ -337,11 +355,9 @@ async def run(args: argparse.Namespace) -> Path:
             client.headers["Authorization"] = f"Bearer {secret}"
             workspace_response = await client.post(
                 "/api/v1/workspace/new",
-                json={
-                    "name": f"networking-{uuid4().hex[:8]}",
-                    "similarityThreshold": 0.0,
-                    "topN": args.candidate_depth,
-                },
+                json=workspace_configuration(
+                    f"networking-{uuid4().hex[:8]}", args.candidate_depth
+                ),
             )
             workspace_response.raise_for_status()
             slug = str(workspace_response.json()["workspace"]["slug"])
@@ -507,6 +523,12 @@ async def run(args: argparse.Namespace) -> Path:
         "embedding_proxy_fingerprint_sha256": (
             proxy_fingerprint if args.embedding_engine == "litellm" else None
         ),
+        "answer_model": args.answer_model,
+        "answer_provider": "litellm",
+        "answer_model_configured": True,
+        "answer_temperature_configured": ANSWER_TEMPERATURE,
+        "answer_generation_executed": False,
+        "answer_provider_calls": 0,
         "dataset_hash_sha256": _dataset_hash(dataset),
         "document_count": len(documents),
         "query_count": len(queries),
@@ -558,6 +580,7 @@ def main() -> None:
     parser.add_argument("--allowed-storage-root", required=True, type=Path)
     parser.add_argument("--model-cache", type=Path)
     parser.add_argument("--embedding-engine", choices=("native", "litellm"), default="native")
+    parser.add_argument("--answer-model", default=ANSWER_MODEL)
     parser.add_argument(
         "--embedding-proxy-fingerprint",
         help="Non-secret SHA-256 identity of the LiteLLM instance/configuration",

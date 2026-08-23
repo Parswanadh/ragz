@@ -20,7 +20,10 @@ from run_multi_query_benchmark import (  # noqa: E402
     safe_query_record,
     summarize_stage_timings,
 )
-from seed_networking_comparison_lab import validate_lab_target  # noqa: E402
+from seed_networking_comparison_lab import (  # noqa: E402
+    DEFAULT_CHAT_MODEL,
+    validate_lab_target,
+)
 
 
 def test_query_set_requires_original_alternatives_and_page_qrels(tmp_path: Path) -> None:
@@ -154,6 +157,10 @@ def test_embedding_tracks_pin_model_and_dimension() -> None:
     assert openai_track.settings_backend == "litellm"
     with pytest.raises(ValueError):
         resolve_embedding_track("other")
+
+
+def test_comparison_lab_pins_shared_answer_model() -> None:
+    assert DEFAULT_CHAT_MODEL == "gpt-5.6-luna"
 
 
 def test_safe_record_never_contains_query_or_alternatives() -> None:

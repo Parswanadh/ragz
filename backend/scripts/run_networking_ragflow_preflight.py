@@ -21,7 +21,7 @@ MIN_VM_MAX_MAP_COUNT = 262_144
 OFFICIAL_SOURCE = f"{RAGFLOW_REPOSITORY}/blob/{RAGFLOW_VERSION}/docs/quickstart.mdx"
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMENSION = 1536
-GENERATION_MODEL = "gpt-5.4-mini"
+GENERATION_MODEL = "gpt-5.6-luna"
 
 
 def eligibility(
@@ -115,9 +115,13 @@ def validate_checkout(checkout: Path) -> dict[str, str]:
     catalog = (checkout / "conf" / "models" / "openai.json").read_text(
         encoding="utf-8"
     )
-    if EMBEDDING_MODEL not in catalog or GENERATION_MODEL not in catalog:
-        raise RuntimeError("pinned RAGFlow OpenAI catalog lacks the parity models")
-    return {"version": tag, "commit": commit}
+    if EMBEDDING_MODEL not in catalog:
+        raise RuntimeError("pinned RAGFlow OpenAI catalog lacks the parity embedding model")
+    return {
+        "version": tag,
+        "commit": commit,
+        "generation_model_catalogued": str(GENERATION_MODEL in catalog).lower(),
+    }
 
 
 def run(
@@ -164,6 +168,11 @@ def run(
             "embedding_dimension": EMBEDDING_DIMENSION,
             "generation_model": GENERATION_MODEL,
             "provider": "openai",
+            "generation_transport": "OpenAI-API-Compatible via LiteLLM",
+            "generation_model_catalogued": identity[
+                "generation_model_catalogued"
+            ] == "true",
+            "generation_temperature": "provider default (1); zero is unsupported",
         },
         "multi_query_capabilities": {
             "ordinary_public_retrieval": "single_question",
