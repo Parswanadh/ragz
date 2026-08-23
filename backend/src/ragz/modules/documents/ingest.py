@@ -200,6 +200,7 @@ async def run_embed_upsert(document_id: UUID) -> UUID | None:
         dense_embedder = get_dense_embedder(
             embedding_model.id, provider_kind=embedding_model.provider_kind,
             litellm_model_name=embedding_model.litellm_model_name,
+            dimension=embedding_model.dimension,
         )
 
         # Plan K §4: enrichment is gated by the workspace toggle AND a
@@ -430,6 +431,7 @@ async def run_enrichment_backfill(document_id: UUID) -> None:
         dense_embedder = get_dense_embedder(
             embedding_model.id, provider_kind=embedding_model.provider_kind,
             litellm_model_name=embedding_model.litellm_model_name,
+            dimension=embedding_model.dimension,
         )
         total_prompt_tokens = total_completion_tokens = 0
 
@@ -591,6 +593,7 @@ async def run_reembed_workspace(
             new_embedder = get_dense_embedder(
                 new_model.id, provider_kind=new_model.provider_kind,
                 litellm_model_name=new_model.litellm_model_name,
+                dimension=new_model.dimension,
             )
 
             docs = list(

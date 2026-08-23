@@ -1,0 +1,94 @@
+{
+  "schema_version": "networking-pdfs-v2",
+  "dataset_id": "networking-pdfs-v2",
+  "status": "draft_unverified",
+  "source_books": [
+    {
+      "book_id": "book-a",
+      "title": "book title supplied by curator",
+      "sha256": "<64 lowercase hex characters>",
+      "page_count": 1,
+      "chapters": [
+        {
+          "chapter_id": "book-a-ch01",
+          "title": "chapter title",
+          "page_start": 1,
+          "page_end": 1,
+          "concept_cluster": "book-a-cluster-01"
+        }
+      ]
+    }
+  ],
+  "targets": {
+    "locked": {
+      "definition": 60,
+      "comparison": 60,
+      "procedure": 60,
+      "troubleshooting": 60,
+      "design": 60,
+      "calculation": 60
+    },
+    "dev": {
+      "definition": 10,
+      "comparison": 10,
+      "procedure": 10,
+      "troubleshooting": 10,
+      "design": 10,
+      "calculation": 10
+    }
+  },
+  "answerability_targets": {
+    "locked": {"answerable": 240, "negative": 120},
+    "dev": {"answerable": 40, "negative": 20}
+  },
+  "negative_strata_targets": {
+    "locked": {
+      "out_of_scope": 30,
+      "insufficient_evidence": 30,
+      "false_premise": 30,
+      "ambiguous": 30
+    },
+    "dev": {
+      "out_of_scope": 5,
+      "insufficient_evidence": 5,
+      "false_premise": 5,
+      "ambiguous": 5
+    }
+  },
+  "difficulty_targets": {
+    "locked": {"easy": 120, "medium": 150, "hard": 90},
+    "dev": {"easy": 20, "medium": 25, "hard": 15}
+  },
+  "source_scope_targets": {
+    "locked": {"single_book": 240, "pairwise": 60, "all_three": 30, "off_corpus": 30},
+    "dev": {"single_book": 40, "pairwise": 10, "all_three": 5, "off_corpus": 5}
+  },
+  "book_coverage_targets": {
+    "locked": {"book-a": 120, "book-b": 120, "book-c": 120},
+    "dev": {"book-a": 20, "book-b": 20, "book-c": 20}
+  },
+  "questions": [
+    {
+      "question_id": "npv2-dev-0001",
+      "split": "dev",
+      "query_type": "definition",
+      "concept_cluster": "book-a-cluster-01",
+      "query": "",
+      "alternatives": [],
+      "answerable": null,
+      "negative_stratum": null,
+      "difficulty": null,
+      "source_scope": "single_book",
+      "reference_answer": "",
+      "claims": [],
+      "claim_evidence_links": [],
+      "qrels": [],
+      "source_metadata": [],
+      "status": "draft_unverified",
+      "reviews": [],
+      "adjudication": null,
+      "content_sha256": null
+    }
+  ],
+  "dataset_sha256": null
+}

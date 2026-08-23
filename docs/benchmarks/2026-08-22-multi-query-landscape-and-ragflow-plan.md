@@ -86,10 +86,34 @@ commit: ec9c08d809f63ba2815090182fa225899d2437d5
 Official RAGFlow requirements are at least four x86 cores, 16 GB effective host/
 Docker-daemon RAM, 50 GB disk, and `vm.max_map_count >= 262144`. The pinned
 Compose configuration sets a per-container `MEM_LIMIT=8073741824` bytes; that
-setting is not a substitute for the official 16 GB runtime floor. The live Docker
-daemon exposes only `3864363008` memory bytes. Its disk and kernel-map values were
-not independently verified inside the daemon/VM namespace, so the stack was not
-started.
+setting is not a substitute for the official 16 GB runtime floor. The Docker
+Desktop endpoint exposes only `3864363008` memory bytes. Its disk and kernel-map
+values were not independently verified inside the daemon/VM namespace, so the
+stack was not started. A later smoke attempt used a separate, explicitly selected
+native endpoint (`unix:///var/run/docker.sock`) and measured `16246616064` daemon
+bytes. These are two endpoint observations, not time-varying measurements of one
+daemon: Docker Desktop remains the resource-gated endpoint, while the native
+daemon is the endpoint associated with the low-memory smoke attempt. Every result
+manifest must retain the endpoint string and daemon fingerprint alongside its
+memory measurement so the rows cannot be merged accidentally.
+
+Endpoint ledger:
+
+| Endpoint label | Docker endpoint | Daemon memory | Interpretation |
+|---|---|---:|---|
+| Docker Desktop | current Docker Desktop context (endpoint not explicitly pinned in the preflight artifact) | `3864363008` bytes (3.86 GB) | resource-gated; no quality score |
+| Native daemon | `unix:///var/run/docker.sock` | `16246616064` bytes (16.25 GB) | separate smoke endpoint; runtime still requires disk and `vm.max_map_count` evidence |
+
+The native-daemon project was subsequently started under a hard 3 GB aggregate
+budget with reduced-memory Infinity and API-only model posture. All five
+services reached running state, but the guard stopped them when RAGFlow reached
+99.9% of its 1.38 GB slice and swap growth reached 1.42 GB. There were no OOMs
+or restarts. This is a runtime resource limit, not a quality result.
+
+The low-memory runner performs an explicit `docker compose --project-name … ps
+--all -q` project-collision guard before writing its generated override or
+starting services. Reuse is opt-in (`--reuse-project`) and is recorded in the
+manifest; a default collision refusal never calls `stop`.
 
 This already assumes API-only models. Since v0.22.0 RAGFlow ships only the slim
 image and no longer bundles embedding models; v0.27.0 explicitly relies on external
@@ -101,6 +125,7 @@ while preserving a native RAGFlow benchmark.
 Evidence:
 
 - `docs/benchmarks/artifacts/raw/2026-08-22/ragflow-networking-preflight-20260822-ec9c08d/`
+- `docs/benchmarks/artifacts/raw/2026-08-23/ragflow-native-daemon-lowmem-smoke-20260823-r5/`
 - [RAGFlow v0.27.0 quick start](https://github.com/infiniflow/ragflow/blob/v0.27.0/docs/quickstart.mdx)
 
 ## Same-model contract for a compliant RAGFlow host
@@ -140,8 +165,10 @@ not be described as runtime multi-query retrieval.
 
 ## Blocked versus incomplete
 
-RAGFlow is `resource_gated`, not failed quality and not zero. Completing the native
-benchmark requires at least 16 GB effective Docker-daemon/host memory plus verified
-50 GB daemon disk and daemon/VM `vm.max_map_count >= 262144`. The pinned 8.07 GB
-per-container setting alone is insufficient evidence. A 24–32 GB host is preferable
-for a side-by-side reproducible run.
+RAGFlow is `runtime_resource_limited` under the tested 3 GB project budget, not
+failed quality and not zero. Completing the native benchmark requires more
+application headroom plus verified daemon disk and `vm.max_map_count`. The
+published 16 GB host guidance and the measured 3 GB project behavior both argue
+against using this host for a side-by-side quality run without first changing
+the operator-approved resource envelope. A 24–32 GB host remains preferable for
+a reproducible comparison alongside the other systems.

@@ -994,6 +994,7 @@ async def stream_reply(
             ephemeral_embedder = get_dense_embedder(
                 ephemeral_model.id, provider_kind=ephemeral_model.provider_kind,
                 litellm_model_name=ephemeral_model.litellm_model_name,
+                dimension=ephemeral_model.dimension,
             )
             dense_vec = (await ephemeral_embedder.embed([user_message.content]))[0]
             sparse_vec = (await asyncio.to_thread(embed_sparse, [user_message.content]))[0]

@@ -1,0 +1,5290 @@
+{
+  "bootstrap_samples": 2000,
+  "bootstrap_seed": 20260823,
+  "expected_observations": 2000,
+  "groups": {
+    "openai-text-embedding-3-large-d1024|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1024",
+      "cell_id": "openai-text-embedding-3-large-d1024",
+      "client_mode": "new",
+      "dimension": 1024,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            267.430041983,
+            311.577874922
+          ],
+          "mean_ms": 289.40556396,
+          "observations": 25,
+          "p50_ms": 268.985296,
+          "p95_ms": 381.35586559999996,
+          "p99_ms": 396.33025308
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.136272513,
+            0.15631101699999997
+          ],
+          "mean_ms": 0.14520256,
+          "observations": 25,
+          "p50_ms": 0.138845,
+          "p95_ms": 0.17989019999999994,
+          "p99_ms": 0.22932663999999986
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.145423946,
+            0.173817033
+          ],
+          "mean_ms": 0.1582304,
+          "observations": 25,
+          "p50_ms": 0.143688,
+          "p95_ms": 0.23561579999999993,
+          "p99_ms": 0.24852776
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            269.88291968,
+            311.659814198
+          ],
+          "mean_ms": 289.81019956,
+          "observations": 25,
+          "p50_ms": 269.387223,
+          "p95_ms": 381.77007839999993,
+          "p99_ms": 396.74317679999996
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.09423718099999999,
+            0.10870984999999997
+          ],
+          "mean_ms": 0.10120264000000001,
+          "observations": 25,
+          "p50_ms": 0.092934,
+          "p95_ms": 0.14756159999999996,
+          "p99_ms": 0.15248383999999998
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1024|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1024",
+      "cell_id": "openai-text-embedding-3-large-d1024",
+      "client_mode": "persistent",
+      "dimension": 1024,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            299.32883224200003,
+            360.026930004
+          ],
+          "mean_ms": 328.28282012000005,
+          "observations": 25,
+          "p50_ms": 301.815141,
+          "p95_ms": 454.86302119999993,
+          "p99_ms": 514.6774297999999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.134860732,
+            0.152505958
+          ],
+          "mean_ms": 0.14275928000000002,
+          "observations": 25,
+          "p50_ms": 0.138664,
+          "p95_ms": 0.20213979999999981,
+          "p99_ms": 0.21559516
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.15277123199999998,
+            0.188626492
+          ],
+          "mean_ms": 0.1702908,
+          "observations": 25,
+          "p50_ms": 0.148439,
+          "p95_ms": 0.25323640000000003,
+          "p99_ms": 0.25494432
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            298.884274474,
+            360.412167452
+          ],
+          "mean_ms": 328.70519260000003,
+          "observations": 25,
+          "p50_ms": 302.147686,
+          "p95_ms": 455.22872699999994,
+          "p99_ms": 515.0367323999999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.098752563,
+            0.121214754
+          ],
+          "mean_ms": 0.1093224,
+          "observations": 25,
+          "p50_ms": 0.092963,
+          "p95_ms": 0.1572346,
+          "p99_ms": 0.16042412
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1024|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1024",
+      "cell_id": "openai-text-embedding-3-large-d1024",
+      "client_mode": "new",
+      "dimension": 1024,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            651.613122316,
+            789.302441584
+          ],
+          "mean_ms": 724.86780864,
+          "observations": 25,
+          "p50_ms": 748.043515,
+          "p95_ms": 921.8786768,
+          "p99_ms": 959.4828286399999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.136076602,
+            0.156315935
+          ],
+          "mean_ms": 0.14430552,
+          "observations": 25,
+          "p50_ms": 0.1376,
+          "p95_ms": 0.17620459999999993,
+          "p99_ms": 0.24035367999999985
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            4.0352150479999995,
+            4.8698448789999995
+          ],
+          "mean_ms": 4.41631996,
+          "observations": 25,
+          "p50_ms": 4.04768,
+          "p95_ms": 6.6003548,
+          "p99_ms": 6.65269204
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            664.9875045150001,
+            801.770679408
+          ],
+          "mean_ms": 732.4812144800001,
+          "observations": 25,
+          "p50_ms": 755.533026,
+          "p95_ms": 928.540167,
+          "p99_ms": 969.79287928
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            2.8316489639999998,
+            3.3314885690000002
+          ],
+          "mean_ms": 3.05278036,
+          "observations": 25,
+          "p50_ms": 2.834378,
+          "p95_ms": 4.698556399999999,
+          "p99_ms": 4.75927904
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1024|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1024",
+      "cell_id": "openai-text-embedding-3-large-d1024",
+      "client_mode": "persistent",
+      "dimension": 1024,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            664.1805449599999,
+            768.5197765809999
+          ],
+          "mean_ms": 717.08453748,
+          "observations": 25,
+          "p50_ms": 714.62242,
+          "p95_ms": 901.1588596,
+          "p99_ms": 910.47996888
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.149629334,
+            0.181773453
+          ],
+          "mean_ms": 0.16385976,
+          "observations": 25,
+          "p50_ms": 0.150892,
+          "p95_ms": 0.25552059999999976,
+          "p99_ms": 0.3041142399999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            3.926028652,
+            4.68553772
+          ],
+          "mean_ms": 4.285895239999999,
+          "observations": 25,
+          "p50_ms": 3.858805,
+          "p95_ms": 6.452053599999998,
+          "p99_ms": 6.65428328
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            669.3226608640001,
+            779.785071885
+          ],
+          "mean_ms": 724.4661053200001,
+          "observations": 25,
+          "p50_ms": 722.156763,
+          "p95_ms": 908.1860598000001,
+          "p99_ms": 919.61884128
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            2.8170173490000003,
+            3.106584023
+          ],
+          "mean_ms": 2.93181284,
+          "observations": 25,
+          "p50_ms": 2.874959,
+          "p95_ms": 3.0701722,
+          "p99_ms": 4.295622359999997
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1024|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1024",
+      "cell_id": "openai-text-embedding-3-large-d1024",
+      "client_mode": "new",
+      "dimension": 1024,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            325.55966774399997,
+            380.976840943
+          ],
+          "mean_ms": 353.06423340000003,
+          "observations": 25,
+          "p50_ms": 342.124432,
+          "p95_ms": 455.283078,
+          "p99_ms": 483.6850465199999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.133000916,
+            0.149999361
+          ],
+          "mean_ms": 0.14054732,
+          "observations": 25,
+          "p50_ms": 0.134856,
+          "p95_ms": 0.16242459999999997,
+          "p99_ms": 0.21719903999999984
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.39954492799999997,
+            0.489519235
+          ],
+          "mean_ms": 0.44305543999999997,
+          "observations": 25,
+          "p50_ms": 0.3909,
+          "p95_ms": 0.6582322,
+          "p99_ms": 0.66256424
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            326.726598213,
+            382.868267685
+          ],
+          "mean_ms": 353.96094700000003,
+          "observations": 25,
+          "p50_ms": 343.162734,
+          "p95_ms": 456.02567,
+          "p99_ms": 484.42990015999993
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.283776875,
+            0.344429017
+          ],
+          "mean_ms": 0.31311084,
+          "observations": 25,
+          "p50_ms": 0.271985,
+          "p95_ms": 0.4621278,
+          "p99_ms": 0.48897243999999995
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1024|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1024",
+      "cell_id": "openai-text-embedding-3-large-d1024",
+      "client_mode": "persistent",
+      "dimension": 1024,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            321.988681561,
+            367.61359447
+          ],
+          "mean_ms": 344.06398092,
+          "observations": 25,
+          "p50_ms": 337.972437,
+          "p95_ms": 443.63007880000004,
+          "p99_ms": 452.77796112
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.13582005900000002,
+            0.173244702
+          ],
+          "mean_ms": 0.15294764,
+          "observations": 25,
+          "p50_ms": 0.132892,
+          "p95_ms": 0.251907,
+          "p99_ms": 0.26379411999999997
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.393208578,
+            0.48498164
+          ],
+          "mean_ms": 0.43619100000000005,
+          "observations": 25,
+          "p50_ms": 0.368926,
+          "p95_ms": 0.6449471999999999,
+          "p99_ms": 0.66551716
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            322.584883826,
+            367.9134957659999
+          ],
+          "mean_ms": 344.93775732,
+          "observations": 25,
+          "p50_ms": 338.857612,
+          "p95_ms": 444.3719504,
+          "p99_ms": 453.91019107999995
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.26590028,
+            0.30820590999999997
+          ],
+          "mean_ms": 0.28463776,
+          "observations": 25,
+          "p50_ms": 0.265333,
+          "p95_ms": 0.4177262,
+          "p99_ms": 0.42868004
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1024|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1024",
+      "cell_id": "openai-text-embedding-3-large-d1024",
+      "client_mode": "new",
+      "dimension": 1024,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            433.51415132200003,
+            528.561771706
+          ],
+          "mean_ms": 480.05415976000006,
+          "observations": 25,
+          "p50_ms": 487.983464,
+          "p95_ms": 608.1552859999999,
+          "p99_ms": 726.5709137999997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.132144561,
+            0.151668789
+          ],
+          "mean_ms": 0.14016544,
+          "observations": 25,
+          "p50_ms": 0.131729,
+          "p95_ms": 0.16434459999999995,
+          "p99_ms": 0.23063471999999982
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.0846879770000002,
+            1.3138745180000002
+          ],
+          "mean_ms": 1.1958448400000001,
+          "observations": 25,
+          "p50_ms": 1.150528,
+          "p95_ms": 1.645632,
+          "p99_ms": 1.8184163999999996
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            434.146650908,
+            528.7063504
+          ],
+          "mean_ms": 482.1586642,
+          "observations": 25,
+          "p50_ms": 490.135702,
+          "p95_ms": 609.9870727999999,
+          "p99_ms": 728.2405621999998
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.718172206,
+            0.827025231
+          ],
+          "mean_ms": 0.76849416,
+          "observations": 25,
+          "p50_ms": 0.70729,
+          "p95_ms": 1.1028668,
+          "p99_ms": 1.1434314399999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1024|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1024",
+      "cell_id": "openai-text-embedding-3-large-d1024",
+      "client_mode": "persistent",
+      "dimension": 1024,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            405.9829729,
+            485.17335328599995
+          ],
+          "mean_ms": 444.7666336,
+          "observations": 25,
+          "p50_ms": 385.302025,
+          "p95_ms": 583.0778429999999,
+          "p99_ms": 584.30973904
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14564253200000002,
+            0.175830262
+          ],
+          "mean_ms": 0.1596486,
+          "observations": 25,
+          "p50_ms": 0.143701,
+          "p95_ms": 0.2392934,
+          "p99_ms": 0.26446039999999993
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.009509738,
+            1.2459532960000002
+          ],
+          "mean_ms": 1.12088256,
+          "observations": 25,
+          "p50_ms": 0.936278,
+          "p95_ms": 1.631112,
+          "p99_ms": 1.65847372
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            407.147131028,
+            487.13620041699994
+          ],
+          "mean_ms": 446.7982332,
+          "observations": 25,
+          "p50_ms": 387.14405,
+          "p95_ms": 585.208543,
+          "p99_ms": 586.0608214399999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.698845359,
+            0.811259364
+          ],
+          "mean_ms": 0.75106844,
+          "observations": 25,
+          "p50_ms": 0.700718,
+          "p95_ms": 1.0996209999999997,
+          "p99_ms": 1.1396917199999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1280|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1280",
+      "cell_id": "openai-text-embedding-3-large-d1280",
+      "client_mode": "new",
+      "dimension": 1280,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            311.31591887499997,
+            377.623690535
+          ],
+          "mean_ms": 343.7157894,
+          "observations": 25,
+          "p50_ms": 337.329845,
+          "p95_ms": 535.6320299999998,
+          "p99_ms": 565.64000688
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.139681228,
+            0.17776551199999993
+          ],
+          "mean_ms": 0.15629536,
+          "observations": 25,
+          "p50_ms": 0.137047,
+          "p95_ms": 0.2391254,
+          "p99_ms": 0.30307823999999983
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.19940563299999997,
+            0.253215698
+          ],
+          "mean_ms": 0.22632344,
+          "observations": 25,
+          "p50_ms": 0.220483,
+          "p95_ms": 0.35343579999999997,
+          "p99_ms": 0.36188196
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            312.913151351,
+            381.321710663
+          ],
+          "mean_ms": 344.24569168,
+          "observations": 25,
+          "p50_ms": 337.987233,
+          "p95_ms": 536.0592505999997,
+          "p99_ms": 566.1238601199999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.13097293299999999,
+            0.16514154600000003
+          ],
+          "mean_ms": 0.14728348,
+          "observations": 25,
+          "p50_ms": 0.13598,
+          "p95_ms": 0.21830059999999996,
+          "p99_ms": 0.24451451999999996
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1280|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1280",
+      "cell_id": "openai-text-embedding-3-large-d1280",
+      "client_mode": "persistent",
+      "dimension": 1280,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            319.37819283199997,
+            391.882893358
+          ],
+          "mean_ms": 353.3613826,
+          "observations": 25,
+          "p50_ms": 344.302437,
+          "p95_ms": 470.7947342,
+          "p99_ms": 586.4342367999997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.168290088,
+            0.213078919
+          ],
+          "mean_ms": 0.19084992,
+          "observations": 25,
+          "p50_ms": 0.163868,
+          "p95_ms": 0.2587392,
+          "p99_ms": 0.33978239999999976
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.22063393699999997,
+            0.25997208499999996
+          ],
+          "mean_ms": 0.23984896,
+          "observations": 25,
+          "p50_ms": 0.237531,
+          "p95_ms": 0.31172839999999996,
+          "p99_ms": 0.324507
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            321.701157399,
+            389.8608779079998
+          ],
+          "mean_ms": 353.9400032,
+          "observations": 25,
+          "p50_ms": 344.810249,
+          "p95_ms": 471.29452000000003,
+          "p99_ms": 587.0986517599997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.1360931,
+            0.159450693
+          ],
+          "mean_ms": 0.14792172,
+          "observations": 25,
+          "p50_ms": 0.156561,
+          "p95_ms": 0.1920324,
+          "p99_ms": 0.1947086
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1280|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1280",
+      "cell_id": "openai-text-embedding-3-large-d1280",
+      "client_mode": "new",
+      "dimension": 1280,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            716.6082058679999,
+            886.0783633019995
+          ],
+          "mean_ms": 801.72935048,
+          "observations": 25,
+          "p50_ms": 795.290277,
+          "p95_ms": 1191.2547032,
+          "p99_ms": 1235.8398783599998
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.13988531199999998,
+            0.152650995
+          ],
+          "mean_ms": 0.14589036,
+          "observations": 25,
+          "p50_ms": 0.14644,
+          "p95_ms": 0.17440679999999995,
+          "p99_ms": 0.19074963999999997
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            5.559528475000001,
+            6.8553689449999995
+          ],
+          "mean_ms": 6.170054199999999,
+          "observations": 25,
+          "p50_ms": 5.1538,
+          "p95_ms": 8.7189506,
+          "p99_ms": 8.83358456
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            727.0228654900001,
+            896.8287851229999
+          ],
+          "mean_ms": 811.92159696,
+          "observations": 25,
+          "p50_ms": 807.314055,
+          "p95_ms": 1201.4257762,
+          "p99_ms": 1246.0057583999999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            3.6452432169999995,
+            4.141973346
+          ],
+          "mean_ms": 3.8763019200000004,
+          "observations": 25,
+          "p50_ms": 3.590941,
+          "p95_ms": 5.3046244,
+          "p99_ms": 5.48935932
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1280|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1280",
+      "cell_id": "openai-text-embedding-3-large-d1280",
+      "client_mode": "persistent",
+      "dimension": 1280,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            762.6973543659999,
+            899.6963704869999
+          ],
+          "mean_ms": 832.82864764,
+          "observations": 25,
+          "p50_ms": 861.18656,
+          "p95_ms": 1134.3409522,
+          "p99_ms": 1157.44130668
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.17338318100000003,
+            0.20786400099999996
+          ],
+          "mean_ms": 0.19038232,
+          "observations": 25,
+          "p50_ms": 0.174553,
+          "p95_ms": 0.2609566,
+          "p99_ms": 0.2976625599999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            5.182161562999999,
+            6.321605407
+          ],
+          "mean_ms": 5.7280542400000005,
+          "observations": 25,
+          "p50_ms": 4.788214,
+          "p95_ms": 8.6301682,
+          "p99_ms": 8.68636844
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            773.402121537,
+            914.61263962
+          ],
+          "mean_ms": 842.64310604,
+          "observations": 25,
+          "p50_ms": 873.247364,
+          "p95_ms": 1145.8474588,
+          "p99_ms": 1166.5780322399999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            3.6503945810000005,
+            4.202301973
+          ],
+          "mean_ms": 3.8960218400000004,
+          "observations": 25,
+          "p50_ms": 3.682437,
+          "p95_ms": 5.671695399999999,
+          "p99_ms": 5.988192359999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1280|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1280",
+      "cell_id": "openai-text-embedding-3-large-d1280",
+      "client_mode": "new",
+      "dimension": 1280,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            365.342980084,
+            456.4568031629999
+          ],
+          "mean_ms": 407.68095436000004,
+          "observations": 25,
+          "p50_ms": 362.955125,
+          "p95_ms": 632.6508425999996,
+          "p99_ms": 682.6453617999999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.141447149,
+            0.175016135
+          ],
+          "mean_ms": 0.15744296,
+          "observations": 25,
+          "p50_ms": 0.139139,
+          "p95_ms": 0.24608599999999992,
+          "p99_ms": 0.27295052
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.518912971,
+            0.639730151
+          ],
+          "mean_ms": 0.5791486,
+          "observations": 25,
+          "p50_ms": 0.472535,
+          "p95_ms": 0.8454455999999999,
+          "p99_ms": 0.8958543999999998
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            366.116668537,
+            453.19403168199995
+          ],
+          "mean_ms": 408.80200308,
+          "observations": 25,
+          "p50_ms": 363.919716,
+          "p95_ms": 633.6392909999996,
+          "p99_ms": 683.9084545999999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.35344144299999997,
+            0.417595208
+          ],
+          "mean_ms": 0.38445715999999996,
+          "observations": 25,
+          "p50_ms": 0.33483,
+          "p95_ms": 0.5386006,
+          "p99_ms": 0.54276456
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1280|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1280",
+      "cell_id": "openai-text-embedding-3-large-d1280",
+      "client_mode": "persistent",
+      "dimension": 1280,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            364.291809115,
+            434.16131986899995
+          ],
+          "mean_ms": 397.4497158,
+          "observations": 25,
+          "p50_ms": 432.220367,
+          "p95_ms": 476.1901152,
+          "p99_ms": 618.6427832799997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.157621072,
+            0.19298807599999998
+          ],
+          "mean_ms": 0.17510943999999998,
+          "observations": 25,
+          "p50_ms": 0.169551,
+          "p95_ms": 0.2418706,
+          "p99_ms": 0.26193043999999993
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.580538001,
+            0.6915638889999999
+          ],
+          "mean_ms": 0.6360602399999999,
+          "observations": 25,
+          "p50_ms": 0.709259,
+          "p95_ms": 0.8057675999999999,
+          "p99_ms": 0.8379469199999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            365.106724473,
+            433.7785050009999
+          ],
+          "mean_ms": 398.67421108,
+          "observations": 25,
+          "p50_ms": 433.683156,
+          "p95_ms": 477.0520788,
+          "p99_ms": 619.6250441599997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.377425396,
+            0.4478394889999999
+          ],
+          "mean_ms": 0.4133256,
+          "observations": 25,
+          "p50_ms": 0.398338,
+          "p95_ms": 0.5199493999999999,
+          "p99_ms": 0.5738571999999998
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1280|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1280",
+      "cell_id": "openai-text-embedding-3-large-d1280",
+      "client_mode": "new",
+      "dimension": 1280,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            477.57750553200003,
+            577.9669882879999
+          ],
+          "mean_ms": 526.01770208,
+          "observations": 25,
+          "p50_ms": 566.920994,
+          "p95_ms": 763.6798081999995,
+          "p99_ms": 803.75849228
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14065792300000002,
+            0.180386817
+          ],
+          "mean_ms": 0.15883452,
+          "observations": 25,
+          "p50_ms": 0.137798,
+          "p95_ms": 0.2554827999999999,
+          "p99_ms": 0.3016114399999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.438668482,
+            1.7724005599999997
+          ],
+          "mean_ms": 1.60242384,
+          "observations": 25,
+          "p50_ms": 1.660173,
+          "p95_ms": 2.1248352,
+          "p99_ms": 2.17372408
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            480.316550396,
+            579.930297367
+          ],
+          "mean_ms": 528.8081265999999,
+          "observations": 25,
+          "p50_ms": 570.183545,
+          "p95_ms": 767.4059677999995,
+          "p99_ms": 806.66791284
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.92992895,
+            1.128213697
+          ],
+          "mean_ms": 1.02916616,
+          "observations": 25,
+          "p50_ms": 0.878984,
+          "p95_ms": 1.477208,
+          "p99_ms": 1.4872918
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1280|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1280",
+      "cell_id": "openai-text-embedding-3-large-d1280",
+      "client_mode": "persistent",
+      "dimension": 1280,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            504.02828825,
+            612.1013882350001
+          ],
+          "mean_ms": 556.86136976,
+          "observations": 25,
+          "p50_ms": 587.929239,
+          "p95_ms": 808.8001254,
+          "p99_ms": 812.66356304
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.15129545500000002,
+            0.18481693899999999
+          ],
+          "mean_ms": 0.16707519999999998,
+          "observations": 25,
+          "p50_ms": 0.143418,
+          "p95_ms": 0.24904199999999999,
+          "p99_ms": 0.25401348
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.539427558,
+            1.8337562439999997
+          ],
+          "mean_ms": 1.68278584,
+          "observations": 25,
+          "p50_ms": 1.617664,
+          "p95_ms": 2.1573528,
+          "p99_ms": 2.348181
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            506.39412775999995,
+            613.6073760919999
+          ],
+          "mean_ms": 559.80431564,
+          "observations": 25,
+          "p50_ms": 591.457171,
+          "p95_ms": 811.0494758,
+          "p99_ms": 816.10227116
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.992677573,
+            1.194360457
+          ],
+          "mean_ms": 1.09308484,
+          "observations": 25,
+          "p50_ms": 0.966166,
+          "p95_ms": 1.5133884,
+          "p99_ms": 1.5702086
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1536|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1536",
+      "cell_id": "openai-text-embedding-3-large-d1536",
+      "client_mode": "new",
+      "dimension": 1536,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            315.87344809800004,
+            369.088974921
+          ],
+          "mean_ms": 342.17868224,
+          "observations": 25,
+          "p50_ms": 343.209074,
+          "p95_ms": 428.6490541999999,
+          "p99_ms": 516.4874172799998
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.130169519,
+            0.140000054
+          ],
+          "mean_ms": 0.13490639999999998,
+          "observations": 25,
+          "p50_ms": 0.130892,
+          "p95_ms": 0.15812559999999998,
+          "p99_ms": 0.16070804
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.277056317,
+            0.35691972
+          ],
+          "mean_ms": 0.31595928,
+          "observations": 25,
+          "p50_ms": 0.323208,
+          "p95_ms": 0.5228183999999998,
+          "p99_ms": 0.54880616
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            317.029917951,
+            370.666192391
+          ],
+          "mean_ms": 342.80720624,
+          "observations": 25,
+          "p50_ms": 343.653172,
+          "p95_ms": 429.52333839999994,
+          "p99_ms": 517.0587047599997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.16140560799999998,
+            0.194614964
+          ],
+          "mean_ms": 0.17765832,
+          "observations": 25,
+          "p50_ms": 0.191122,
+          "p95_ms": 0.23455779999999998,
+          "p99_ms": 0.24626731999999998
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1536|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1536",
+      "cell_id": "openai-text-embedding-3-large-d1536",
+      "client_mode": "persistent",
+      "dimension": 1536,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            323.509918213,
+            395.46199328700004
+          ],
+          "mean_ms": 355.61659332000005,
+          "observations": 25,
+          "p50_ms": 346.893755,
+          "p95_ms": 442.6582302,
+          "p99_ms": 648.3608575999995
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.170652363,
+            0.213550287
+          ],
+          "mean_ms": 0.19155328000000002,
+          "observations": 25,
+          "p50_ms": 0.169844,
+          "p95_ms": 0.2856475999999999,
+          "p99_ms": 0.3096363199999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.264797511,
+            0.318120034
+          ],
+          "mean_ms": 0.29012688000000003,
+          "observations": 25,
+          "p50_ms": 0.301849,
+          "p95_ms": 0.39945959999999997,
+          "p99_ms": 0.41461583999999996
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            325.351499406,
+            396.72307665899996
+          ],
+          "mean_ms": 356.26805664,
+          "observations": 25,
+          "p50_ms": 347.726963,
+          "p95_ms": 443.2748908,
+          "p99_ms": 649.0980780799995
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.157638739,
+            0.182049815
+          ],
+          "mean_ms": 0.16978316,
+          "observations": 25,
+          "p50_ms": 0.163884,
+          "p95_ms": 0.21704959999999995,
+          "p99_ms": 0.2246374
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1536|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1536",
+      "cell_id": "openai-text-embedding-3-large-d1536",
+      "client_mode": "new",
+      "dimension": 1536,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            845.316907967,
+            974.130056365
+          ],
+          "mean_ms": 914.00285032,
+          "observations": 25,
+          "p50_ms": 969.183893,
+          "p95_ms": 1043.9955069999999,
+          "p99_ms": 1203.6836909199997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.13720825,
+            0.142744801
+          ],
+          "mean_ms": 0.1400924,
+          "observations": 25,
+          "p50_ms": 0.140538,
+          "p95_ms": 0.1498998,
+          "p99_ms": 0.15065244
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            6.15973766,
+            7.333527733999999
+          ],
+          "mean_ms": 6.702362480000001,
+          "observations": 25,
+          "p50_ms": 5.984515,
+          "p95_ms": 10.0255754,
+          "p99_ms": 10.26675992
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            858.8388275159999,
+            985.019534037
+          ],
+          "mean_ms": 925.34473352,
+          "observations": 25,
+          "p50_ms": 980.999031,
+          "p95_ms": 1054.360491,
+          "p99_ms": 1214.0584985999997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            4.30933355,
+            4.749866644999999
+          ],
+          "mean_ms": 4.49942832,
+          "observations": 25,
+          "p50_ms": 4.438605,
+          "p95_ms": 5.269112999999998,
+          "p99_ms": 6.578939719999997
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1536|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1536",
+      "cell_id": "openai-text-embedding-3-large-d1536",
+      "client_mode": "persistent",
+      "dimension": 1536,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            865.96141327,
+            999.659733993
+          ],
+          "mean_ms": 934.27991316,
+          "observations": 25,
+          "p50_ms": 998.23987,
+          "p95_ms": 1148.1484144,
+          "p99_ms": 1295.5353292799996
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.18146163599999998,
+            0.214766857
+          ],
+          "mean_ms": 0.19701796000000002,
+          "observations": 25,
+          "p50_ms": 0.178961,
+          "p95_ms": 0.27171579999999995,
+          "p99_ms": 0.27323872
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            6.234815474,
+            7.414964470999999
+          ],
+          "mean_ms": 6.795747,
+          "observations": 25,
+          "p50_ms": 5.834944,
+          "p95_ms": 9.2625052,
+          "p99_ms": 9.30448608
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            885.2522809379999,
+            1009.3613258570001
+          ],
+          "mean_ms": 945.60490896,
+          "observations": 25,
+          "p50_ms": 1011.252893,
+          "p95_ms": 1158.1459064,
+          "p99_ms": 1308.4873655599997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            4.257777452,
+            4.407784326
+          ],
+          "mean_ms": 4.332230839999999,
+          "observations": 25,
+          "p50_ms": 4.281699,
+          "p95_ms": 4.6211054,
+          "p99_ms": 4.66891924
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1536|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1536",
+      "cell_id": "openai-text-embedding-3-large-d1536",
+      "client_mode": "new",
+      "dimension": 1536,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            369.287142579,
+            422.52225931299995
+          ],
+          "mean_ms": 397.01477392,
+          "observations": 25,
+          "p50_ms": 440.603406,
+          "p95_ms": 462.7521888,
+          "p99_ms": 470.89069331999997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.134409153,
+            0.15645264599999997
+          ],
+          "mean_ms": 0.14412928,
+          "observations": 25,
+          "p50_ms": 0.144628,
+          "p95_ms": 0.1944963999999999,
+          "p99_ms": 0.23030423999999994
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.7096566750000001,
+            0.873539762
+          ],
+          "mean_ms": 0.7905238800000001,
+          "observations": 25,
+          "p50_ms": 0.763203,
+          "p95_ms": 1.0621289999999999,
+          "p99_ms": 1.1395296
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            370.90945756499997,
+            424.439413556
+          ],
+          "mean_ms": 398.43111916000004,
+          "observations": 25,
+          "p50_ms": 442.412757,
+          "p95_ms": 464.546023,
+          "p99_ms": 472.11208247999997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.44231094699999995,
+            0.5255999239999999
+          ],
+          "mean_ms": 0.48169207999999997,
+          "observations": 25,
+          "p50_ms": 0.412647,
+          "p95_ms": 0.6540077999999999,
+          "p99_ms": 0.66614224
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1536|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1536",
+      "cell_id": "openai-text-embedding-3-large-d1536",
+      "client_mode": "persistent",
+      "dimension": 1536,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            358.059623613,
+            428.39751627199996
+          ],
+          "mean_ms": 392.67928428,
+          "observations": 25,
+          "p50_ms": 359.855214,
+          "p95_ms": 537.3548801999999,
+          "p99_ms": 601.2060127999998
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.157807034,
+            0.20037195900000002
+          ],
+          "mean_ms": 0.17893628,
+          "observations": 25,
+          "p50_ms": 0.149471,
+          "p95_ms": 0.25491379999999997,
+          "p99_ms": 0.28011591999999996
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.701641987,
+            0.8536365429999998
+          ],
+          "mean_ms": 0.77637044,
+          "observations": 25,
+          "p50_ms": 0.759936,
+          "p95_ms": 1.0425248,
+          "p99_ms": 1.054782
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            359.90159606500004,
+            429.78491659400004
+          ],
+          "mean_ms": 394.11425324000004,
+          "observations": 25,
+          "p50_ms": 361.845067,
+          "p95_ms": 538.6905082,
+          "p99_ms": 602.8245115199999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.435242307,
+            0.5248603719999999
+          ],
+          "mean_ms": 0.47966223999999996,
+          "observations": 25,
+          "p50_ms": 0.405719,
+          "p95_ms": 0.6506456,
+          "p99_ms": 0.6821266399999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1536|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1536",
+      "cell_id": "openai-text-embedding-3-large-d1536",
+      "client_mode": "new",
+      "dimension": 1536,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            486.61341095999995,
+            592.8255270440001
+          ],
+          "mean_ms": 542.21517608,
+          "observations": 25,
+          "p50_ms": 580.804807,
+          "p95_ms": 693.6089844,
+          "p99_ms": 707.88557512
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.151146431,
+            0.19217117000000003
+          ],
+          "mean_ms": 0.17067851999999997,
+          "observations": 25,
+          "p50_ms": 0.146583,
+          "p95_ms": 0.260084,
+          "p99_ms": 0.29096755999999996
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.666115297,
+            2.0596832459999996
+          ],
+          "mean_ms": 1.86624468,
+          "observations": 25,
+          "p50_ms": 1.616195,
+          "p95_ms": 2.6405352,
+          "p99_ms": 2.74047356
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            493.665227382,
+            593.449819386
+          ],
+          "mean_ms": 545.52409916,
+          "observations": 25,
+          "p50_ms": 585.275176,
+          "p95_ms": 697.368022,
+          "p99_ms": 710.63169848
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.15652624,
+            1.3958775890000001
+          ],
+          "mean_ms": 1.27199988,
+          "observations": 25,
+          "p50_ms": 1.11605,
+          "p95_ms": 1.7951928000000001,
+          "p99_ms": 1.9555665199999996
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1536|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1536",
+      "cell_id": "openai-text-embedding-3-large-d1536",
+      "client_mode": "persistent",
+      "dimension": 1536,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            514.5266838360001,
+            625.5952343319999
+          ],
+          "mean_ms": 572.9575636,
+          "observations": 25,
+          "p50_ms": 593.674636,
+          "p95_ms": 704.0536012,
+          "p99_ms": 793.5451063599997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.168728616,
+            0.206866578
+          ],
+          "mean_ms": 0.18720164,
+          "observations": 25,
+          "p50_ms": 0.161402,
+          "p95_ms": 0.26717599999999997,
+          "p99_ms": 0.27249172
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.983729053,
+            2.3093725370000002
+          ],
+          "mean_ms": 2.15602196,
+          "observations": 25,
+          "p50_ms": 2.297282,
+          "p95_ms": 2.6561866,
+          "p99_ms": 2.7002568
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            519.7549621750001,
+            630.0342595459999
+          ],
+          "mean_ms": 576.6242306,
+          "observations": 25,
+          "p50_ms": 596.560294,
+          "p95_ms": 707.2484866,
+          "p99_ms": 797.6650438799998
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.190127569,
+            1.4580270370000001
+          ],
+          "mean_ms": 1.3234434,
+          "observations": 25,
+          "p50_ms": 1.087026,
+          "p95_ms": 1.8290748,
+          "p99_ms": 1.87823304
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1792|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1792",
+      "cell_id": "openai-text-embedding-3-large-d1792",
+      "client_mode": "new",
+      "dimension": 1792,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            303.532148156,
+            360.11791402399996
+          ],
+          "mean_ms": 330.79844776,
+          "observations": 25,
+          "p50_ms": 294.754705,
+          "p95_ms": 473.8854699999999,
+          "p99_ms": 491.13525431999994
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.134605087,
+            0.157436256
+          ],
+          "mean_ms": 0.14471904,
+          "observations": 25,
+          "p50_ms": 0.136587,
+          "p95_ms": 0.21359159999999988,
+          "p99_ms": 0.23919679999999996
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.297735718,
+            0.35873779000000006
+          ],
+          "mean_ms": 0.32838616000000004,
+          "observations": 25,
+          "p50_ms": 0.349786,
+          "p95_ms": 0.4237472,
+          "p99_ms": 0.44908999999999993
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            303.84974500899995,
+            361.558125024
+          ],
+          "mean_ms": 331.46994988,
+          "observations": 25,
+          "p50_ms": 295.22519,
+          "p95_ms": 474.6894173999999,
+          "p99_ms": 491.97514271999995
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.179984618,
+            0.218305011
+          ],
+          "mean_ms": 0.19839692,
+          "observations": 25,
+          "p50_ms": 0.166605,
+          "p95_ms": 0.27173939999999996,
+          "p99_ms": 0.27656216
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1792|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1792",
+      "cell_id": "openai-text-embedding-3-large-d1792",
+      "client_mode": "persistent",
+      "dimension": 1792,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            285.539642485,
+            324.50206526100004
+          ],
+          "mean_ms": 304.09775452,
+          "observations": 25,
+          "p50_ms": 296.523453,
+          "p95_ms": 392.87326699999994,
+          "p99_ms": 432.00889335999995
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.15646643600000001,
+            0.19617527599999993
+          ],
+          "mean_ms": 0.17636935999999998,
+          "observations": 25,
+          "p50_ms": 0.145952,
+          "p95_ms": 0.2668405999999999,
+          "p99_ms": 0.28017867999999996
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.29164481099999995,
+            0.35497563499999996
+          ],
+          "mean_ms": 0.32249048,
+          "observations": 25,
+          "p50_ms": 0.309064,
+          "p95_ms": 0.4306272,
+          "p99_ms": 0.45260719999999993
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            286.39858447,
+            325.14416575800004
+          ],
+          "mean_ms": 304.80177888,
+          "observations": 25,
+          "p50_ms": 297.019115,
+          "p95_ms": 393.50327799999997,
+          "p99_ms": 432.6245132399999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.184605242,
+            0.226283087
+          ],
+          "mean_ms": 0.20516452000000002,
+          "observations": 25,
+          "p50_ms": 0.193409,
+          "p95_ms": 0.29748519999999995,
+          "p99_ms": 0.31612535999999997
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1792|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1792",
+      "cell_id": "openai-text-embedding-3-large-d1792",
+      "client_mode": "new",
+      "dimension": 1792,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            812.034813828,
+            1019.533653978
+          ],
+          "mean_ms": 908.66827228,
+          "observations": 25,
+          "p50_ms": 912.721242,
+          "p95_ms": 1443.5512837999988,
+          "p99_ms": 1607.6422146399998
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.136392347,
+            0.16349368799999997
+          ],
+          "mean_ms": 0.14845404,
+          "observations": 25,
+          "p50_ms": 0.138371,
+          "p95_ms": 0.24344979999999974,
+          "p99_ms": 0.26333932
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            7.506039672,
+            9.222061845999999
+          ],
+          "mean_ms": 8.32417088,
+          "observations": 25,
+          "p50_ms": 7.25927,
+          "p95_ms": 12.357954999999999,
+          "p99_ms": 12.44134432
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            823.345096719,
+            1032.5116334729998
+          ],
+          "mean_ms": 922.65984916,
+          "observations": 25,
+          "p50_ms": 932.758543,
+          "p95_ms": 1462.7402073999988,
+          "p99_ms": 1626.7033456399997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            5.157865196,
+            5.948936699
+          ],
+          "mean_ms": 5.518951959999999,
+          "observations": 25,
+          "p50_ms": 5.087434,
+          "p95_ms": 8.0489752,
+          "p99_ms": 8.636291359999998
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1792|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1792",
+      "cell_id": "openai-text-embedding-3-large-d1792",
+      "client_mode": "persistent",
+      "dimension": 1792,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            853.7022380939999,
+            1288.202113809
+          ],
+          "mean_ms": 1017.36946596,
+          "observations": 25,
+          "p50_ms": 854.834043,
+          "p95_ms": 1071.2781388,
+          "p99_ms": 3214.6431048399945
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.16603904700000002,
+            0.201213463
+          ],
+          "mean_ms": 0.18278580000000003,
+          "observations": 25,
+          "p50_ms": 0.164713,
+          "p95_ms": 0.2540766,
+          "p99_ms": 0.27570143999999996
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            7.758985713,
+            9.397857989999999
+          ],
+          "mean_ms": 8.56838932,
+          "observations": 25,
+          "p50_ms": 8.161397,
+          "p95_ms": 12.089462,
+          "p99_ms": 12.45203952
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            871.932024566,
+            1309.3021252279998
+          ],
+          "mean_ms": 1031.362269,
+          "observations": 25,
+          "p50_ms": 867.340814,
+          "p95_ms": 1083.4924074,
+          "p99_ms": 3227.722123679994
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            5.042429198,
+            5.459712833999999
+          ],
+          "mean_ms": 5.24162792,
+          "observations": 25,
+          "p50_ms": 5.03548,
+          "p95_ms": 6.463315399999998,
+          "p99_ms": 6.68663784
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1792|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1792",
+      "cell_id": "openai-text-embedding-3-large-d1792",
+      "client_mode": "new",
+      "dimension": 1792,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            374.85672536600003,
+            464.27366235700003
+          ],
+          "mean_ms": 419.25074659999996,
+          "observations": 25,
+          "p50_ms": 351.659968,
+          "p95_ms": 568.2680081999999,
+          "p99_ms": 637.4771056799998
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.138554066,
+            0.180031811
+          ],
+          "mean_ms": 0.15790852,
+          "observations": 25,
+          "p50_ms": 0.133879,
+          "p95_ms": 0.2637458,
+          "p99_ms": 0.2986361999999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.7921538490000001,
+            0.983458331
+          ],
+          "mean_ms": 0.88910272,
+          "observations": 25,
+          "p50_ms": 0.853923,
+          "p95_ms": 1.2663039999999997,
+          "p99_ms": 1.2868978
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            379.08139018400004,
+            466.71873994699996
+          ],
+          "mean_ms": 420.831909,
+          "observations": 25,
+          "p50_ms": 352.822834,
+          "p95_ms": 569.6779348,
+          "p99_ms": 638.7282991999998
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.48814212700000004,
+            0.5839975199999999
+          ],
+          "mean_ms": 0.53415116,
+          "observations": 25,
+          "p50_ms": 0.472337,
+          "p95_ms": 0.7582966,
+          "p99_ms": 0.7923596799999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1792|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1792",
+      "cell_id": "openai-text-embedding-3-large-d1792",
+      "client_mode": "persistent",
+      "dimension": 1792,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            347.185748464,
+            412.18771228900005
+          ],
+          "mean_ms": 378.19188820000005,
+          "observations": 25,
+          "p50_ms": 347.286218,
+          "p95_ms": 543.1125918,
+          "p99_ms": 547.78760324
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.15351056899999999,
+            0.18900082999999995
+          ],
+          "mean_ms": 0.17146232,
+          "observations": 25,
+          "p50_ms": 0.147719,
+          "p95_ms": 0.24499939999999998,
+          "p99_ms": 0.24837556
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.8087019209999999,
+            1.011992804
+          ],
+          "mean_ms": 0.91406768,
+          "observations": 25,
+          "p50_ms": 0.923097,
+          "p95_ms": 1.2159007999999998,
+          "p99_ms": 1.3324870799999997
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            347.88393084899997,
+            414.69520265999995
+          ],
+          "mean_ms": 379.87042536,
+          "observations": 25,
+          "p50_ms": 349.60965,
+          "p95_ms": 545.1366672,
+          "p99_ms": 549.9238682
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.538128712,
+            0.6479605359999999
+          ],
+          "mean_ms": 0.59300716,
+          "observations": 25,
+          "p50_ms": 0.552998,
+          "p95_ms": 0.7801957999999999,
+          "p99_ms": 0.8145635999999998
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1792|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d1792",
+      "cell_id": "openai-text-embedding-3-large-d1792",
+      "client_mode": "new",
+      "dimension": 1792,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            417.122017503,
+            508.676125628
+          ],
+          "mean_ms": 459.95002148,
+          "observations": 25,
+          "p50_ms": 414.788464,
+          "p95_ms": 696.3743816,
+          "p99_ms": 699.56520708
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.139394346,
+            0.165248557
+          ],
+          "mean_ms": 0.150791,
+          "observations": 25,
+          "p50_ms": 0.141291,
+          "p95_ms": 0.22609359999999995,
+          "p99_ms": 0.25004255999999997
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            2.1597182550000005,
+            2.5797689649999995
+          ],
+          "mean_ms": 2.37277132,
+          "observations": 25,
+          "p50_ms": 2.196529,
+          "p95_ms": 3.0897948,
+          "p99_ms": 3.1010468799999997
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            418.720526789,
+            510.111650963
+          ],
+          "mean_ms": 463.95473264,
+          "observations": 25,
+          "p50_ms": 418.563078,
+          "p95_ms": 700.8974734,
+          "p99_ms": 704.07998404
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.343591035,
+            1.625965151
+          ],
+          "mean_ms": 1.48114884,
+          "observations": 25,
+          "p50_ms": 1.257694,
+          "p95_ms": 2.1183275999999998,
+          "p99_ms": 2.18299008
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d1792|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d1792",
+      "cell_id": "openai-text-embedding-3-large-d1792",
+      "client_mode": "persistent",
+      "dimension": 1792,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            499.03733101299997,
+            592.988362059
+          ],
+          "mean_ms": 546.0533612,
+          "observations": 25,
+          "p50_ms": 510.154776,
+          "p95_ms": 695.145087,
+          "p99_ms": 699.0485192
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.155989206,
+            0.19512194700000002
+          ],
+          "mean_ms": 0.17393664,
+          "observations": 25,
+          "p50_ms": 0.149966,
+          "p95_ms": 0.28049879999999994,
+          "p99_ms": 0.28695983999999997
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            2.107359954,
+            2.55054465
+          ],
+          "mean_ms": 2.32214448,
+          "observations": 25,
+          "p50_ms": 2.143715,
+          "p95_ms": 3.2139558,
+          "p99_ms": 3.3523762799999997
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            500.338615874,
+            599.191684843
+          ],
+          "mean_ms": 550.01507244,
+          "observations": 25,
+          "p50_ms": 515.437043,
+          "p95_ms": 699.811578,
+          "p99_ms": 702.6946316
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.320957329,
+            1.637908526
+          ],
+          "mean_ms": 1.46563012,
+          "observations": 25,
+          "p50_ms": 1.242965,
+          "p95_ms": 2.1101632,
+          "p99_ms": 2.394629199999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2048|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d2048",
+      "cell_id": "openai-text-embedding-3-large-d2048",
+      "client_mode": "new",
+      "dimension": 2048,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            309.693182445,
+            397.96323263799997
+          ],
+          "mean_ms": 346.13216200000005,
+          "observations": 25,
+          "p50_ms": 336.648203,
+          "p95_ms": 406.02893099999994,
+          "p99_ms": 743.664676679999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.13417164799999998,
+            0.1565585
+          ],
+          "mean_ms": 0.14441152000000002,
+          "observations": 25,
+          "p50_ms": 0.135318,
+          "p95_ms": 0.19707719999999995,
+          "p99_ms": 0.23161119999999993
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.34580382400000004,
+            0.418421467
+          ],
+          "mean_ms": 0.38245196,
+          "observations": 25,
+          "p50_ms": 0.390351,
+          "p95_ms": 0.5209339999999999,
+          "p99_ms": 0.5292087600000001
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            311.393292928,
+            401.17263787400003
+          ],
+          "mean_ms": 346.87677664,
+          "observations": 25,
+          "p50_ms": 337.189282,
+          "p95_ms": 406.86033539999994,
+          "p99_ms": 744.3758587199991
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.198893113,
+            0.23638647899999995
+          ],
+          "mean_ms": 0.21775116,
+          "observations": 25,
+          "p50_ms": 0.184238,
+          "p95_ms": 0.2912772,
+          "p99_ms": 0.29939583999999997
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2048|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d2048",
+      "cell_id": "openai-text-embedding-3-large-d2048",
+      "client_mode": "persistent",
+      "dimension": 2048,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            272.574624299,
+            311.360469976
+          ],
+          "mean_ms": 291.26159268,
+          "observations": 25,
+          "p50_ms": 282.67611,
+          "p95_ms": 387.4491321999999,
+          "p99_ms": 397.10018404
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.157680171,
+            0.19405566999999999
+          ],
+          "mean_ms": 0.17517408,
+          "observations": 25,
+          "p50_ms": 0.143493,
+          "p95_ms": 0.2521066,
+          "p99_ms": 0.2639572
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.351549949,
+            0.42676843799999997
+          ],
+          "mean_ms": 0.38846995999999995,
+          "observations": 25,
+          "p50_ms": 0.372403,
+          "p95_ms": 0.5452564,
+          "p99_ms": 0.55142872
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            273.52927398400004,
+            311.27967122599995
+          ],
+          "mean_ms": 292.0571592,
+          "observations": 25,
+          "p50_ms": 283.400008,
+          "p95_ms": 388.42424639999984,
+          "p99_ms": 397.81689928
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.211505206,
+            0.251991594
+          ],
+          "mean_ms": 0.23192248,
+          "observations": 25,
+          "p50_ms": 0.214811,
+          "p95_ms": 0.30723659999999997,
+          "p99_ms": 0.31054516
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2048|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d2048",
+      "cell_id": "openai-text-embedding-3-large-d2048",
+      "client_mode": "new",
+      "dimension": 2048,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            832.6561457109999,
+            1007.352864596
+          ],
+          "mean_ms": 919.23084868,
+          "observations": 25,
+          "p50_ms": 832.869547,
+          "p95_ms": 1333.8951797999998,
+          "p99_ms": 1427.9750985199998
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.138878097,
+            0.153535385
+          ],
+          "mean_ms": 0.14492768,
+          "observations": 25,
+          "p50_ms": 0.142394,
+          "p95_ms": 0.15971079999999999,
+          "p99_ms": 0.21025371999999987
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            8.093624648,
+            9.544905735
+          ],
+          "mean_ms": 8.737141920000001,
+          "observations": 25,
+          "p50_ms": 7.924302,
+          "p95_ms": 13.677184199999994,
+          "p99_ms": 14.34330604
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            849.057682798,
+            1024.5662039329998
+          ],
+          "mean_ms": 934.20643484,
+          "observations": 25,
+          "p50_ms": 847.341547,
+          "p95_ms": 1347.5032231999999,
+          "p99_ms": 1441.7761880799999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            5.840373692,
+            6.440752602999999
+          ],
+          "mean_ms": 6.09351656,
+          "observations": 25,
+          "p50_ms": 5.851867,
+          "p95_ms": 7.229361599999997,
+          "p99_ms": 8.831627759999996
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2048|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d2048",
+      "cell_id": "openai-text-embedding-3-large-d2048",
+      "client_mode": "persistent",
+      "dimension": 2048,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            855.0991727620001,
+            988.4032174060001
+          ],
+          "mean_ms": 922.71679524,
+          "observations": 25,
+          "p50_ms": 935.405635,
+          "p95_ms": 1125.6853968,
+          "p99_ms": 1128.79881
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.167780151,
+            0.200614669
+          ],
+          "mean_ms": 0.18358892000000002,
+          "observations": 25,
+          "p50_ms": 0.173468,
+          "p95_ms": 0.2676286,
+          "p99_ms": 0.28668768
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            8.939078793,
+            10.639804524999999
+          ],
+          "mean_ms": 9.728646,
+          "observations": 25,
+          "p50_ms": 8.726802,
+          "p95_ms": 14.127397799999999,
+          "p99_ms": 14.541703839999998
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            868.5952091669999,
+            1005.006426634
+          ],
+          "mean_ms": 938.6929900800001,
+          "observations": 25,
+          "p50_ms": 954.884108,
+          "p95_ms": 1140.4291394,
+          "p99_ms": 1143.47219064
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            5.784945981,
+            6.416081579999998
+          ],
+          "mean_ms": 6.063959919999999,
+          "observations": 25,
+          "p50_ms": 5.757103,
+          "p95_ms": 7.503968399999996,
+          "p99_ms": 9.095419159999995
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2048|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d2048",
+      "cell_id": "openai-text-embedding-3-large-d2048",
+      "client_mode": "new",
+      "dimension": 2048,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            363.135508378,
+            459.37782580600003
+          ],
+          "mean_ms": 411.40539772000005,
+          "observations": 25,
+          "p50_ms": 350.562853,
+          "p95_ms": 561.4637462000001,
+          "p99_ms": 590.06216576
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.13246756699999998,
+            0.153794524
+          ],
+          "mean_ms": 0.14177552000000002,
+          "observations": 25,
+          "p50_ms": 0.134517,
+          "p95_ms": 0.20271679999999995,
+          "p99_ms": 0.23260383999999992
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.894049099,
+            1.094322511
+          ],
+          "mean_ms": 0.9931709999999999,
+          "observations": 25,
+          "p50_ms": 0.876135,
+          "p95_ms": 1.4114003999999998,
+          "p99_ms": 1.4384477599999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            367.372126216,
+            460.790956142
+          ],
+          "mean_ms": 413.14099736,
+          "observations": 25,
+          "p50_ms": 352.044106,
+          "p95_ms": 563.7768507999999,
+          "p99_ms": 591.8885417599998
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.549502862,
+            0.6625501709999999
+          ],
+          "mean_ms": 0.60065312,
+          "observations": 25,
+          "p50_ms": 0.532061,
+          "p95_ms": 0.8812137999999999,
+          "p99_ms": 0.9106963199999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2048|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d2048",
+      "cell_id": "openai-text-embedding-3-large-d2048",
+      "client_mode": "persistent",
+      "dimension": 2048,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            355.12736778400006,
+            423.2606567449999
+          ],
+          "mean_ms": 387.06597844000004,
+          "observations": 25,
+          "p50_ms": 359.839759,
+          "p95_ms": 550.7032272,
+          "p99_ms": 578.8906370799999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.166751946,
+            0.207105816
+          ],
+          "mean_ms": 0.18688604,
+          "observations": 25,
+          "p50_ms": 0.179528,
+          "p95_ms": 0.26375499999999996,
+          "p99_ms": 0.2920136399999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.9270195659999999,
+            1.121082591
+          ],
+          "mean_ms": 1.02823572,
+          "observations": 25,
+          "p50_ms": 1.069367,
+          "p95_ms": 1.3777835999999999,
+          "p99_ms": 1.4643478399999998
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            355.94095863000007,
+            423.56659874999997
+          ],
+          "mean_ms": 388.93794148,
+          "observations": 25,
+          "p50_ms": 361.400915,
+          "p95_ms": 552.9129866,
+          "p99_ms": 581.0059010399999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.5976946089999999,
+            0.7170264989999999
+          ],
+          "mean_ms": 0.65684128,
+          "observations": 25,
+          "p50_ms": 0.606418,
+          "p95_ms": 0.9009717999999999,
+          "p99_ms": 0.90929888
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2048|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d2048",
+      "cell_id": "openai-text-embedding-3-large-d2048",
+      "client_mode": "new",
+      "dimension": 2048,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            510.402580298,
+            625.126835499
+          ],
+          "mean_ms": 566.42893464,
+          "observations": 25,
+          "p50_ms": 526.28588,
+          "p95_ms": 718.2742546000001,
+          "p99_ms": 854.8131848799997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.13337960199999999,
+            0.162702102
+          ],
+          "mean_ms": 0.14620364,
+          "observations": 25,
+          "p50_ms": 0.132284,
+          "p95_ms": 0.23391559999999986,
+          "p99_ms": 0.2716431599999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            2.331240491,
+            2.8361183039999993
+          ],
+          "mean_ms": 2.5910498,
+          "observations": 25,
+          "p50_ms": 2.393472,
+          "p95_ms": 3.513565,
+          "p99_ms": 3.5701589599999997
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            515.9591871299999,
+            629.2100571359999
+          ],
+          "mean_ms": 570.7177434,
+          "observations": 25,
+          "p50_ms": 530.328997,
+          "p95_ms": 722.5079165999999,
+          "p99_ms": 858.2981779999997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.4254088679999999,
+            1.6918406990000001
+          ],
+          "mean_ms": 1.5515553199999998,
+          "observations": 25,
+          "p50_ms": 1.420375,
+          "p95_ms": 2.2911014,
+          "p99_ms": 2.32703844
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2048|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d2048",
+      "cell_id": "openai-text-embedding-3-large-d2048",
+      "client_mode": "persistent",
+      "dimension": 2048,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            451.018033789,
+            565.7971041169999
+          ],
+          "mean_ms": 505.79420896000005,
+          "observations": 25,
+          "p50_ms": 430.556641,
+          "p95_ms": 710.784669,
+          "p99_ms": 716.81862924
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.15303439400000002,
+            0.20803058800000002
+          ],
+          "mean_ms": 0.1772868,
+          "observations": 25,
+          "p50_ms": 0.152031,
+          "p95_ms": 0.2710737999999999,
+          "p99_ms": 0.43284991999999956
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            2.275110916,
+            2.6971531019999997
+          ],
+          "mean_ms": 2.48123864,
+          "observations": 25,
+          "p50_ms": 2.417267,
+          "p95_ms": 3.5320785999999997,
+          "p99_ms": 3.56932376
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            454.71651659400004,
+            566.780780307
+          ],
+          "mean_ms": 510.01818480000003,
+          "observations": 25,
+          "p50_ms": 434.375277,
+          "p95_ms": 714.7757182,
+          "p99_ms": 720.6891432
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.454225926,
+            1.693465667
+          ],
+          "mean_ms": 1.5654504,
+          "observations": 25,
+          "p50_ms": 1.41696,
+          "p95_ms": 2.3120856,
+          "p99_ms": 2.4425093199999997
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2096|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d2096",
+      "cell_id": "openai-text-embedding-3-large-d2096",
+      "client_mode": "new",
+      "dimension": 2096,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            289.26648290800006,
+            379.49670717899994
+          ],
+          "mean_ms": 327.0330604,
+          "observations": 25,
+          "p50_ms": 312.365747,
+          "p95_ms": 402.6895998,
+          "p99_ms": 732.0392685599991
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.134975162,
+            0.16599497799999996
+          ],
+          "mean_ms": 0.14810476,
+          "observations": 25,
+          "p50_ms": 0.143566,
+          "p95_ms": 0.20601899999999987,
+          "p99_ms": 0.29992627999999977
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.343992521,
+            0.42686343499999996
+          ],
+          "mean_ms": 0.38510212000000005,
+          "observations": 25,
+          "p50_ms": 0.353595,
+          "p95_ms": 0.5412277999999999,
+          "p99_ms": 0.55925248
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            290.188675591,
+            379.1202765669999
+          ],
+          "mean_ms": 327.80053792,
+          "observations": 25,
+          "p50_ms": 312.974258,
+          "p95_ms": 403.52050399999996,
+          "p99_ms": 732.8114771599992
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.21104852699999996,
+            0.259545855
+          ],
+          "mean_ms": 0.23427063999999997,
+          "observations": 25,
+          "p50_ms": 0.216386,
+          "p95_ms": 0.33316879999999993,
+          "p99_ms": 0.3643078799999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2096|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d2096",
+      "cell_id": "openai-text-embedding-3-large-d2096",
+      "client_mode": "persistent",
+      "dimension": 2096,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            298.22607673299996,
+            343.641792406
+          ],
+          "mean_ms": 321.3667492,
+          "observations": 25,
+          "p50_ms": 341.848083,
+          "p95_ms": 390.12845479999993,
+          "p99_ms": 403.0549332
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.147832084,
+            0.17638434099999997
+          ],
+          "mean_ms": 0.16089988000000002,
+          "observations": 25,
+          "p50_ms": 0.148165,
+          "p95_ms": 0.24991299999999997,
+          "p99_ms": 0.25430584
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.362620302,
+            0.43818193699999997
+          ],
+          "mean_ms": 0.40079828,
+          "observations": 25,
+          "p50_ms": 0.412709,
+          "p95_ms": 0.5507324,
+          "p99_ms": 0.5643233599999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            299.188537417,
+            343.539837103
+          ],
+          "mean_ms": 322.15876596,
+          "observations": 25,
+          "p50_ms": 342.486628,
+          "p95_ms": 390.94775819999995,
+          "p99_ms": 403.77307623999997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.209872859,
+            0.25008254099999994
+          ],
+          "mean_ms": 0.2303186,
+          "observations": 25,
+          "p50_ms": 0.204611,
+          "p95_ms": 0.3008322,
+          "p99_ms": 0.30355524
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2096|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d2096",
+      "cell_id": "openai-text-embedding-3-large-d2096",
+      "client_mode": "new",
+      "dimension": 2096,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            822.735328523,
+            985.6009227139999
+          ],
+          "mean_ms": 901.940834,
+          "observations": 25,
+          "p50_ms": 901.504295,
+          "p95_ms": 1139.9464628,
+          "p99_ms": 1172.61802308
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.13961948500000002,
+            0.151171762
+          ],
+          "mean_ms": 0.14515572000000002,
+          "observations": 25,
+          "p50_ms": 0.142608,
+          "p95_ms": 0.17185999999999998,
+          "p99_ms": 0.17956615999999997
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            8.615595277,
+            10.136283656
+          ],
+          "mean_ms": 9.314515199999999,
+          "observations": 25,
+          "p50_ms": 8.187753,
+          "p95_ms": 13.223351399999999,
+          "p99_ms": 13.690422199999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            839.816535126,
+            1002.8257280619999
+          ],
+          "mean_ms": 917.54480384,
+          "observations": 25,
+          "p50_ms": 914.838361,
+          "p95_ms": 1157.9170972,
+          "p99_ms": 1187.9007586799999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            5.937956996,
+            6.410193776
+          ],
+          "mean_ms": 6.14429892,
+          "observations": 25,
+          "p50_ms": 6.013903,
+          "p95_ms": 7.207592799999999,
+          "p99_ms": 8.153907879999998
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2096|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d2096",
+      "cell_id": "openai-text-embedding-3-large-d2096",
+      "client_mode": "persistent",
+      "dimension": 2096,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            907.8326212970001,
+            1035.314418556
+          ],
+          "mean_ms": 973.49921932,
+          "observations": 25,
+          "p50_ms": 984.319799,
+          "p95_ms": 1170.2492617999999,
+          "p99_ms": 1191.0774967199998
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.166648766,
+            0.19776670799999999
+          ],
+          "mean_ms": 0.18117180000000002,
+          "observations": 25,
+          "p50_ms": 0.166938,
+          "p95_ms": 0.25110779999999994,
+          "p99_ms": 0.26289103999999996
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            9.031229169,
+            10.713725835999998
+          ],
+          "mean_ms": 9.84727564,
+          "observations": 25,
+          "p50_ms": 9.196853,
+          "p95_ms": 14.284203399999997,
+          "p99_ms": 14.8513732
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            926.2032577839999,
+            1050.1837943130001
+          ],
+          "mean_ms": 989.5390731599999,
+          "observations": 25,
+          "p50_ms": 1000.215023,
+          "p95_ms": 1184.7524964,
+          "p99_ms": 1206.29389412
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            5.864306801,
+            6.159585417
+          ],
+          "mean_ms": 6.011406399999999,
+          "observations": 25,
+          "p50_ms": 5.907676,
+          "p95_ms": 6.7152046,
+          "p99_ms": 6.80094976
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2096|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d2096",
+      "cell_id": "openai-text-embedding-3-large-d2096",
+      "client_mode": "new",
+      "dimension": 2096,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            387.16329131,
+            479.66073329700004
+          ],
+          "mean_ms": 433.85391684,
+          "observations": 25,
+          "p50_ms": 408.337777,
+          "p95_ms": 570.3325436,
+          "p99_ms": 623.7437109199999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.13758041899999998,
+            0.167567133
+          ],
+          "mean_ms": 0.15155068,
+          "observations": 25,
+          "p50_ms": 0.138448,
+          "p95_ms": 0.2340276,
+          "p99_ms": 0.24072179999999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.02367659,
+            1.2727146779999998
+          ],
+          "mean_ms": 1.1493212,
+          "observations": 25,
+          "p50_ms": 1.234554,
+          "p95_ms": 1.4813375999999998,
+          "p99_ms": 1.8040544799999991
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            390.68180368299994,
+            480.6540647229999
+          ],
+          "mean_ms": 435.82267204000004,
+          "observations": 25,
+          "p50_ms": 411.037264,
+          "p95_ms": 572.4244623999999,
+          "p99_ms": 626.1811659999998
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.607489267,
+            0.72647947
+          ],
+          "mean_ms": 0.66788332,
+          "observations": 25,
+          "p50_ms": 0.556823,
+          "p95_ms": 0.9100655999999999,
+          "p99_ms": 0.9365009999999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2096|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d2096",
+      "cell_id": "openai-text-embedding-3-large-d2096",
+      "client_mode": "persistent",
+      "dimension": 2096,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            415.745030008,
+            511.52337891199994
+          ],
+          "mean_ms": 466.63575951999997,
+          "observations": 25,
+          "p50_ms": 549.241652,
+          "p95_ms": 569.254601,
+          "p99_ms": 575.11139032
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.15608301200000002,
+            0.19934829199999998
+          ],
+          "mean_ms": 0.17708136,
+          "observations": 25,
+          "p50_ms": 0.146713,
+          "p95_ms": 0.27041,
+          "p99_ms": 0.2775258
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.042504475,
+            1.2859499889999997
+          ],
+          "mean_ms": 1.1718636,
+          "observations": 25,
+          "p50_ms": 1.384311,
+          "p95_ms": 1.4892509999999999,
+          "p99_ms": 1.5951845999999996
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            420.852648022,
+            513.739340388
+          ],
+          "mean_ms": 468.68012148,
+          "observations": 25,
+          "p50_ms": 551.457462,
+          "p95_ms": 570.9381374,
+          "p99_ms": 576.553911
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.634106913,
+            0.7590790669999999
+          ],
+          "mean_ms": 0.6954170000000001,
+          "observations": 25,
+          "p50_ms": 0.679697,
+          "p95_ms": 0.9183545999999999,
+          "p99_ms": 0.93029612
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2096|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d2096",
+      "cell_id": "openai-text-embedding-3-large-d2096",
+      "client_mode": "new",
+      "dimension": 2096,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            509.038196012,
+            609.33556116
+          ],
+          "mean_ms": 559.60509504,
+          "observations": 25,
+          "p50_ms": 521.277714,
+          "p95_ms": 720.0443548,
+          "p99_ms": 721.8021104
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.134422281,
+            0.158185375
+          ],
+          "mean_ms": 0.14494124,
+          "observations": 25,
+          "p50_ms": 0.134083,
+          "p95_ms": 0.2272129999999998,
+          "p99_ms": 0.24795507999999997
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            2.3277803219999997,
+            2.8489993700000005
+          ],
+          "mean_ms": 2.56376964,
+          "observations": 25,
+          "p50_ms": 2.250411,
+          "p95_ms": 3.7117904,
+          "p99_ms": 3.7129046
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            513.901540023,
+            613.673682551
+          ],
+          "mean_ms": 563.93743612,
+          "observations": 25,
+          "p50_ms": 527.417129,
+          "p95_ms": 725.7562646,
+          "p99_ms": 726.12119468
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.494339363,
+            1.7775661689999998
+          ],
+          "mean_ms": 1.6236302,
+          "observations": 25,
+          "p50_ms": 1.443366,
+          "p95_ms": 2.4089541999999997,
+          "p99_ms": 2.4716998799999996
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d2096|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d2096",
+      "cell_id": "openai-text-embedding-3-large-d2096",
+      "client_mode": "persistent",
+      "dimension": 2096,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            500.12804186100004,
+            609.206109342
+          ],
+          "mean_ms": 554.27979432,
+          "observations": 25,
+          "p50_ms": 514.409444,
+          "p95_ms": 723.3241817999999,
+          "p99_ms": 724.7556051199999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14964657900000003,
+            0.178646134
+          ],
+          "mean_ms": 0.1633784,
+          "observations": 25,
+          "p50_ms": 0.14929,
+          "p95_ms": 0.2454826,
+          "p99_ms": 0.25088612
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            2.412109014,
+            2.9255362989999996
+          ],
+          "mean_ms": 2.66333256,
+          "observations": 25,
+          "p50_ms": 2.362774,
+          "p95_ms": 3.8024848,
+          "p99_ms": 3.94264864
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            505.160935207,
+            613.302624313
+          ],
+          "mean_ms": 558.74535588,
+          "observations": 25,
+          "p50_ms": 518.104186,
+          "p95_ms": 727.5438206,
+          "p99_ms": 730.179776
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.478598309,
+            1.827434959
+          ],
+          "mean_ms": 1.6388506,
+          "observations": 25,
+          "p50_ms": 1.44355,
+          "p95_ms": 2.4881724,
+          "p99_ms": 2.878239039999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d3072|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d3072",
+      "cell_id": "openai-text-embedding-3-large-d3072",
+      "client_mode": "new",
+      "dimension": 3072,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            334.428830722,
+            386.94760198899996
+          ],
+          "mean_ms": 360.59113004,
+          "observations": 25,
+          "p50_ms": 345.457913,
+          "p95_ms": 451.6314302,
+          "p99_ms": 465.38363835999996
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.134063871,
+            0.153786172
+          ],
+          "mean_ms": 0.14287516,
+          "observations": 25,
+          "p50_ms": 0.133205,
+          "p95_ms": 0.19588659999999994,
+          "p99_ms": 0.22363619999999992
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.445881156,
+            0.528295414
+          ],
+          "mean_ms": 0.48561844,
+          "observations": 25,
+          "p50_ms": 0.445752,
+          "p95_ms": 0.6803243999999999,
+          "p99_ms": 0.7415213599999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            334.34430688299994,
+            388.56808756199996
+          ],
+          "mean_ms": 361.50163116000004,
+          "observations": 25,
+          "p50_ms": 346.625848,
+          "p95_ms": 452.4687112,
+          "p99_ms": 466.32106963999996
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.268216526,
+            0.29737485099999994
+          ],
+          "mean_ms": 0.28200752,
+          "observations": 25,
+          "p50_ms": 0.264585,
+          "p95_ms": 0.35357679999999997,
+          "p99_ms": 0.3852101599999999
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d3072|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d3072",
+      "cell_id": "openai-text-embedding-3-large-d3072",
+      "client_mode": "persistent",
+      "dimension": 3072,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            324.07999732599995,
+            384.471253322
+          ],
+          "mean_ms": 355.88072504,
+          "observations": 25,
+          "p50_ms": 350.179859,
+          "p95_ms": 451.11246359999996,
+          "p99_ms": 466.92454444
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.15091743900000001,
+            0.174313251
+          ],
+          "mean_ms": 0.16192664,
+          "observations": 25,
+          "p50_ms": 0.149599,
+          "p95_ms": 0.22280539999999996,
+          "p99_ms": 0.22906115999999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.5101772830000001,
+            0.6381029759999999
+          ],
+          "mean_ms": 0.57386972,
+          "observations": 25,
+          "p50_ms": 0.548527,
+          "p95_ms": 0.8035996,
+          "p99_ms": 0.81268124
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            325.851056584,
+            388.52824668799997
+          ],
+          "mean_ms": 356.95331904,
+          "observations": 25,
+          "p50_ms": 351.201652,
+          "p95_ms": 451.99385079999996,
+          "p99_ms": 467.73515344
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.30912360699999997,
+            0.36579297499999996
+          ],
+          "mean_ms": 0.33679764,
+          "observations": 25,
+          "p50_ms": 0.319109,
+          "p95_ms": 0.4462502,
+          "p99_ms": 0.450699
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d3072|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d3072",
+      "cell_id": "openai-text-embedding-3-large-d3072",
+      "client_mode": "new",
+      "dimension": 3072,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            1088.110860799,
+            1274.1920782799998
+          ],
+          "mean_ms": 1177.43208916,
+          "observations": 25,
+          "p50_ms": 1188.108187,
+          "p95_ms": 1562.2900339999997,
+          "p99_ms": 1728.0878728799996
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.142096912,
+            0.153031018
+          ],
+          "mean_ms": 0.1472348,
+          "observations": 25,
+          "p50_ms": 0.143258,
+          "p95_ms": 0.1642642,
+          "p99_ms": 0.18957643999999993
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            13.185270697,
+            15.508027090999999
+          ],
+          "mean_ms": 14.23405608,
+          "observations": 25,
+          "p50_ms": 12.860007,
+          "p95_ms": 20.87361599999999,
+          "p99_ms": 21.900611599999998
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            1106.0682618810001,
+            1295.1966976579997
+          ],
+          "mean_ms": 1200.6961076,
+          "observations": 25,
+          "p50_ms": 1215.687144,
+          "p95_ms": 1583.9213833999995,
+          "p99_ms": 1750.7281428799997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            8.673607598,
+            9.103296857
+          ],
+          "mean_ms": 8.882727560000001,
+          "observations": 25,
+          "p50_ms": 8.956472,
+          "p95_ms": 9.6942662,
+          "p99_ms": 10.25813736
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d3072|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d3072",
+      "cell_id": "openai-text-embedding-3-large-d3072",
+      "client_mode": "persistent",
+      "dimension": 3072,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            1076.654816357,
+            1387.2821779409999
+          ],
+          "mean_ms": 1204.6941094000001,
+          "observations": 25,
+          "p50_ms": 1124.143725,
+          "p95_ms": 1653.4237827999996,
+          "p99_ms": 2591.4930822399974
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.155644887,
+            0.178447151
+          ],
+          "mean_ms": 0.16663076,
+          "observations": 25,
+          "p50_ms": 0.161239,
+          "p95_ms": 0.21911439999999993,
+          "p99_ms": 0.23153216
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            12.345596847,
+            13.968518042
+          ],
+          "mean_ms": 13.068498159999999,
+          "observations": 25,
+          "p50_ms": 12.20715,
+          "p95_ms": 16.638463799999997,
+          "p99_ms": 20.32158131999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            1096.043722619,
+            1402.8019446679998
+          ],
+          "mean_ms": 1226.68897752,
+          "observations": 25,
+          "p50_ms": 1147.561913,
+          "p95_ms": 1674.4998335999996,
+          "p99_ms": 2613.7454753999973
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            8.604868921,
+            8.918211572999999
+          ],
+          "mean_ms": 8.7597392,
+          "observations": 25,
+          "p50_ms": 8.744788,
+          "p95_ms": 9.3551846,
+          "p99_ms": 9.50410016
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d3072|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d3072",
+      "cell_id": "openai-text-embedding-3-large-d3072",
+      "client_mode": "new",
+      "dimension": 3072,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            419.704529672,
+            541.6381511129999
+          ],
+          "mean_ms": 479.37549359999997,
+          "observations": 25,
+          "p50_ms": 478.602676,
+          "p95_ms": 638.4829371999999,
+          "p99_ms": 887.8589951599994
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.145118077,
+            0.184244575
+          ],
+          "mean_ms": 0.16308284,
+          "observations": 25,
+          "p50_ms": 0.138668,
+          "p95_ms": 0.2386798,
+          "p99_ms": 0.30288619999999983
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.4194290259999998,
+            1.805904742
+          ],
+          "mean_ms": 1.60256836,
+          "observations": 25,
+          "p50_ms": 1.458559,
+          "p95_ms": 2.2937906,
+          "p99_ms": 2.5276137999999997
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            421.17554251800004,
+            551.769829879
+          ],
+          "mean_ms": 482.10518804,
+          "observations": 25,
+          "p50_ms": 480.865162,
+          "p95_ms": 642.8409121999999,
+          "p99_ms": 891.0657629599993
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.847577951,
+            1.1275159639999999
+          ],
+          "mean_ms": 0.9640432400000001,
+          "observations": 25,
+          "p50_ms": 0.800338,
+          "p95_ms": 1.4072927999999998,
+          "p99_ms": 2.185655919999998
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d3072|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d3072",
+      "cell_id": "openai-text-embedding-3-large-d3072",
+      "client_mode": "persistent",
+      "dimension": 3072,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            376.479064311,
+            460.226202179
+          ],
+          "mean_ms": 417.65161272,
+          "observations": 25,
+          "p50_ms": 395.272421,
+          "p95_ms": 580.4932606,
+          "p99_ms": 589.7111096799999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.151490977,
+            0.18906335600000002
+          ],
+          "mean_ms": 0.16863936,
+          "observations": 25,
+          "p50_ms": 0.141144,
+          "p95_ms": 0.23775759999999999,
+          "p99_ms": 0.2824752399999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.418285601,
+            1.7202189599999997
+          ],
+          "mean_ms": 1.56636448,
+          "observations": 25,
+          "p50_ms": 1.545392,
+          "p95_ms": 2.1122414000000003,
+          "p99_ms": 2.13078116
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            381.555905621,
+            460.3422154279999
+          ],
+          "mean_ms": 420.34617748,
+          "observations": 25,
+          "p50_ms": 397.752161,
+          "p95_ms": 583.5075082,
+          "p99_ms": 592.43106888
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.879691671,
+            1.040867573
+          ],
+          "mean_ms": 0.9595609199999999,
+          "observations": 25,
+          "p50_ms": 0.855443,
+          "p95_ms": 1.2685057999999998,
+          "p99_ms": 1.3028301599999998
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d3072|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-large-d3072",
+      "cell_id": "openai-text-embedding-3-large-d3072",
+      "client_mode": "new",
+      "dimension": 3072,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            560.05689867,
+            674.7982570229999
+          ],
+          "mean_ms": 617.6416080399999,
+          "observations": 25,
+          "p50_ms": 558.173281,
+          "p95_ms": 843.535369,
+          "p99_ms": 853.0258727199999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.144564269,
+            0.17775206400000002
+          ],
+          "mean_ms": 0.16021544,
+          "observations": 25,
+          "p50_ms": 0.140517,
+          "p95_ms": 0.24651279999999998,
+          "p99_ms": 0.25397288
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            3.2756352399999997,
+            3.9448121229999997
+          ],
+          "mean_ms": 3.59095128,
+          "observations": 25,
+          "p50_ms": 3.059377,
+          "p95_ms": 5.1330344,
+          "p99_ms": 5.24939864
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            567.85580334,
+            679.3210780939999
+          ],
+          "mean_ms": 623.63276936,
+          "observations": 25,
+          "p50_ms": 563.942108,
+          "p95_ms": 848.8776803999999,
+          "p99_ms": 858.34458
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            2.113467719,
+            2.421544091
+          ],
+          "mean_ms": 2.2399946,
+          "observations": 25,
+          "p50_ms": 2.160409,
+          "p95_ms": 3.292169399999996,
+          "p99_ms": 3.56795104
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-large-d3072|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-large-d3072",
+      "cell_id": "openai-text-embedding-3-large-d3072",
+      "client_mode": "persistent",
+      "dimension": 3072,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            591.795128209,
+            906.493517535
+          ],
+          "mean_ms": 723.79226788,
+          "observations": 25,
+          "p50_ms": 639.086312,
+          "p95_ms": 881.6444569999999,
+          "p99_ms": 2213.667378519997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14836105100000002,
+            0.177460548
+          ],
+          "mean_ms": 0.16206644,
+          "observations": 25,
+          "p50_ms": 0.144813,
+          "p95_ms": 0.24857239999999992,
+          "p99_ms": 0.27249803999999994
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            3.379400913,
+            4.086136993
+          ],
+          "mean_ms": 3.71118872,
+          "observations": 25,
+          "p50_ms": 3.40873,
+          "p95_ms": 5.402019999999999,
+          "p99_ms": 5.56179692
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            599.906348917,
+            919.2937801499999
+          ],
+          "mean_ms": 730.0128722,
+          "observations": 25,
+          "p50_ms": 647.65089,
+          "p95_ms": 886.8351109999999,
+          "p99_ms": 2219.5475179199966
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            2.181768827,
+            2.5536258419999998
+          ],
+          "mean_ms": 2.34734916,
+          "observations": 25,
+          "p50_ms": 2.134316,
+          "p95_ms": 3.3651285999999994,
+          "p99_ms": 3.4656802
+        }
+      },
+      "model": "text-embedding-3-large",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1024|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1024",
+      "cell_id": "openai-text-embedding-3-small-d1024",
+      "client_mode": "new",
+      "dimension": 1024,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            286.55647150899995,
+            342.556984323
+          ],
+          "mean_ms": 314.16167848000003,
+          "observations": 25,
+          "p50_ms": 298.07488,
+          "p95_ms": 452.8238041999998,
+          "p99_ms": 480.69793056
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.135417212,
+            1.3534281650000002
+          ],
+          "mean_ms": 0.5465610399999999,
+          "observations": 25,
+          "p50_ms": 0.134888,
+          "p95_ms": 0.2524857999999999,
+          "p99_ms": 7.79123099999998
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.1452453,
+            0.180242151
+          ],
+          "mean_ms": 0.16117324,
+          "observations": 25,
+          "p50_ms": 0.135626,
+          "p95_ms": 0.24204579999999998,
+          "p99_ms": 0.25772927999999995
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            288.680867894,
+            344.93409584399996
+          ],
+          "mean_ms": 314.9758852,
+          "observations": 25,
+          "p50_ms": 298.472559,
+          "p95_ms": 453.30600019999986,
+          "p99_ms": 481.09432424
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.09739096300000001,
+            0.116498966
+          ],
+          "mean_ms": 0.10647244,
+          "observations": 25,
+          "p50_ms": 0.092537,
+          "p95_ms": 0.15297239999999998,
+          "p99_ms": 0.156942
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1024|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1024",
+      "cell_id": "openai-text-embedding-3-small-d1024",
+      "client_mode": "persistent",
+      "dimension": 1024,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            299.26166094,
+            353.735935123
+          ],
+          "mean_ms": 325.0835802,
+          "observations": 25,
+          "p50_ms": 312.787172,
+          "p95_ms": 402.2270494,
+          "p99_ms": 511.7066167199997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.15936550300000002,
+            0.19784307799999998
+          ],
+          "mean_ms": 0.1773744,
+          "observations": 25,
+          "p50_ms": 0.14764,
+          "p95_ms": 0.28074299999999985,
+          "p99_ms": 0.2933398
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.150113385,
+            0.187972183
+          ],
+          "mean_ms": 0.16810704,
+          "observations": 25,
+          "p50_ms": 0.140084,
+          "p95_ms": 0.2577498,
+          "p99_ms": 0.27003779999999994
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            299.401179291,
+            354.66887242900003
+          ],
+          "mean_ms": 325.5381868,
+          "observations": 25,
+          "p50_ms": 313.156861,
+          "p95_ms": 402.565123,
+          "p99_ms": 512.2224562399997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.09912348400000001,
+            0.119386909
+          ],
+          "mean_ms": 0.10912516,
+          "observations": 25,
+          "p50_ms": 0.092579,
+          "p95_ms": 0.15222259999999999,
+          "p99_ms": 0.15751475999999998
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1024|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1024",
+      "cell_id": "openai-text-embedding-3-small-d1024",
+      "client_mode": "new",
+      "dimension": 1024,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            674.738517798,
+            812.13216591
+          ],
+          "mean_ms": 745.69774984,
+          "observations": 25,
+          "p50_ms": 856.151168,
+          "p95_ms": 913.5760468,
+          "p99_ms": 922.63336036
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.140875434,
+            0.165108717
+          ],
+          "mean_ms": 0.15096400000000001,
+          "observations": 25,
+          "p50_ms": 0.141358,
+          "p95_ms": 0.22158919999999982,
+          "p99_ms": 0.25453679999999995
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            3.870990549,
+            4.779441606
+          ],
+          "mean_ms": 4.3051628,
+          "observations": 25,
+          "p50_ms": 3.659487,
+          "p95_ms": 6.3490588,
+          "p99_ms": 6.819015519999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            680.681287277,
+            817.385915051
+          ],
+          "mean_ms": 753.17491488,
+          "observations": 25,
+          "p50_ms": 863.14704,
+          "p95_ms": 919.9240702,
+          "p99_ms": 928.69052936
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            2.852480601,
+            3.2294806179999997
+          ],
+          "mean_ms": 3.02103824,
+          "observations": 25,
+          "p50_ms": 2.849975,
+          "p95_ms": 4.268945199999997,
+          "p99_ms": 4.59096716
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1024|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1024",
+      "cell_id": "openai-text-embedding-3-small-d1024",
+      "client_mode": "persistent",
+      "dimension": 1024,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            697.6557354040001,
+            814.131586568
+          ],
+          "mean_ms": 758.51367332,
+          "observations": 25,
+          "p50_ms": 839.94809,
+          "p95_ms": 894.6292986,
+          "p99_ms": 895.60845352
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.142624526,
+            0.167069489
+          ],
+          "mean_ms": 0.15323632,
+          "observations": 25,
+          "p50_ms": 0.146842,
+          "p95_ms": 0.22677299999999984,
+          "p99_ms": 0.25428343999999997
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            3.989124017,
+            4.900049561
+          ],
+          "mean_ms": 4.41568936,
+          "observations": 25,
+          "p50_ms": 3.775958,
+          "p95_ms": 6.450883999999999,
+          "p99_ms": 6.49816852
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            701.425317222,
+            824.8330042810001
+          ],
+          "mean_ms": 766.1869594000001,
+          "observations": 25,
+          "p50_ms": 846.347775,
+          "p95_ms": 901.4580714,
+          "p99_ms": 904.3296794
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            2.8637238320000002,
+            3.394906902
+          ],
+          "mean_ms": 3.1043604,
+          "observations": 25,
+          "p50_ms": 2.843413,
+          "p95_ms": 4.565789,
+          "p99_ms": 4.6601951999999995
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1024|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1024",
+      "cell_id": "openai-text-embedding-3-small-d1024",
+      "client_mode": "new",
+      "dimension": 1024,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            301.922289148,
+            365.620695715
+          ],
+          "mean_ms": 333.94677204,
+          "observations": 25,
+          "p50_ms": 326.961334,
+          "p95_ms": 449.2635294,
+          "p99_ms": 463.7113826
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14127696999999997,
+            0.19617466799999994
+          ],
+          "mean_ms": 0.16607368,
+          "observations": 25,
+          "p50_ms": 0.129215,
+          "p95_ms": 0.3117653999999998,
+          "p99_ms": 0.38000227999999986
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.429531551,
+            0.5334294880000001
+          ],
+          "mean_ms": 0.47998996,
+          "observations": 25,
+          "p50_ms": 0.444138,
+          "p95_ms": 0.6521047999999999,
+          "p99_ms": 0.7004953999999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            302.771358691,
+            367.608727912
+          ],
+          "mean_ms": 334.92353168,
+          "observations": 25,
+          "p50_ms": 327.732264,
+          "p95_ms": 450.01065439999996,
+          "p99_ms": 464.44294763999994
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.30256704700000003,
+            0.361424711
+          ],
+          "mean_ms": 0.330696,
+          "observations": 25,
+          "p50_ms": 0.28519,
+          "p95_ms": 0.43949,
+          "p99_ms": 0.47379411999999993
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1024|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1024",
+      "cell_id": "openai-text-embedding-3-small-d1024",
+      "client_mode": "persistent",
+      "dimension": 1024,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            332.57610643299995,
+            420.25001602799995
+          ],
+          "mean_ms": 371.79410252,
+          "observations": 25,
+          "p50_ms": 330.667636,
+          "p95_ms": 452.3837448,
+          "p99_ms": 735.6003911999992
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14546905300000001,
+            0.18316634299999998
+          ],
+          "mean_ms": 0.16429259999999998,
+          "observations": 25,
+          "p50_ms": 0.133391,
+          "p95_ms": 0.2367816,
+          "p99_ms": 0.25729675999999996
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.41879661399999996,
+            0.530181372
+          ],
+          "mean_ms": 0.46997644,
+          "observations": 25,
+          "p50_ms": 0.401015,
+          "p95_ms": 0.7335801999999997,
+          "p99_ms": 0.8794470799999996
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            334.35878489699996,
+            421.54458812099995
+          ],
+          "mean_ms": 372.75512968000004,
+          "observations": 25,
+          "p50_ms": 331.885198,
+          "p95_ms": 453.3101496,
+          "p99_ms": 736.7107182799994
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.29565494600000003,
+            0.36147124799999997
+          ],
+          "mean_ms": 0.32675812,
+          "observations": 25,
+          "p50_ms": 0.276778,
+          "p95_ms": 0.4266903999999999,
+          "p99_ms": 0.5823870399999996
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1024|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1024",
+      "cell_id": "openai-text-embedding-3-small-d1024",
+      "client_mode": "new",
+      "dimension": 1024,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            393.20927546800004,
+            486.7282841679999
+          ],
+          "mean_ms": 439.9170214,
+          "observations": 25,
+          "p50_ms": 380.260481,
+          "p95_ms": 584.8649059999999,
+          "p99_ms": 617.4411395999999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.135574624,
+            0.162219486
+          ],
+          "mean_ms": 0.14756512,
+          "observations": 25,
+          "p50_ms": 0.133733,
+          "p95_ms": 0.21873199999999995,
+          "p99_ms": 0.24830207999999993
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.192688295,
+            1.4430886829999998
+          ],
+          "mean_ms": 1.3196958799999998,
+          "observations": 25,
+          "p50_ms": 1.391918,
+          "p95_ms": 1.6591194,
+          "p99_ms": 1.7105089199999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            394.597206795,
+            489.97976864699996
+          ],
+          "mean_ms": 442.26579884,
+          "observations": 25,
+          "p50_ms": 382.88643,
+          "p95_ms": 586.8323996,
+          "p99_ms": 619.9306971199999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.807121429,
+            0.961726936
+          ],
+          "mean_ms": 0.8815164400000001,
+          "observations": 25,
+          "p50_ms": 0.824971,
+          "p95_ms": 1.1589918,
+          "p99_ms": 1.20182588
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1024|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1024",
+      "cell_id": "openai-text-embedding-3-small-d1024",
+      "client_mode": "persistent",
+      "dimension": 1024,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            411.146705785,
+            495.33152548399994
+          ],
+          "mean_ms": 454.04582372,
+          "observations": 25,
+          "p50_ms": 457.478529,
+          "p95_ms": 580.6800846,
+          "p99_ms": 588.3910693600001
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.169791853,
+            0.21534201099999994
+          ],
+          "mean_ms": 0.19229472,
+          "observations": 25,
+          "p50_ms": 0.210312,
+          "p95_ms": 0.2765695999999999,
+          "p99_ms": 0.29393827999999994
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.093182577,
+            1.33671537
+          ],
+          "mean_ms": 1.21495204,
+          "observations": 25,
+          "p50_ms": 1.325805,
+          "p95_ms": 1.6420464,
+          "p99_ms": 1.6673497199999998
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            412.163804098,
+            496.418702926
+          ],
+          "mean_ms": 456.2877816,
+          "observations": 25,
+          "p50_ms": 460.187059,
+          "p95_ms": 583.288181,
+          "p99_ms": 590.93731192
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.758519171,
+            0.9182709469999999
+          ],
+          "mean_ms": 0.83471112,
+          "observations": 25,
+          "p50_ms": 0.704453,
+          "p95_ms": 1.1630512,
+          "p99_ms": 1.17294648
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1280|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1280",
+      "cell_id": "openai-text-embedding-3-small-d1280",
+      "client_mode": "new",
+      "dimension": 1280,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            297.031385319,
+            336.239094438
+          ],
+          "mean_ms": 316.39133632,
+          "observations": 25,
+          "p50_ms": 326.29526,
+          "p95_ms": 379.8764522,
+          "p99_ms": 402.87902704
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.136066752,
+            0.152684305
+          ],
+          "mean_ms": 0.14331104,
+          "observations": 25,
+          "p50_ms": 0.135335,
+          "p95_ms": 0.17548879999999994,
+          "p99_ms": 0.2208854799999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.177354678,
+            0.21244093999999997
+          ],
+          "mean_ms": 0.19366864,
+          "observations": 25,
+          "p50_ms": 0.173724,
+          "p95_ms": 0.2758616,
+          "p99_ms": 0.3098175599999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            297.22814021199997,
+            335.60256077199995
+          ],
+          "mean_ms": 316.85691328,
+          "observations": 25,
+          "p50_ms": 326.707792,
+          "p95_ms": 380.3015496,
+          "p99_ms": 403.29109664
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.11866766100000001,
+            0.13950595
+          ],
+          "mean_ms": 0.12859728,
+          "observations": 25,
+          "p50_ms": 0.113948,
+          "p95_ms": 0.1825412,
+          "p99_ms": 0.19263947999999997
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1280|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1280",
+      "cell_id": "openai-text-embedding-3-small-d1280",
+      "client_mode": "persistent",
+      "dimension": 1280,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            299.889878333,
+            345.23256175800003
+          ],
+          "mean_ms": 321.97859124,
+          "observations": 25,
+          "p50_ms": 313.886917,
+          "p95_ms": 411.75430799999987,
+          "p99_ms": 466.2871076399999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14566219,
+            0.179900679
+          ],
+          "mean_ms": 0.16072768,
+          "observations": 25,
+          "p50_ms": 0.141897,
+          "p95_ms": 0.2202624,
+          "p99_ms": 0.28022383999999984
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.17966633599999998,
+            0.218521693
+          ],
+          "mean_ms": 0.19705760000000003,
+          "observations": 25,
+          "p50_ms": 0.170069,
+          "p95_ms": 0.2949108,
+          "p99_ms": 0.31169871999999993
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            299.553126921,
+            346.24540574799994
+          ],
+          "mean_ms": 322.463353,
+          "observations": 25,
+          "p50_ms": 314.38506,
+          "p95_ms": 412.2139527999999,
+          "p99_ms": 466.77738311999985
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.116905795,
+            0.13816307599999997
+          ],
+          "mean_ms": 0.12697648,
+          "observations": 25,
+          "p50_ms": 0.113419,
+          "p95_ms": 0.1838418,
+          "p99_ms": 0.18428951999999998
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1280|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1280",
+      "cell_id": "openai-text-embedding-3-small-d1280",
+      "client_mode": "new",
+      "dimension": 1280,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            760.077269482,
+            882.4862039420001
+          ],
+          "mean_ms": 823.32946972,
+          "observations": 25,
+          "p50_ms": 924.560028,
+          "p95_ms": 972.2638789999999,
+          "p99_ms": 996.9660498799999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.138351321,
+            0.14735586199999998
+          ],
+          "mean_ms": 0.14270336,
+          "observations": 25,
+          "p50_ms": 0.14173,
+          "p95_ms": 0.16821179999999997,
+          "p99_ms": 0.17115476000000002
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            4.956685941,
+            6.226366188
+          ],
+          "mean_ms": 5.55001292,
+          "observations": 25,
+          "p50_ms": 4.551206,
+          "p95_ms": 8.2892692,
+          "p99_ms": 8.53859132
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            771.035210454,
+            890.7979087539998
+          ],
+          "mean_ms": 832.93103204,
+          "observations": 25,
+          "p50_ms": 932.796896,
+          "p95_ms": 981.0504112,
+          "p99_ms": 1004.8996825199999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            3.640134322,
+            4.211096737
+          ],
+          "mean_ms": 3.9088460400000002,
+          "observations": 25,
+          "p50_ms": 3.587849,
+          "p95_ms": 5.7343448,
+          "p99_ms": 5.85709344
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1280|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1280",
+      "cell_id": "openai-text-embedding-3-small-d1280",
+      "client_mode": "persistent",
+      "dimension": 1280,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            732.431243448,
+            851.7974904929999
+          ],
+          "mean_ms": 791.5161066000001,
+          "observations": 25,
+          "p50_ms": 811.404567,
+          "p95_ms": 960.8264524,
+          "p99_ms": 987.9433192399999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14530091399999998,
+            0.172305773
+          ],
+          "mean_ms": 0.1572452,
+          "observations": 25,
+          "p50_ms": 0.147387,
+          "p95_ms": 0.22735739999999982,
+          "p99_ms": 0.2722238799999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            4.912666874999999,
+            5.942596346999999
+          ],
+          "mean_ms": 5.4137254399999994,
+          "observations": 25,
+          "p50_ms": 4.797978,
+          "p95_ms": 8.0475338,
+          "p99_ms": 8.177780519999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            740.4652581280001,
+            863.9604875959999
+          ],
+          "mean_ms": 800.8691641999999,
+          "observations": 25,
+          "p50_ms": 819.497016,
+          "p95_ms": 973.1066754,
+          "p99_ms": 997.3269858799999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            3.573091566,
+            4.071718919
+          ],
+          "mean_ms": 3.7820869600000004,
+          "observations": 25,
+          "p50_ms": 3.520437,
+          "p95_ms": 5.257770799999998,
+          "p99_ms": 5.827696799999999
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1280|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1280",
+      "cell_id": "openai-text-embedding-3-small-d1280",
+      "client_mode": "new",
+      "dimension": 1280,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            332.295208119,
+            381.94898123400003
+          ],
+          "mean_ms": 357.568469,
+          "observations": 25,
+          "p50_ms": 343.287013,
+          "p95_ms": 451.7172436,
+          "p99_ms": 456.85497164
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.140416426,
+            0.173918403
+          ],
+          "mean_ms": 0.15578908,
+          "observations": 25,
+          "p50_ms": 0.140237,
+          "p95_ms": 0.24233999999999997,
+          "p99_ms": 0.24813464
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.530752122,
+            0.6523836929999999
+          ],
+          "mean_ms": 0.59292752,
+          "observations": 25,
+          "p50_ms": 0.525988,
+          "p95_ms": 0.8079564,
+          "p99_ms": 0.8475265599999998
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            334.693924573,
+            385.48718314300004
+          ],
+          "mean_ms": 358.72845256,
+          "observations": 25,
+          "p50_ms": 344.176916,
+          "p95_ms": 453.099745,
+          "p99_ms": 458.2297998
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.375291834,
+            0.446301973
+          ],
+          "mean_ms": 0.41126696,
+          "observations": 25,
+          "p50_ms": 0.384803,
+          "p95_ms": 0.542238,
+          "p99_ms": 0.54939816
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1280|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1280",
+      "cell_id": "openai-text-embedding-3-small-d1280",
+      "client_mode": "persistent",
+      "dimension": 1280,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            350.184417855,
+            406.119383438
+          ],
+          "mean_ms": 378.46519024,
+          "observations": 25,
+          "p50_ms": 429.767657,
+          "p95_ms": 449.1905228,
+          "p99_ms": 453.29667759999995
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14185668,
+            0.175940098
+          ],
+          "mean_ms": 0.1573066,
+          "observations": 25,
+          "p50_ms": 0.136252,
+          "p95_ms": 0.23384419999999997,
+          "p99_ms": 0.2741675999999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.5594258719999999,
+            0.684613778
+          ],
+          "mean_ms": 0.62148852,
+          "observations": 25,
+          "p50_ms": 0.636884,
+          "p95_ms": 0.8212278,
+          "p99_ms": 0.86197448
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            350.31068184099996,
+            405.63265283899995
+          ],
+          "mean_ms": 379.6602798,
+          "observations": 25,
+          "p50_ms": 431.305049,
+          "p95_ms": 450.1995808,
+          "p99_ms": 454.23813976
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.38367918400000006,
+            0.45281815599999997
+          ],
+          "mean_ms": 0.41629444,
+          "observations": 25,
+          "p50_ms": 0.349353,
+          "p95_ms": 0.551921,
+          "p99_ms": 0.5867049999999999
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1280|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1280",
+      "cell_id": "openai-text-embedding-3-small-d1280",
+      "client_mode": "new",
+      "dimension": 1280,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            444.190723232,
+            526.495539526
+          ],
+          "mean_ms": 485.64218156000004,
+          "observations": 25,
+          "p50_ms": 490.979539,
+          "p95_ms": 595.0164068,
+          "p99_ms": 610.61982552
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.14252394699999998,
+            1.116468811
+          ],
+          "mean_ms": 0.47245716000000004,
+          "observations": 25,
+          "p50_ms": 0.139204,
+          "p95_ms": 0.2809257999999999,
+          "p99_ms": 6.237586519999985
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.393759747,
+            1.6758532199999998
+          ],
+          "mean_ms": 1.52884636,
+          "observations": 25,
+          "p50_ms": 1.502311,
+          "p95_ms": 2.0927048,
+          "p99_ms": 2.1278753999999998
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            449.227718588,
+            527.272800888
+          ],
+          "mean_ms": 488.64449972,
+          "observations": 25,
+          "p50_ms": 493.266197,
+          "p95_ms": 598.1790722,
+          "p99_ms": 613.73473596
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.922723901,
+            1.090674373
+          ],
+          "mean_ms": 1.00101464,
+          "observations": 25,
+          "p50_ms": 0.888662,
+          "p95_ms": 1.4342627999999997,
+          "p99_ms": 1.46753812
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1280|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1280",
+      "cell_id": "openai-text-embedding-3-small-d1280",
+      "client_mode": "persistent",
+      "dimension": 1280,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            408.91165487,
+            500.229668146
+          ],
+          "mean_ms": 454.15506975999995,
+          "observations": 25,
+          "p50_ms": 468.849102,
+          "p95_ms": 594.6114038,
+          "p99_ms": 610.7538062399999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.15796868,
+            0.18939162399999998
+          ],
+          "mean_ms": 0.17304856000000002,
+          "observations": 25,
+          "p50_ms": 0.14715,
+          "p95_ms": 0.2428726,
+          "p99_ms": 0.24942288
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.399736237,
+            1.748823305
+          ],
+          "mean_ms": 1.5633936,
+          "observations": 25,
+          "p50_ms": 1.543899,
+          "p95_ms": 2.366834399999999,
+          "p99_ms": 2.55853416
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            413.05880709900003,
+            501.1361097089999
+          ],
+          "mean_ms": 456.8974172,
+          "observations": 25,
+          "p50_ms": 472.578226,
+          "p95_ms": 597.1462566,
+          "p99_ms": 612.83443612
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.914981361,
+            1.1095968299999996
+          ],
+          "mean_ms": 1.0059052800000001,
+          "observations": 25,
+          "p50_ms": 0.873781,
+          "p95_ms": 1.4798635999999998,
+          "p99_ms": 1.5656507999999998
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1536|n1|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1536",
+      "cell_id": "openai-text-embedding-3-small-d1536",
+      "client_mode": "new",
+      "dimension": 1536,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            275.559359395,
+            315.634890527
+          ],
+          "mean_ms": 295.58781972,
+          "observations": 25,
+          "p50_ms": 291.207258,
+          "p95_ms": 387.0723625999999,
+          "p99_ms": 393.16378524
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.135481701,
+            0.15755802
+          ],
+          "mean_ms": 0.1450708,
+          "observations": 25,
+          "p50_ms": 0.139902,
+          "p95_ms": 0.2007797999999999,
+          "p99_ms": 0.23738739999999994
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.205484097,
+            0.2478836539999999
+          ],
+          "mean_ms": 0.22513676,
+          "observations": 25,
+          "p50_ms": 0.203159,
+          "p95_ms": 0.34549139999999995,
+          "p99_ms": 0.37530027999999993
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            276.51902279000007,
+            315.63354940299996
+          ],
+          "mean_ms": 296.10919004,
+          "observations": 25,
+          "p50_ms": 291.800722,
+          "p95_ms": 387.7215993999999,
+          "p99_ms": 393.7275274
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.137751408,
+            0.167051641
+          ],
+          "mean_ms": 0.15116276,
+          "observations": 25,
+          "p50_ms": 0.135004,
+          "p95_ms": 0.232263,
+          "p99_ms": 0.2391794
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1536|n1|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1536",
+      "cell_id": "openai-text-embedding-3-small-d1536",
+      "client_mode": "persistent",
+      "dimension": 1536,
+      "input_count": 1,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            291.730453194,
+            341.397415803
+          ],
+          "mean_ms": 314.96825,
+          "observations": 25,
+          "p50_ms": 297.698464,
+          "p95_ms": 432.20683299999996,
+          "p99_ms": 468.2497854399999
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.166428864,
+            0.20559133799999996
+          ],
+          "mean_ms": 0.18613223999999998,
+          "observations": 25,
+          "p50_ms": 0.173599,
+          "p95_ms": 0.25589939999999994,
+          "p99_ms": 0.25987124
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.22161103999999998,
+            0.26983831399999997
+          ],
+          "mean_ms": 0.24485816,
+          "observations": 25,
+          "p50_ms": 0.210013,
+          "p95_ms": 0.35959559999999996,
+          "p99_ms": 0.3837799599999999
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            292.10240003800004,
+            340.63084938500003
+          ],
+          "mean_ms": 315.55313224,
+          "observations": 25,
+          "p50_ms": 298.170573,
+          "p95_ms": 432.8764728,
+          "p99_ms": 469.0519856799999
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.14205169099999998,
+            0.16704024099999998
+          ],
+          "mean_ms": 0.15389184,
+          "observations": 25,
+          "p50_ms": 0.140191,
+          "p95_ms": 0.22075299999999998,
+          "p99_ms": 0.22348111999999998
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1536|n32|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1536",
+      "cell_id": "openai-text-embedding-3-small-d1536",
+      "client_mode": "new",
+      "dimension": 1536,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            765.972625366,
+            916.9213695819999
+          ],
+          "mean_ms": 842.44703664,
+          "observations": 25,
+          "p50_ms": 860.749434,
+          "p95_ms": 1088.3333306,
+          "p99_ms": 1186.2443933999998
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.137943251,
+            0.157647509
+          ],
+          "mean_ms": 0.14589587999999998,
+          "observations": 25,
+          "p50_ms": 0.139897,
+          "p95_ms": 0.164732,
+          "p99_ms": 0.2419013199999998
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            6.074488647,
+            7.187446745
+          ],
+          "mean_ms": 6.6078652,
+          "observations": 25,
+          "p50_ms": 5.838599,
+          "p95_ms": 9.614572999999996,
+          "p99_ms": 10.330931319999998
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            776.480515233,
+            927.51227038
+          ],
+          "mean_ms": 853.5897912800001,
+          "observations": 25,
+          "p50_ms": 871.107964,
+          "p95_ms": 1099.218745,
+          "p99_ms": 1196.5837215599997
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            4.212663448,
+            4.665704017
+          ],
+          "mean_ms": 4.38899356,
+          "observations": 25,
+          "p50_ms": 4.202501,
+          "p95_ms": 4.6850556,
+          "p99_ms": 6.599856119999995
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1536|n32|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1536",
+      "cell_id": "openai-text-embedding-3-small-d1536",
+      "client_mode": "persistent",
+      "dimension": 1536,
+      "input_count": 32,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            778.6919126310002,
+            899.93428159
+          ],
+          "mean_ms": 842.76341012,
+          "observations": 25,
+          "p50_ms": 837.897425,
+          "p95_ms": 1037.986142,
+          "p99_ms": 1047.37208496
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.154994041,
+            0.185464725
+          ],
+          "mean_ms": 0.16882903999999999,
+          "observations": 25,
+          "p50_ms": 0.160174,
+          "p95_ms": 0.24890599999999993,
+          "p99_ms": 0.2813357999999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            6.079487837999999,
+            6.900002366
+          ],
+          "mean_ms": 6.47069928,
+          "observations": 25,
+          "p50_ms": 6.169162,
+          "p95_ms": 8.705211199999997,
+          "p99_ms": 9.183033839999998
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            795.919339927,
+            914.949463753
+          ],
+          "mean_ms": 853.7629201999999,
+          "observations": 25,
+          "p50_ms": 848.170291,
+          "p95_ms": 1048.820714,
+          "p99_ms": 1058.3052675200001
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            4.199579826000001,
+            4.624786119
+          ],
+          "mean_ms": 4.35998176,
+          "observations": 25,
+          "p50_ms": 4.208081,
+          "p95_ms": 4.650689,
+          "p99_ms": 6.438649919999996
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1536|n3|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1536",
+      "cell_id": "openai-text-embedding-3-small-d1536",
+      "client_mode": "new",
+      "dimension": 1536,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            357.23987519,
+            414.21949396900004
+          ],
+          "mean_ms": 385.16919036,
+          "observations": 25,
+          "p50_ms": 401.176418,
+          "p95_ms": 465.5709922,
+          "p99_ms": 467.63410096
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.133467445,
+            0.15573877399999997
+          ],
+          "mean_ms": 0.14290812,
+          "observations": 25,
+          "p50_ms": 0.134319,
+          "p95_ms": 0.21342019999999984,
+          "p99_ms": 0.23242367999999997
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.5850274830000001,
+            0.723388343
+          ],
+          "mean_ms": 0.6526958,
+          "observations": 25,
+          "p50_ms": 0.543353,
+          "p95_ms": 0.9796022,
+          "p99_ms": 1.0517808799999997
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            359.67520469600004,
+            414.14862648400003
+          ],
+          "mean_ms": 386.40293904,
+          "observations": 25,
+          "p50_ms": 403.050661,
+          "p95_ms": 466.6254848,
+          "p99_ms": 468.6898804
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.403543134,
+            0.480903553
+          ],
+          "mean_ms": 0.43814475999999997,
+          "observations": 25,
+          "p50_ms": 0.392303,
+          "p95_ms": 0.6476019999999999,
+          "p99_ms": 0.65763284
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1536|n3|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1536",
+      "cell_id": "openai-text-embedding-3-small-d1536",
+      "client_mode": "persistent",
+      "dimension": 1536,
+      "input_count": 3,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            329.711415068,
+            398.38391889999997
+          ],
+          "mean_ms": 362.14312859999995,
+          "observations": 25,
+          "p50_ms": 336.730902,
+          "p95_ms": 466.7736262,
+          "p99_ms": 585.7909938799997
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.13779096999999998,
+            0.17320865699999996
+          ],
+          "mean_ms": 0.15429496,
+          "observations": 25,
+          "p50_ms": 0.134354,
+          "p95_ms": 0.24192139999999993,
+          "p99_ms": 0.2789878799999999
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            0.625046191,
+            0.7878967769999999
+          ],
+          "mean_ms": 0.70695768,
+          "observations": 25,
+          "p50_ms": 0.634853,
+          "p95_ms": 1.0297899999999998,
+          "p99_ms": 1.1781797199999995
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            330.59261751,
+            399.93884049700006
+          ],
+          "mean_ms": 363.4796306,
+          "observations": 25,
+          "p50_ms": 338.22392,
+          "p95_ms": 467.7816976,
+          "p99_ms": 587.5758037199996
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            0.43849248100000005,
+            0.515905965
+          ],
+          "mean_ms": 0.47524935999999995,
+          "observations": 25,
+          "p50_ms": 0.42741,
+          "p95_ms": 0.6524439999999999,
+          "p99_ms": 0.6562140399999999
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1536|n8|new": {
+      "alias": "ragz-openai-text-embedding-3-small-d1536",
+      "cell_id": "openai-text-embedding-3-small-d1536",
+      "client_mode": "new",
+      "dimension": 1536,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            450.31384790199996,
+            543.806948765
+          ],
+          "mean_ms": 497.73385892,
+          "observations": 25,
+          "p50_ms": 472.144485,
+          "p95_ms": 679.6427208,
+          "p99_ms": 681.9254048
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.136462839,
+            0.161690444
+          ],
+          "mean_ms": 0.1483098,
+          "observations": 25,
+          "p50_ms": 0.140017,
+          "p95_ms": 0.22870279999999996,
+          "p99_ms": 0.23606123999999998
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.675162133,
+            2.0066801
+          ],
+          "mean_ms": 1.84838704,
+          "observations": 25,
+          "p50_ms": 1.757848,
+          "p95_ms": 2.4857987999999995,
+          "p99_ms": 2.55821712
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            454.980560568,
+            549.392095254
+          ],
+          "mean_ms": 500.95060495999996,
+          "observations": 25,
+          "p50_ms": 475.806932,
+          "p95_ms": 682.5738425999999,
+          "p99_ms": 685.59983084
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.124857213,
+            1.3267821949999998
+          ],
+          "mean_ms": 1.2200492,
+          "observations": 25,
+          "p50_ms": 1.071864,
+          "p95_ms": 1.6205635999999999,
+          "p99_ms": 1.6893384799999998
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    },
+    "openai-text-embedding-3-small-d1536|n8|persistent": {
+      "alias": "ragz-openai-text-embedding-3-small-d1536",
+      "cell_id": "openai-text-embedding-3-small-d1536",
+      "client_mode": "persistent",
+      "dimension": 1536,
+      "input_count": 8,
+      "metrics": {
+        "http_wall_ms": {
+          "bootstrap_ci95_ms": [
+            417.372334067,
+            517.482458146
+          ],
+          "mean_ms": 465.08642547999995,
+          "observations": 25,
+          "p50_ms": 398.95912,
+          "p95_ms": 677.9642568,
+          "p99_ms": 679.50342212
+        },
+        "request_build_ms": {
+          "bootstrap_ci95_ms": [
+            0.141134138,
+            0.16445104899999996
+          ],
+          "mean_ms": 0.15099424,
+          "observations": 25,
+          "p50_ms": 0.144409,
+          "p95_ms": 0.22752219999999973,
+          "p99_ms": 0.25301367999999996
+        },
+        "response_decode_ms": {
+          "bootstrap_ci95_ms": [
+            1.6418276490000001,
+            2.012804899
+          ],
+          "mean_ms": 1.81593684,
+          "observations": 25,
+          "p50_ms": 1.712462,
+          "p95_ms": 2.6919893999999993,
+          "p99_ms": 2.8816950399999994
+        },
+        "total_ms": {
+          "bootstrap_ci95_ms": [
+            421.678756702,
+            520.874202061
+          ],
+          "mean_ms": 468.20039856000005,
+          "observations": 25,
+          "p50_ms": 403.384714,
+          "p95_ms": 680.5927342,
+          "p99_ms": 682.127469
+        },
+        "vector_validation_ms": {
+          "bootstrap_ci95_ms": [
+            1.063483493,
+            1.245092547
+          ],
+          "mean_ms": 1.147042,
+          "observations": 25,
+          "p50_ms": 1.067657,
+          "p95_ms": 1.7318931999999998,
+          "p99_ms": 1.7548376399999999
+        }
+      },
+      "model": "text-embedding-3-small",
+      "observations": 25
+    }
+  },
+  "observations": 2000,
+  "runner_version": "1.0",
+  "schema_version": 1
+}

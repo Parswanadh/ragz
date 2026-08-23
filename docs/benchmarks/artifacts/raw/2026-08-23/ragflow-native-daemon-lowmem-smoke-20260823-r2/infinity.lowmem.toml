@@ -1,0 +1,33 @@
+[general]
+version = "0.7.3"
+time_zone = "utc-8"
+
+[network]
+server_address = "0.0.0.0"
+postgres_port = 5432
+http_port = 23820
+client_port = 23817
+connection_pool_size = 16
+
+[log]
+log_to_stdout = true
+log_level = "warning"
+
+[storage]
+persistence_dir = "/var/infinity/persistence"
+data_dir = "/var/infinity/data"
+optimize_interval = "60s"
+cleanup_interval = "300s"
+compact_interval = "600s"
+storage_type = "local"
+mem_index_capacity = 8192
+
+[buffer]
+buffer_manager_size = "512MB"
+lru_num = 3
+temp_dir = "/var/infinity/tmp"
+result_cache = "off"
+memindex_memory_quota = "128MB"
+
+[wal]
+wal_dir = "/var/infinity/wal"

@@ -1,0 +1,130 @@
+{
+  "alias_contract": {
+    "client_sends_dimensions": false,
+    "fixed_dimensions_in_litellm": true,
+    "provider_key_source": "environment_only"
+  },
+  "benchmark_kind": "openai-embedding-model-dimension-matrix",
+  "cells": [
+    {
+      "alias": "ragz-openai-text-embedding-3-small-d1024",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-small-d1024",
+      "client_sends_dimensions": false,
+      "dimension": 1024,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-small",
+      "probe_status": "passed",
+      "provider": "openai"
+    },
+    {
+      "alias": "ragz-openai-text-embedding-3-small-d1280",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-small-d1280",
+      "client_sends_dimensions": false,
+      "dimension": 1280,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-small",
+      "probe_status": "passed",
+      "provider": "openai"
+    },
+    {
+      "alias": "ragz-openai-text-embedding-3-small-d1536",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-small-d1536",
+      "client_sends_dimensions": false,
+      "dimension": 1536,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-small",
+      "probe_status": "passed",
+      "provider": "openai"
+    },
+    {
+      "alias": "ragz-openai-text-embedding-3-large-d1024",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-large-d1024",
+      "client_sends_dimensions": false,
+      "dimension": 1024,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-large",
+      "probe_status": "passed",
+      "provider": "openai"
+    },
+    {
+      "alias": "ragz-openai-text-embedding-3-large-d1280",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-large-d1280",
+      "client_sends_dimensions": false,
+      "dimension": 1280,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-large",
+      "probe_status": "passed",
+      "provider": "openai"
+    },
+    {
+      "alias": "ragz-openai-text-embedding-3-large-d1536",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-large-d1536",
+      "client_sends_dimensions": false,
+      "dimension": 1536,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-large",
+      "probe_status": "passed",
+      "provider": "openai"
+    },
+    {
+      "alias": "ragz-openai-text-embedding-3-large-d1792",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-large-d1792",
+      "client_sends_dimensions": false,
+      "dimension": 1792,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-large",
+      "probe_status": "passed",
+      "provider": "openai"
+    },
+    {
+      "alias": "ragz-openai-text-embedding-3-large-d2048",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-large-d2048",
+      "client_sends_dimensions": false,
+      "dimension": 2048,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-large",
+      "probe_status": "passed",
+      "provider": "openai"
+    },
+    {
+      "alias": "ragz-openai-text-embedding-3-large-d2096",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-large-d2096",
+      "client_sends_dimensions": false,
+      "dimension": 2096,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-large",
+      "probe_status": "passed",
+      "provider": "openai"
+    },
+    {
+      "alias": "ragz-openai-text-embedding-3-large-d3072",
+      "alias_status": "present",
+      "cell_id": "openai-text-embedding-3-large-d3072",
+      "client_sends_dimensions": false,
+      "dimension": 3072,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "model": "text-embedding-3-large",
+      "probe_status": "passed",
+      "provider": "openai"
+    }
+  ],
+  "created_at_utc": "2026-08-23T12:50:55.998280+00:00",
+  "credentials_persisted": false,
+  "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "probe_input_persisted": false,
+  "provider_calls": 10,
+  "proxy_calls": 1,
+  "response_bodies_persisted": false,
+  "runner_version": "1.0",
+  "schema_version": 1,
+  "status": "completed"
+}

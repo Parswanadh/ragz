@@ -558,6 +558,7 @@ async def retrieve(
         dense_embedder = get_dense_embedder(
             embedding_model.id, provider_kind=embedding_model.provider_kind,
             litellm_model_name=embedding_model.litellm_model_name,
+            dimension=embedding_model.dimension,
         )
     queries: tuple[str, ...] = (query,)
     with _capture_stage(stage_timings_ms, "query_expansion"):

@@ -85,6 +85,75 @@ async def test_litellm_embedder_posts_and_parses_embeddings() -> None:
     assert str(captured["url"]).endswith("/v1/embeddings")
 
 
+async def test_litellm_openai_embedder_requests_dimensions() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["json"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "data": [{"index": 0, "embedding": [0.1, 0.2, 0.3]}],
+            },
+        )
+
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master",
+        model="text-embedding-3-small", provider_kind="openai", dimension=3,
+        transport=httpx.MockTransport(handler),
+    )
+    vectors = await embedder.embed(["hello"])
+
+    assert vectors == [[0.1, 0.2, 0.3]]
+    assert captured["json"] == {
+        "model": "text-embedding-3-small", "input": ["hello"], "dimensions": 3
+    }
+
+
+async def test_litellm_embedder_rejects_requested_width_mismatch() -> None:
+    transport = httpx.MockTransport(
+        lambda _request: httpx.Response(
+            200, json={"data": [{"index": 0, "embedding": [0.1, 0.2]}]}
+        )
+    )
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master",
+        model="text-embedding-3-small", provider_kind="openai", dimension=3,
+        transport=transport,
+    )
+
+    with pytest.raises(UpstreamError, match="expected 3 dimensions"):
+        await embedder.embed(["hello"])
+
+
+@pytest.mark.parametrize(
+    ("provider_kind", "model"),
+    [
+        ("cohere", "embed-english-v3.0"),
+        ("cohere", "text-embedding-3-small"),
+        ("openai", "text-embedding-ada-002"),
+    ],
+)
+async def test_litellm_embedder_omits_dimensions_for_unsupported_models(
+    provider_kind: str, model: str,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["json"] = json.loads(request.content)
+        return httpx.Response(
+            200, json={"data": [{"index": 0, "embedding": [0.1, 0.2]}]}
+        )
+
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master", model=model,
+        provider_kind=provider_kind, dimension=2, transport=httpx.MockTransport(handler),
+    )
+    await embedder.embed(["hello"])
+
+    assert "dimensions" not in captured["json"]
+
+
 async def test_litellm_embedder_reports_billed_tokens() -> None:
     # Cost reporting (design 2026-08-15): embed_with_usage surfaces the hosted
     # provider's usage.total_tokens, summed across batches, for the recording
@@ -159,6 +228,17 @@ def test_get_dense_embedder_caches_by_model_id() -> None:
     a = get_dense_embedder(model_id, provider_kind="tei", litellm_model_name="local-embeddings")
     b = get_dense_embedder(model_id, provider_kind="tei", litellm_model_name="local-embeddings")
     assert a is b
+
+
+def test_get_dense_embedder_cache_separates_dimensions() -> None:
+    model_id = uuid4()
+    a = get_dense_embedder(
+        model_id, provider_kind="tei", litellm_model_name="local-embeddings", dimension=1024
+    )
+    b = get_dense_embedder(
+        model_id, provider_kind="tei", litellm_model_name="local-embeddings", dimension=1536
+    )
+    assert a is not b
 
 
 async def test_an_unreachable_tei_names_the_service_and_the_fix() -> None:

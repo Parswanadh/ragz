@@ -12,6 +12,16 @@ from ragz.core.config import get_settings
 from ragz.core.errors import UpstreamError
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
+_OPENAI_DIMENSION_MODELS = {"text-embedding-3-small", "text-embedding-3-large"}
+
+
+def _supports_openai_dimensions(model: str, provider_kind: str | None) -> bool:
+    """Return whether the upstream API accepts OpenAI's ``dimensions`` option."""
+    if provider_kind is not None and provider_kind != "openai":
+        return False
+    # LiteLLM accepts both ``text-embedding-3-small`` and provider-prefixed
+    # names such as ``openai/text-embedding-3-small``.
+    return model.rsplit("/", 1)[-1] in _OPENAI_DIMENSION_MODELS
 
 
 class DenseEmbedder(Protocol):
@@ -90,12 +100,16 @@ class LiteLLMEmbedder:
         base_url: str,
         master_key: str,
         model: str,
+        provider_kind: str | None = None,
+        dimension: int | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
         batch_size: int = 32,
     ) -> None:
         self._base_url = base_url
         self._master_key = master_key
         self._model = model
+        self._provider_kind = provider_kind
+        self._dimension = dimension
         self._transport = transport
         self._batch_size = batch_size
 
@@ -114,9 +128,14 @@ class LiteLLMEmbedder:
             ) as client:
                 for i in range(0, len(texts), self._batch_size):
                     batch = texts[i : i + self._batch_size]
+                    payload: dict[str, object] = {"model": self._model, "input": batch}
+                    if self._dimension is not None and _supports_openai_dimensions(
+                        self._model, self._provider_kind
+                    ):
+                        payload["dimensions"] = self._dimension
                     response = await client.post(
                         "/v1/embeddings",
-                        json={"model": self._model, "input": batch},
+                        json=payload,
                         headers=headers,
                     )
                     if response.status_code != 200:
@@ -129,7 +148,14 @@ class LiteLLMEmbedder:
                     except ValueError as exc:
                         raise UpstreamError("malformed embedding response from gateway") from exc
                     ordered = sorted(body.get("data", []), key=lambda d: d["index"])
-                    out.extend([d["embedding"] for d in ordered])
+                    for item in ordered:
+                        embedding = item["embedding"]
+                        if self._dimension is not None and len(embedding) != self._dimension:
+                            raise UpstreamError(
+                                "embedding gateway returned vector width "
+                                f"{len(embedding)}; expected {self._dimension} dimensions"
+                            )
+                        out.append(embedding)
                     # Hosted providers return billed usage; missing/malformed
                     # usage degrades to 0 (a cost undercount is never a failure).
                     usage = body.get("usage") or {}
@@ -169,13 +195,16 @@ class HashDenseEmbedder:
 
 @lru_cache
 def get_dense_embedder(
-    model_id: UUID, *, provider_kind: str, litellm_model_name: str
+    model_id: UUID, *, provider_kind: str, litellm_model_name: str,
+    dimension: int | None = None,
 ) -> DenseEmbedder:
     """DOC-10: model-parameterized (was a no-arg global singleton). Cached by
-    the primitive (model_id, provider_kind, litellm_model_name) tuple, not by
-    an ORM Model object -- two Model instances loaded in different sessions
-    for the SAME row don't share Python identity/hash, which would defeat
-    lru_cache's whole purpose across separate Celery task invocations.
+    the primitive (model_id, provider_kind, litellm_model_name, dimension) tuple,
+    not by an ORM Model object -- two Model instances loaded in different
+    sessions for the SAME row don't share Python identity/hash, which would
+    defeat lru_cache's whole purpose across separate Celery task invocations.
+    The requested width is part of the key so changing dimensions cannot reuse
+    an embedder configured for another vector space.
 
     settings.embedding_backend == "hash" is a TEST-ONLY override (unchanged
     from before DOC-10): it forces every model_id to the deterministic hash
@@ -188,7 +217,7 @@ def get_dense_embedder(
         return TeiDenseEmbedder(settings.tei_url)
     return LiteLLMEmbedder(
         base_url=settings.litellm_url, master_key=settings.litellm_master_key,
-        model=litellm_model_name,
+        model=litellm_model_name, provider_kind=provider_kind, dimension=dimension,
     )
 
 

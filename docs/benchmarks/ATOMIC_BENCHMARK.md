@@ -6,6 +6,10 @@ This is the canonical short-form record for the networking retrieval, atomic
 latency, answer-model parity, AGNO boundary, and RAGFlow execution status. Raw
 query/document text and credentials are not committed.
 
+The expanded 70-query/ten-dimension campaign and the actual RAGFlow runtime
+attempt are documented in
+`docs/benchmarks/2026-08-23-professional-embedding-rag-triad-and-ragflow.md`.
+
 ## Frozen published retrieval configuration
 
 | Field | Value |
@@ -127,6 +131,31 @@ The paths differed substantially, but these small unpaired samples do not prove
 a fixed LiteLLM speedup or penalty. Both remain hundreds of milliseconds; the
 OpenAI/provider-network stage is the dominant latency source.
 
+## Expanded embedding and RAG-Triad result
+
+A later run tested all ten valid OpenAI small/large dimension cells with 2,000
+scored atomic embedding requests. It then ran 700 exploratory Open Manuals
+query evaluations and a clean no-cache 70-query pair with Luna generation and
+a separate GPT-5.4-mini judge.
+
+- Large/1,024 versus small/1,024 retrieval mean: `443.4` versus `445.8 ms`.
+- Required-document hit: `60/60` versus `59/60`.
+- Answerable-query context relevance: `0.9882` versus `0.9618`.
+- Answerable-query correctness: `0.9790` versus `0.9552`.
+- Actual 70-query provider cost: `$0.12545` versus `$0.10299`.
+- No paired quality or latency delta survives Holm correction.
+
+The clean large/1,024 end-to-end mean is `5,543.9 ms`: retrieval is `8.0%`,
+Luna generation `58.8%`, and automated judging `33.2%`. Judge time is not a
+user-facing production layer.
+
+The production networking hybrid confirmation produces a different result.
+Across 210 observations per mode, large/1,024 exact-page Recall@5 is `0.2573`
+single and `0.2422` multi, materially below the earlier small/1,536 track.
+Large/1,024 improves MRR/nDCG and latency but is not a safe universal default.
+The Open Manuals qrels are document-level; networking qrels require an exact
+physical page.
+
 ## `gpt-5.6-luna` answer-model parity
 
 - The supplied OpenAI account returned HTTP 200 for model
@@ -167,11 +196,19 @@ RAGFlow v0.27.0 was configured conceptually for cloud/API models only:
 - Generation/expansion: custom OpenAI-compatible `gpt-5.6-luna` through LiteLLM
 - Local embedding/generation model: none
 
-It remains resource-gated because the RAGFlow application/index stack—not the
-models—requires at least 16 GB effective Docker/host memory. Current Docker
-memory is 3,864,363,008 bytes; daemon disk and `vm.max_map_count` also remain
-unverified in the Docker VM namespace. The stack was not started and no score
-was emitted.
+Two different Docker endpoints were found. Docker Desktop exposes
+`3,864,363,008` bytes. A separate native daemon at
+`unix:///var/run/docker.sock` exposes `16,246,616,064` bytes and received the
+pinned image through `skopeo` after Docker Desktop hit content-store commit
+errors.
+
+On the native daemon, an isolated five-service project was actually started
+under a 3 GB total budget: RAGFlow, reduced-memory Infinity, MySQL, MinIO, and
+Redis. No local model service was started. The guard stopped the project after
+about 15 seconds when the RAGFlow app reached `1,378.7 / 1,379.8 MB` and swap
+grew by `1,415.7 MB`. No container was OOM-killed or restarted. No provider was
+configured, no corpus was ingested, and no score was emitted. The status is
+`runtime_resource_limited`, not failed quality.
 
 ### Official RAGFlow Cloud
 
@@ -208,3 +245,16 @@ or paid plan was created.
   `docs/benchmarks/artifacts/raw/2026-08-23/ragflow-cloud-api-preflight-20260823/`
 - Complete HTML review:
   `docs/benchmarks/2026-08-22-complete-rag-review.html`
+- Professional embedding/RAG-Triad/RAGFlow report:
+  `docs/benchmarks/2026-08-23-professional-embedding-rag-triad-and-ragflow.md`
+- Atomic ten-cell endpoint matrix:
+  `docs/benchmarks/artifacts/raw/2026-08-23/openai-embedding-atomic-matrix-20260823-r1/`
+- Clean no-cache publication cells:
+  `docs/benchmarks/artifacts/raw/2026-08-23/open-manuals-publication-*-1024-nocache-gpt54judge-20260823-r1/`
+- Clean-pair statistics:
+  `docs/benchmarks/artifacts/2026-08-23-open-manuals-clean-pair-analysis.md`
+- RAGZ large/1,024 product confirmations:
+  `docs/benchmarks/artifacts/raw/2026-08-23/ragz-networking-large1024-product-atomic-20260823-r1/`
+  and `...-r2/`
+- Combined large/1,024 product analysis:
+  `docs/benchmarks/artifacts/2026-08-23-ragz-large1024-product-analysis.md`

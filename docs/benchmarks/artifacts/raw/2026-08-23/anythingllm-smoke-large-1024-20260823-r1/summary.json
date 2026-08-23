@@ -1,0 +1,29 @@
+{
+  "abstention": {
+    "f1": 0.0,
+    "false_negative": 2,
+    "false_positive": 0,
+    "precision": null,
+    "recall": 0.0,
+    "true_positive": 0
+  },
+  "errors": 0,
+  "indexing_ms": 22699.292516015703,
+  "ingestion_progress": {
+    "index_batches_completed": 4,
+    "locations_indexed": 14,
+    "uploads_completed": 14
+  },
+  "latency_ms": {
+    "p50": 270.28634999999997,
+    "p95": 356.65596500000004,
+    "p99": 368.923353
+  },
+  "mean_mrr_at_k": 1.0,
+  "mean_ndcg_at_k": 0.953572607243596,
+  "mean_recall_at_k": 0.9629629629629629,
+  "observations": 20,
+  "peak_container_memory_bytes": 385980825,
+  "quality_observations": 18,
+  "top_k": 5
+}

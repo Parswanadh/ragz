@@ -1,0 +1,4024 @@
+{
+  "analysis": {
+    "alpha": 0.05,
+    "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+    "bootstrap_samples": 10000,
+    "cache_contaminated_cells": [
+      "openai-text-embedding-3-large-d1024",
+      "openai-text-embedding-3-large-d1280",
+      "openai-text-embedding-3-large-d1536",
+      "openai-text-embedding-3-large-d1792",
+      "openai-text-embedding-3-large-d2048",
+      "openai-text-embedding-3-large-d2096",
+      "openai-text-embedding-3-large-d3072",
+      "openai-text-embedding-3-small-d1280",
+      "openai-text-embedding-3-small-d1536"
+    ],
+    "cache_contaminated_matrix": true,
+    "cache_policy": "cached and uncached denominators are reported separately and never pooled for comparable latency",
+    "evidence_policy": "document hit is not section evidence; section-level qrels are unavailable",
+    "privacy": {
+      "answers_persisted": false,
+      "document_text_persisted": false,
+      "prompts_persisted": false,
+      "provider_response_bodies_persisted": false
+    },
+    "provider_spend_policy": "observed provider spend is descriptive only and excluded from cross-cell Pareto ranking",
+    "seed": 42
+  },
+  "benchmark": "open-manuals-v2",
+  "cells": {
+    "openai-text-embedding-3-large-d1024": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 3481.8269685714286,
+          "share_of_total_mean": 0.5104464240342514,
+          "stage": "judge_total"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 527.7301366197183,
+            "observations": 71,
+            "p50_ms": 362.7831,
+            "p95_ms": 465.59614999999997,
+            "p99_ms": 4397.301889999968
+          },
+          "generation_provider": {
+            "mean_ms": 2944.239871014493,
+            "observations": 69,
+            "p50_ms": 2819.5579,
+            "p95_ms": 4555.21624,
+            "p99_ms": 4806.150148
+          },
+          "judge_provider": {
+            "mean_ms": 3531.71058115942,
+            "observations": 69,
+            "p50_ms": 3277.8811,
+            "p95_ms": 5180.28666,
+            "p99_ms": 6931.186811999995
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 3339.25762,
+            "observations": 70,
+            "p50_ms": 3246.9568,
+            "p95_ms": 5047.418575,
+            "p99_ms": 5477.121624000001
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 436.45273857142854,
+            "observations": 70,
+            "p50_ms": 440.00705,
+            "p95_ms": 541.58657,
+            "p99_ms": 770.7321390000009
+          },
+          "generation_provider": {
+            "mean_ms": 2944.2882304347827,
+            "observations": 69,
+            "p50_ms": 2819.5965,
+            "p95_ms": 4555.25662,
+            "p99_ms": 4806.189288
+          },
+          "generation_total": {
+            "mean_ms": 2902.763872857143,
+            "observations": 70,
+            "p50_ms": 2804.9263,
+            "p95_ms": 4553.763634999999,
+            "p99_ms": 4805.658414
+          },
+          "judge_provider": {
+            "mean_ms": 3531.7621985507244,
+            "observations": 69,
+            "p50_ms": 3277.9353,
+            "p95_ms": 5180.335959999999,
+            "p99_ms": 6931.232851999995
+          },
+          "judge_total": {
+            "mean_ms": 3481.8269685714286,
+            "observations": 70,
+            "p50_ms": 3277.4831999999997,
+            "p95_ms": 5175.704255,
+            "p99_ms": 6924.397544000002
+          },
+          "postprocess": {
+            "mean_ms": 0.05008,
+            "observations": 70,
+            "p50_ms": 0.0366,
+            "p95_ms": 0.06655,
+            "p99_ms": 0.2576320000000013
+          },
+          "total_with_judge": {
+            "mean_ms": 6821.140877142857,
+            "observations": 70,
+            "p50_ms": 6763.44515,
+            "p95_ms": 9617.863679999999,
+            "p99_ms": 10431.243327
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": true,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [
+          "provider_calls_below_expected_209_of_211",
+          "generation_calls_below_expected_69_of_70",
+          "judge_calls_below_expected_69_of_70",
+          "missing_generation_provider_timing_1",
+          "missing_judge_provider_timing_1",
+          "zero_generation_usage_1",
+          "zero_judge_usage_1"
+        ],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 69,
+            "uncached": 69
+          },
+          "judge": {
+            "cached": 0,
+            "total": 69,
+            "uncached": 69
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "descriptive_only"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-large-d1024",
+        "cell_id": "openai-text-embedding-3-large-d1024",
+        "dimension": 1024,
+        "model": "text-embedding-3-large"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.13570619",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.02593539",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0514684",
+            "cached_input_tokens": 0,
+            "calls": 69,
+            "input_tokens": 164846,
+            "output_tokens": 15416
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0583024",
+            "cached_input_tokens": 0,
+            "calls": 69,
+            "input_tokens": 178250,
+            "output_tokens": 18877
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 209,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.987,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9874285714285715,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9816666666666667,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.8677142857142858,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.9936666666666666,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9811428571428572,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.9874444444444443,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 436.45273857142854,
+        "observations": 70,
+        "p50_ms": 440.00705,
+        "p95_ms": 541.58657,
+        "p99_ms": 770.7321390000009
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 1.0,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    },
+    "openai-text-embedding-3-large-d1280": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 976.0315857142856,
+          "share_of_total_mean": 0.4635564270487172,
+          "stage": "judge_total"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 423.8452591549296,
+            "observations": 71,
+            "p50_ms": 343.229,
+            "p95_ms": 529.4584,
+            "p99_ms": 1894.265739999989
+          },
+          "generation_provider": {
+            "mean_ms": 2747.656811764706,
+            "observations": 17,
+            "p50_ms": 2712.2975,
+            "p95_ms": 3545.71346,
+            "p99_ms": 3625.660532
+          },
+          "judge_provider": {
+            "mean_ms": 4017.679252941177,
+            "observations": 17,
+            "p50_ms": 3993.1061,
+            "p95_ms": 5631.815799999999,
+            "p99_ms": 5960.56268
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 1129.4582842857142,
+            "observations": 70,
+            "p50_ms": 493.06745,
+            "p95_ms": 3661.3976399999992,
+            "p99_ms": 4071.1221360000004
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 460.98195,
+            "observations": 70,
+            "p50_ms": 440.8216,
+            "p95_ms": 571.3358499999999,
+            "p99_ms": 746.9423200000002
+          },
+          "generation_provider": {
+            "mean_ms": 2747.7085588235295,
+            "observations": 17,
+            "p50_ms": 2712.3382,
+            "p95_ms": 3545.7785799999997,
+            "p99_ms": 3625.7061959999996
+          },
+          "generation_total": {
+            "mean_ms": 668.4345142857143,
+            "observations": 70,
+            "p50_ms": 2.2291499999999997,
+            "p95_ms": 3246.5485949999993,
+            "p99_ms": 3560.1096810000004
+          },
+          "judge_provider": {
+            "mean_ms": 4017.732105882353,
+            "observations": 17,
+            "p50_ms": 3993.1517,
+            "p95_ms": 5631.86234,
+            "p99_ms": 5960.622788
+          },
+          "judge_total": {
+            "mean_ms": 976.0315857142856,
+            "observations": 70,
+            "p50_ms": 0.24564999999999998,
+            "p95_ms": 5024.60265,
+            "p99_ms": 5688.861998000001
+          },
+          "postprocess": {
+            "mean_ms": 0.034910000000000004,
+            "observations": 70,
+            "p50_ms": 0.03165,
+            "p95_ms": 0.05546499999999998,
+            "p99_ms": 0.06416100000000002
+          },
+          "total_with_judge": {
+            "mean_ms": 2105.529184285714,
+            "observations": 70,
+            "p50_ms": 493.30205,
+            "p95_ms": 7832.734774999999,
+            "p99_ms": 8814.096254000002
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": true,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [
+          "provider_calls_below_expected_105_of_211",
+          "generation_calls_below_expected_17_of_70",
+          "judge_calls_below_expected_17_of_70",
+          "missing_generation_provider_timing_53",
+          "missing_judge_provider_timing_53",
+          "zero_generation_usage_53",
+          "zero_judge_usage_53"
+        ],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 17,
+            "uncached": 17
+          },
+          "judge": {
+            "cached": 0,
+            "total": 17,
+            "uncached": 17
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "descriptive_only"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-large-d1280",
+        "cell_id": "openai-text-embedding-3-large-d1280",
+        "dimension": 1280,
+        "model": "text-embedding-3-large"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.05328019",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.02593539",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0122456",
+            "cached_input_tokens": 0,
+            "calls": 17,
+            "input_tokens": 41524,
+            "output_tokens": 3284
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0150992",
+            "cached_input_tokens": 0,
+            "calls": 17,
+            "input_tokens": 44362,
+            "output_tokens": 5189
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 105,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.9831666666666667,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.984,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9760000000000001,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.863,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.9923333333333333,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9695714285714286,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.9838333333333333,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 460.98195,
+        "observations": 70,
+        "p50_ms": 440.8216,
+        "p95_ms": 571.3358499999999,
+        "p99_ms": 746.9423200000002
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 1.0,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    },
+    "openai-text-embedding-3-large-d1536": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 2223.57249,
+          "share_of_total_mean": 0.5002022929262806,
+          "stage": "judge_total"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 448.45191267605634,
+            "observations": 71,
+            "p50_ms": 365.7694,
+            "p95_ms": 573.5853999999999,
+            "p99_ms": 2372.652169999985
+          },
+          "generation_provider": {
+            "mean_ms": 2965.0891853658536,
+            "observations": 41,
+            "p50_ms": 2790.1954,
+            "p95_ms": 4588.2837,
+            "p99_ms": 4833.9446800000005
+          },
+          "judge_provider": {
+            "mean_ms": 3795.604185365854,
+            "observations": 41,
+            "p50_ms": 3379.2032,
+            "p95_ms": 5467.514,
+            "p99_ms": 7243.410280000002
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 2221.7300685714285,
+            "observations": 70,
+            "p50_ms": 2661.0493500000002,
+            "p95_ms": 4551.1722,
+            "p99_ms": 5248.033058000001
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 483.7966271428571,
+            "observations": 70,
+            "p50_ms": 478.10895000000005,
+            "p95_ms": 647.4678199999997,
+            "p99_ms": 848.1248330000002
+          },
+          "generation_provider": {
+            "mean_ms": 2965.1392195121953,
+            "observations": 41,
+            "p50_ms": 2790.2397,
+            "p95_ms": 4588.3297,
+            "p99_ms": 4833.98762
+          },
+          "generation_total": {
+            "mean_ms": 1737.8912842857142,
+            "observations": 70,
+            "p50_ms": 2161.4179,
+            "p95_ms": 4084.7269799999995,
+            "p99_ms": 4738.845446000001
+          },
+          "judge_provider": {
+            "mean_ms": 3795.6533097560978,
+            "observations": 41,
+            "p50_ms": 3379.2411,
+            "p95_ms": 5467.5779,
+            "p99_ms": 7243.458400000001
+          },
+          "judge_total": {
+            "mean_ms": 2223.57249,
+            "observations": 70,
+            "p50_ms": 2631.7247,
+            "p95_ms": 5377.4654949999995,
+            "p99_ms": 6853.179071000003
+          },
+          "postprocess": {
+            "mean_ms": 0.03871714285714286,
+            "observations": 70,
+            "p50_ms": 0.0327,
+            "p95_ms": 0.06875999999999999,
+            "p99_ms": 0.07720600000000004
+          },
+          "total_with_judge": {
+            "mean_ms": 4445.346455714285,
+            "observations": 70,
+            "p50_ms": 5465.451950000001,
+            "p95_ms": 9085.1091,
+            "p99_ms": 10948.886527000002
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": true,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [
+          "provider_calls_below_expected_153_of_211",
+          "generation_calls_below_expected_41_of_70",
+          "judge_calls_below_expected_41_of_70",
+          "missing_generation_provider_timing_29",
+          "missing_judge_provider_timing_29",
+          "zero_generation_usage_29",
+          "zero_judge_usage_29"
+        ],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 41,
+            "uncached": 41
+          },
+          "judge": {
+            "cached": 0,
+            "total": 41,
+            "uncached": 41
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "descriptive_only"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-large-d1536",
+        "cell_id": "openai-text-embedding-3-large-d1536",
+        "dimension": 1536,
+        "model": "text-embedding-3-large"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.09408019",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.02593539",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0315332",
+            "cached_input_tokens": 0,
+            "calls": 41,
+            "input_tokens": 98272,
+            "output_tokens": 9899
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0366116",
+            "cached_input_tokens": 0,
+            "calls": 41,
+            "input_tokens": 106480,
+            "output_tokens": 12763
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 153,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.9823333333333333,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9835714285714285,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9813333333333334,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.8651428571428572,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.9938333333333333,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9687142857142857,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.9858333333333333,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 483.7966271428571,
+        "observations": 70,
+        "p50_ms": 478.10895000000005,
+        "p95_ms": 647.4678199999997,
+        "p99_ms": 848.1248330000002
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 1.0,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    },
+    "openai-text-embedding-3-large-d1792": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 733.4797485714286,
+          "share_of_total_mean": 0.4474643541226073,
+          "stage": "judge_total"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 432.00299014084504,
+            "observations": 71,
+            "p50_ms": 341.1433,
+            "p95_ms": 477.067,
+            "p99_ms": 2407.081749999982
+          },
+          "generation_provider": {
+            "mean_ms": 2497.4474416666667,
+            "observations": 12,
+            "p50_ms": 2459.47075,
+            "p95_ms": 3041.2612499999996,
+            "p99_ms": 3273.5368100000005
+          },
+          "judge_provider": {
+            "mean_ms": 4277.235475,
+            "observations": 12,
+            "p50_ms": 4051.6310000000003,
+            "p95_ms": 6530.96411,
+            "p99_ms": 6708.066662
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 905.67475,
+            "observations": 70,
+            "p50_ms": 489.5557,
+            "p95_ms": 3072.107775,
+            "p99_ms": 3457.741521000001
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 476.82980000000003,
+            "observations": 70,
+            "p50_ms": 477.54335000000003,
+            "p95_ms": 611.24758,
+            "p99_ms": 632.4882240000001
+          },
+          "generation_provider": {
+            "mean_ms": 2497.500575,
+            "observations": 12,
+            "p50_ms": 2459.51365,
+            "p95_ms": 3041.3213049999995,
+            "p99_ms": 3273.596821
+          },
+          "generation_total": {
+            "mean_ms": 428.8047314285714,
+            "observations": 70,
+            "p50_ms": 0.2649,
+            "p95_ms": 2594.5847999999996,
+            "p99_ms": 2968.0019650000013
+          },
+          "judge_provider": {
+            "mean_ms": 4277.285841666667,
+            "observations": 12,
+            "p50_ms": 4051.68905,
+            "p95_ms": 6531.003314999999,
+            "p99_ms": 6708.104503
+          },
+          "judge_total": {
+            "mean_ms": 733.4797485714286,
+            "observations": 70,
+            "p50_ms": 0.15945,
+            "p95_ms": 5185.571284999997,
+            "p99_ms": 6475.088764000001
+          },
+          "postprocess": {
+            "mean_ms": 0.03304857142857143,
+            "observations": 70,
+            "p50_ms": 0.03105,
+            "p95_ms": 0.048069999999999974,
+            "p99_ms": 0.06677500000000001
+          },
+          "total_with_judge": {
+            "mean_ms": 1639.1914614285715,
+            "observations": 70,
+            "p50_ms": 489.7395,
+            "p95_ms": 8312.353615,
+            "p99_ms": 9031.890375
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": true,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [
+          "provider_calls_below_expected_95_of_211",
+          "generation_calls_below_expected_12_of_70",
+          "judge_calls_below_expected_12_of_70",
+          "missing_generation_provider_timing_58",
+          "missing_judge_provider_timing_58",
+          "zero_generation_usage_58",
+          "zero_judge_usage_58"
+        ],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 12,
+            "uncached": 12
+          },
+          "judge": {
+            "cached": 0,
+            "total": 12,
+            "uncached": 12
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "descriptive_only"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-large-d1792",
+        "cell_id": "openai-text-embedding-3-large-d1792",
+        "dimension": 1792,
+        "model": "text-embedding-3-large"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.04483439",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.02593539",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0081316",
+            "cached_input_tokens": 0,
+            "calls": 12,
+            "input_tokens": 28790,
+            "output_tokens": 1978
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0107674",
+            "cached_input_tokens": 0,
+            "calls": 12,
+            "input_tokens": 30551,
+            "output_tokens": 3881
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 95,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.9843333333333334,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9852857142857143,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9831666666666667,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.8664285714285714,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.9901666666666666,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9762857142857143,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.9858888888888889,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 476.82980000000003,
+        "observations": 70,
+        "p50_ms": 477.54335000000003,
+        "p95_ms": 611.24758,
+        "p99_ms": 632.4882240000001
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 1.0,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    },
+    "openai-text-embedding-3-large-d2048": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 554.4659657142856,
+          "share_of_total_mean": 0.48580844644702287,
+          "stage": "context_select_or_dense_retrieval"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 547.8448084507041,
+            "observations": 71,
+            "p50_ms": 362.1536,
+            "p95_ms": 651.6294,
+            "p99_ms": 3926.7286399999707
+          },
+          "generation_provider": {
+            "mean_ms": 2998.1656166666667,
+            "observations": 6,
+            "p50_ms": 3042.00065,
+            "p95_ms": 3305.6664,
+            "p99_ms": 3334.86976
+          },
+          "judge_provider": {
+            "mean_ms": 3820.0845666666664,
+            "observations": 6,
+            "p50_ms": 3841.80605,
+            "p95_ms": 4652.75185,
+            "p99_ms": 4737.42909
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 812.1128628571429,
+            "observations": 70,
+            "p50_ms": 530.9394,
+            "p95_ms": 3445.2698649999998,
+            "p99_ms": 3864.2537310000002
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 554.4659657142856,
+            "observations": 70,
+            "p50_ms": 517.93015,
+            "p95_ms": 789.9603999999999,
+            "p99_ms": 910.8405180000004
+          },
+          "generation_provider": {
+            "mean_ms": 2998.215716666667,
+            "observations": 6,
+            "p50_ms": 3042.0473,
+            "p95_ms": 3305.71835,
+            "p99_ms": 3334.9166299999997
+          },
+          "generation_total": {
+            "mean_ms": 257.60493285714284,
+            "observations": 70,
+            "p50_ms": 0.26639999999999997,
+            "p95_ms": 2980.902395,
+            "p99_ms": 3242.049567
+          },
+          "judge_provider": {
+            "mean_ms": 3820.13335,
+            "observations": 6,
+            "p50_ms": 3841.85315,
+            "p95_ms": 4652.80105,
+            "p99_ms": 4737.47341
+          },
+          "judge_total": {
+            "mean_ms": 329.1777614285714,
+            "observations": 70,
+            "p50_ms": 0.15910000000000002,
+            "p95_ms": 3577.4168449999984,
+            "p99_ms": 4467.0555300000005
+          },
+          "postprocess": {
+            "mean_ms": 0.032221428571428574,
+            "observations": 70,
+            "p50_ms": 0.0314,
+            "p95_ms": 0.039365,
+            "p99_ms": 0.043817
+          },
+          "total_with_judge": {
+            "mean_ms": 1141.3263185714286,
+            "observations": 70,
+            "p50_ms": 532.57945,
+            "p95_ms": 6979.848069999999,
+            "p99_ms": 8198.890125
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": true,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [
+          "provider_calls_below_expected_83_of_211",
+          "generation_calls_below_expected_6_of_70",
+          "judge_calls_below_expected_6_of_70",
+          "missing_generation_provider_timing_64",
+          "missing_judge_provider_timing_64",
+          "zero_generation_usage_64",
+          "zero_judge_usage_64"
+        ],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 6,
+            "uncached": 6
+          },
+          "judge": {
+            "cached": 0,
+            "total": 6,
+            "uncached": 6
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "descriptive_only"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-large-d2048",
+        "cell_id": "openai-text-embedding-3-large-d2048",
+        "dimension": 2048,
+        "model": "text-embedding-3-large"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.03529039",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.02593539",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0041566",
+            "cached_input_tokens": 0,
+            "calls": 6,
+            "input_tokens": 14447,
+            "output_tokens": 1056
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0051984",
+            "cached_input_tokens": 0,
+            "calls": 6,
+            "input_tokens": 15324,
+            "output_tokens": 1778
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 83,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.985,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9854285714285714,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9856666666666667,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.872,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.9933333333333334,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9735714285714286,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.988,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 554.4659657142856,
+        "observations": 70,
+        "p50_ms": 517.93015,
+        "p95_ms": 789.9603999999999,
+        "p99_ms": 910.8405180000004
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 1.0,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    },
+    "openai-text-embedding-3-large-d2096": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 1442.3146057142858,
+          "share_of_total_mean": 0.46912745274874135,
+          "stage": "judge_total"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 919.8344943661972,
+            "observations": 71,
+            "p50_ms": 363.2424,
+            "p95_ms": 611.8468,
+            "p99_ms": 12097.712929999896
+          },
+          "generation_provider": {
+            "mean_ms": 2816.532081481482,
+            "observations": 27,
+            "p50_ms": 2642.9157,
+            "p95_ms": 4125.859469999999,
+            "p99_ms": 4537.872033999999
+          },
+          "judge_provider": {
+            "mean_ms": 3738.423718518519,
+            "observations": 27,
+            "p50_ms": 3089.3847,
+            "p95_ms": 7168.085979999999,
+            "p99_ms": 7693.777894
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 1632.1054714285715,
+            "observations": 70,
+            "p50_ms": 607.8706500000001,
+            "p95_ms": 4257.2944,
+            "p99_ms": 4784.596135000001
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 544.7784314285715,
+            "observations": 70,
+            "p50_ms": 522.5442,
+            "p95_ms": 694.6605399999996,
+            "p99_ms": 976.3142880000003
+          },
+          "generation_provider": {
+            "mean_ms": 2816.5881555555557,
+            "observations": 27,
+            "p50_ms": 2642.9632,
+            "p95_ms": 4125.91652,
+            "p99_ms": 4537.916803999999
+          },
+          "generation_total": {
+            "mean_ms": 1087.28486,
+            "observations": 70,
+            "p50_ms": 2.2586,
+            "p95_ms": 3726.1268849999997,
+            "p99_ms": 4306.073699000001
+          },
+          "judge_provider": {
+            "mean_ms": 3738.4780370370368,
+            "observations": 27,
+            "p50_ms": 3089.4495,
+            "p95_ms": 7168.149919999999,
+            "p99_ms": 7693.82561
+          },
+          "judge_total": {
+            "mean_ms": 1442.3146057142858,
+            "observations": 70,
+            "p50_ms": 0.2893,
+            "p95_ms": 5201.488544999999,
+            "p99_ms": 7653.765608
+          },
+          "postprocess": {
+            "mean_ms": 0.03742285714285715,
+            "observations": 70,
+            "p50_ms": 0.0326,
+            "p95_ms": 0.06506999999999999,
+            "p99_ms": 0.06970500000000002
+          },
+          "total_with_judge": {
+            "mean_ms": 3074.4621685714287,
+            "observations": 70,
+            "p50_ms": 608.0799999999999,
+            "p95_ms": 8581.92644,
+            "p99_ms": 10164.805568000002
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": true,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [
+          "provider_calls_below_expected_125_of_211",
+          "generation_calls_below_expected_27_of_70",
+          "judge_calls_below_expected_27_of_70",
+          "missing_generation_provider_timing_43",
+          "missing_judge_provider_timing_43",
+          "zero_generation_usage_43",
+          "zero_judge_usage_43"
+        ],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 27,
+            "uncached": 27
+          },
+          "judge": {
+            "cached": 0,
+            "total": 27,
+            "uncached": 27
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "descriptive_only"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-large-d2096",
+        "cell_id": "openai-text-embedding-3-large-d2096",
+        "dimension": 2096,
+        "model": "text-embedding-3-large"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.07024419",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.02593539",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0200726",
+            "cached_input_tokens": 0,
+            "calls": 27,
+            "input_tokens": 67015,
+            "output_tokens": 5558
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0242362",
+            "cached_input_tokens": 0,
+            "calls": 27,
+            "input_tokens": 72059,
+            "output_tokens": 8187
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 125,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.984,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9847142857142858,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9861666666666667,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.8711428571428571,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.994,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9772857142857142,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.9880555555555556,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 544.7784314285715,
+        "observations": 70,
+        "p50_ms": 522.5442,
+        "p95_ms": 694.6605399999996,
+        "p99_ms": 976.3142880000003
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 1.0,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    },
+    "openai-text-embedding-3-large-d3072": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 1407.9051042857143,
+          "share_of_total_mean": 0.47363064697485463,
+          "stage": "judge_total"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 527.4383,
+            "observations": 71,
+            "p50_ms": 439.7272,
+            "p95_ms": 578.4911500000001,
+            "p99_ms": 3254.6525099999753
+          },
+          "generation_provider": {
+            "mean_ms": 2813.727604347826,
+            "observations": 23,
+            "p50_ms": 2820.3988,
+            "p95_ms": 4160.708639999999,
+            "p99_ms": 4514.87326
+          },
+          "judge_provider": {
+            "mean_ms": 4283.740717391304,
+            "observations": 23,
+            "p50_ms": 3506.4989,
+            "p95_ms": 6212.673499999999,
+            "p99_ms": 14789.785756000012
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 1564.6337971428572,
+            "observations": 70,
+            "p50_ms": 686.68655,
+            "p95_ms": 4021.2794999999996,
+            "p99_ms": 4922.583494
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 638.4084842857143,
+            "observations": 70,
+            "p50_ms": 672.95605,
+            "p95_ms": 767.8657649999998,
+            "p99_ms": 869.0229840000002
+          },
+          "generation_provider": {
+            "mean_ms": 2813.7916130434783,
+            "observations": 23,
+            "p50_ms": 2820.4831,
+            "p95_ms": 4160.7867799999985,
+            "p99_ms": 4514.93675
+          },
+          "generation_total": {
+            "mean_ms": 926.1814714285714,
+            "observations": 70,
+            "p50_ms": 2.3902,
+            "p95_ms": 3358.083575,
+            "p99_ms": 4349.700419000001
+          },
+          "judge_provider": {
+            "mean_ms": 4283.8003,
+            "observations": 23,
+            "p50_ms": 3506.5645,
+            "p95_ms": 6212.7388999999985,
+            "p99_ms": 14789.84002000001
+          },
+          "judge_total": {
+            "mean_ms": 1407.9051042857143,
+            "observations": 70,
+            "p50_ms": 0.35655000000000003,
+            "p95_ms": 4686.369149999999,
+            "p99_ms": 9680.078031000025
+          },
+          "postprocess": {
+            "mean_ms": 0.03641428571428571,
+            "observations": 70,
+            "p50_ms": 0.0332,
+            "p95_ms": 0.06198,
+            "p99_ms": 0.06735700000000001
+          },
+          "total_with_judge": {
+            "mean_ms": 2972.5802442857143,
+            "observations": 70,
+            "p50_ms": 687.06105,
+            "p95_ms": 8545.272014999999,
+            "p99_ms": 12642.806370000028
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": true,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [
+          "provider_calls_below_expected_117_of_211",
+          "generation_calls_below_expected_23_of_70",
+          "judge_calls_below_expected_23_of_70",
+          "missing_generation_provider_timing_47",
+          "missing_judge_provider_timing_47",
+          "zero_generation_usage_47",
+          "zero_judge_usage_47"
+        ],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 23,
+            "uncached": 23
+          },
+          "judge": {
+            "cached": 0,
+            "total": 23,
+            "uncached": 23
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "descriptive_only"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-large-d3072",
+        "cell_id": "openai-text-embedding-3-large-d3072",
+        "dimension": 3072,
+        "model": "text-embedding-3-large"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.06231479",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.02593539",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0165680",
+            "cached_input_tokens": 0,
+            "calls": 23,
+            "input_tokens": 55162,
+            "output_tokens": 4613
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0198114",
+            "cached_input_tokens": 0,
+            "calls": 23,
+            "input_tokens": 58983,
+            "output_tokens": 6679
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 117,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.9856666666666667,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9851428571428571,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9863333333333333,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.8691428571428572,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.9945,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9885714285714287,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.9888333333333333,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 638.4084842857143,
+        "observations": 70,
+        "p50_ms": 672.95605,
+        "p95_ms": 767.8657649999998,
+        "p99_ms": 869.0229840000002
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 1.0,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    },
+    "openai-text-embedding-3-small-d1024": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 4343.39399,
+          "share_of_total_mean": 0.5399343643287005,
+          "stage": "judge_total"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 402.93432816901407,
+            "observations": 71,
+            "p50_ms": 364.4892,
+            "p95_ms": 432.71465,
+            "p99_ms": 1778.9748299999915
+          },
+          "generation_provider": {
+            "mean_ms": 3270.001102857143,
+            "observations": 70,
+            "p50_ms": 3126.6583,
+            "p95_ms": 5321.173815,
+            "p99_ms": 5858.497043
+          },
+          "judge_provider": {
+            "mean_ms": 4342.852004285714,
+            "observations": 70,
+            "p50_ms": 4092.87415,
+            "p95_ms": 6748.073029999999,
+            "p99_ms": 7906.210122
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 3700.8577885714285,
+            "observations": 70,
+            "p50_ms": 3510.77025,
+            "p95_ms": 5704.92894,
+            "p99_ms": 6233.582352000001
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 429.86442999999997,
+            "observations": 70,
+            "p50_ms": 440.2472,
+            "p95_ms": 488.939275,
+            "p99_ms": 913.6168750000002
+          },
+          "generation_provider": {
+            "mean_ms": 3270.050787142857,
+            "observations": 70,
+            "p50_ms": 3126.6964,
+            "p95_ms": 5321.23671,
+            "p99_ms": 5858.561398000001
+          },
+          "generation_total": {
+            "mean_ms": 3270.9501657142855,
+            "observations": 70,
+            "p50_ms": 3127.1552,
+            "p95_ms": 5321.838589999999,
+            "p99_ms": 5859.164398000001
+          },
+          "judge_provider": {
+            "mean_ms": 4342.903688571429,
+            "observations": 70,
+            "p50_ms": 4092.9334,
+            "p95_ms": 6748.117069999998,
+            "p99_ms": 7906.257111
+          },
+          "judge_total": {
+            "mean_ms": 4343.39399,
+            "observations": 70,
+            "p50_ms": 4093.5211,
+            "p95_ms": 6748.551474999998,
+            "p99_ms": 7906.701035
+          },
+          "postprocess": {
+            "mean_ms": 0.041882857142857145,
+            "observations": 70,
+            "p50_ms": 0.0378,
+            "p95_ms": 0.065105,
+            "p99_ms": 0.073744
+          },
+          "total_with_judge": {
+            "mean_ms": 8044.2999685714285,
+            "observations": 70,
+            "p50_ms": 7880.087799999999,
+            "p95_ms": 11486.55504,
+            "p99_ms": 13153.201433000004
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": false,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 70,
+            "uncached": 70
+          },
+          "judge": {
+            "cached": 0,
+            "total": 70,
+            "uncached": 70
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "comparable"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-small-d1024",
+        "cell_id": "openai-text-embedding-3-small-d1024",
+        "dimension": 1024,
+        "model": "text-embedding-3-small"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.11709106",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.00399006",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0514134",
+            "cached_input_tokens": 0,
+            "calls": 70,
+            "input_tokens": 164235,
+            "output_tokens": 15472
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0616876",
+            "cached_input_tokens": 0,
+            "calls": 70,
+            "input_tokens": 177566,
+            "output_tokens": 21812
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 211,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.9613333333333334,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9655714285714286,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9570000000000001,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.8402857142857143,
+            "observations": 70,
+            "p50": 0.99,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.9926666666666667,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9872857142857143,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.9703333333333333,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 429.86442999999997,
+        "observations": 70,
+        "p50_ms": 440.2472,
+        "p95_ms": 488.939275,
+        "p99_ms": 913.6168750000002
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 0.9833333333333333,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    },
+    "openai-text-embedding-3-small-d1280": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 1281.1010742857143,
+          "share_of_total_mean": 0.4679953137654173,
+          "stage": "judge_total"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 433.7245267605634,
+            "observations": 71,
+            "p50_ms": 363.6893,
+            "p95_ms": 562.00305,
+            "p99_ms": 2385.1476399999847
+          },
+          "generation_provider": {
+            "mean_ms": 2934.293283333333,
+            "observations": 24,
+            "p50_ms": 2746.94805,
+            "p95_ms": 5025.070654999999,
+            "p99_ms": 5916.041287
+          },
+          "judge_provider": {
+            "mean_ms": 3735.4119708333333,
+            "observations": 24,
+            "p50_ms": 3457.81715,
+            "p95_ms": 5965.2737499999985,
+            "p99_ms": 6357.304693
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 1456.2830942857145,
+            "observations": 70,
+            "p50_ms": 505.2932,
+            "p95_ms": 4439.364064999998,
+            "p99_ms": 6084.717965000002
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 448.62027571428575,
+            "observations": 70,
+            "p50_ms": 453.6303,
+            "p95_ms": 578.5624399999997,
+            "p99_ms": 773.4143370000003
+          },
+          "generation_provider": {
+            "mean_ms": 2934.344720833333,
+            "observations": 24,
+            "p50_ms": 2746.9932,
+            "p95_ms": 5025.121614999998,
+            "p99_ms": 5916.0853369999995
+          },
+          "generation_total": {
+            "mean_ms": 1007.6222528571429,
+            "observations": 70,
+            "p50_ms": 2.3571,
+            "p95_ms": 3961.300429999998,
+            "p99_ms": 5454.979001000002
+          },
+          "judge_provider": {
+            "mean_ms": 3735.4611958333335,
+            "observations": 24,
+            "p50_ms": 3457.8757,
+            "p95_ms": 5965.34283,
+            "p99_ms": 6357.355149999999
+          },
+          "judge_total": {
+            "mean_ms": 1281.1010742857143,
+            "observations": 70,
+            "p50_ms": 0.38055,
+            "p95_ms": 4812.52061,
+            "p99_ms": 6169.752751000001
+          },
+          "postprocess": {
+            "mean_ms": 0.03403,
+            "observations": 70,
+            "p50_ms": 0.0314,
+            "p95_ms": 0.05125,
+            "p99_ms": 0.06203500000000002
+          },
+          "total_with_judge": {
+            "mean_ms": 2737.4228685714284,
+            "observations": 70,
+            "p50_ms": 505.51779999999997,
+            "p95_ms": 8656.03422,
+            "p99_ms": 9866.740284000001
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": true,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [
+          "provider_calls_below_expected_119_of_211",
+          "generation_calls_below_expected_24_of_70",
+          "judge_calls_below_expected_24_of_70",
+          "missing_generation_provider_timing_46",
+          "missing_judge_provider_timing_46",
+          "zero_generation_usage_46",
+          "zero_judge_usage_46"
+        ],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 24,
+            "uncached": 24
+          },
+          "judge": {
+            "cached": 0,
+            "total": 24,
+            "uncached": 24
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "descriptive_only"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-small-d1280",
+        "cell_id": "openai-text-embedding-3-small-d1280",
+        "dimension": 1280,
+        "model": "text-embedding-3-small"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.04268686",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.00399006",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0173678",
+            "cached_input_tokens": 0,
+            "calls": 24,
+            "input_tokens": 58693,
+            "output_tokens": 4691
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0213290",
+            "cached_input_tokens": 0,
+            "calls": 24,
+            "input_tokens": 62641,
+            "output_tokens": 7334
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 119,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.9641666666666667,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9680000000000001,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9576666666666667,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.8387142857142857,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.9943333333333333,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9805714285714285,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.9720555555555556,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 448.62027571428575,
+        "observations": 70,
+        "p50_ms": 453.6303,
+        "p95_ms": 578.5624399999997,
+        "p99_ms": 773.4143370000003
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 0.9833333333333333,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    },
+    "openai-text-embedding-3-small-d1536": {
+      "atomic_latency": {
+        "cached_provider_stages": {},
+        "cached_query_stages": {},
+        "dominant_query_stage": {
+          "mean_ms": 2568.5285142857147,
+          "share_of_total_mean": 0.5046640756710898,
+          "stage": "judge_total"
+        },
+        "population": "uncached",
+        "provider_stages": {
+          "embedding_provider": {
+            "mean_ms": 450.4160704225352,
+            "observations": 71,
+            "p50_ms": 345.3032,
+            "p95_ms": 583.35185,
+            "p99_ms": 2568.584389999984
+          },
+          "generation_provider": {
+            "mean_ms": 3038.4427255319147,
+            "observations": 47,
+            "p50_ms": 2811.9694,
+            "p95_ms": 4706.82205,
+            "p99_ms": 5051.44173
+          },
+          "judge_provider": {
+            "mean_ms": 3824.2248319148935,
+            "observations": 47,
+            "p50_ms": 3581.7423,
+            "p95_ms": 5678.845829999998,
+            "p99_ms": 6325.422489999999
+          }
+        },
+        "query_stages": {
+          "answer_pipeline_without_live_retrieval": {
+            "mean_ms": 2521.0059414285715,
+            "observations": 70,
+            "p50_ms": 2764.10775,
+            "p95_ms": 4961.062509999999,
+            "p99_ms": 5647.22613
+          },
+          "context_select_or_dense_retrieval": {
+            "mean_ms": 479.73432428571425,
+            "observations": 70,
+            "p50_ms": 458.33005,
+            "p95_ms": 593.999645,
+            "p99_ms": 863.3897320000004
+          },
+          "generation_provider": {
+            "mean_ms": 3038.4989595744682,
+            "observations": 47,
+            "p50_ms": 2812.0291,
+            "p95_ms": 4706.88531,
+            "p99_ms": 5051.489605999999
+          },
+          "generation_total": {
+            "mean_ms": 2041.229012857143,
+            "observations": 70,
+            "p50_ms": 2299.47825,
+            "p95_ms": 4498.757209999999,
+            "p99_ms": 4960.088476000001
+          },
+          "judge_provider": {
+            "mean_ms": 3824.277378723404,
+            "observations": 47,
+            "p50_ms": 3581.7933,
+            "p95_ms": 5678.910689999999,
+            "p99_ms": 6325.461823999999
+          },
+          "judge_total": {
+            "mean_ms": 2568.5285142857147,
+            "observations": 70,
+            "p50_ms": 3198.0752,
+            "p95_ms": 5346.6228599999995,
+            "p99_ms": 6151.023148000002
+          },
+          "postprocess": {
+            "mean_ms": 0.04044285714285714,
+            "observations": 70,
+            "p50_ms": 0.033100000000000004,
+            "p95_ms": 0.066095,
+            "p99_ms": 0.07721300000000006
+          },
+          "total_with_judge": {
+            "mean_ms": 5089.58065,
+            "observations": 70,
+            "p50_ms": 6107.2104500000005,
+            "p95_ms": 9792.860029999998,
+            "p99_ms": 10455.846438
+          }
+        }
+      },
+      "cache_denominators": {
+        "cache_contaminated": true,
+        "cached_latency_comparable": false,
+        "comparability": "uncached_only; cached and uncached totals are not pooled",
+        "contamination_reasons": [
+          "provider_calls_below_expected_165_of_211",
+          "generation_calls_below_expected_47_of_70",
+          "judge_calls_below_expected_47_of_70",
+          "missing_generation_provider_timing_23",
+          "missing_judge_provider_timing_23",
+          "zero_generation_usage_23",
+          "zero_judge_usage_23"
+        ],
+        "expected_provider_calls": {
+          "embedding": 71,
+          "generation": 70,
+          "judge": 70,
+          "total": 211
+        },
+        "mode": "unlabelled",
+        "provider_calls": {
+          "embedding": {
+            "cached": 0,
+            "total": 71,
+            "uncached": 71
+          },
+          "generation": {
+            "cached": 0,
+            "total": 47,
+            "uncached": 47
+          },
+          "judge": {
+            "cached": 0,
+            "total": 47,
+            "uncached": 47
+          }
+        },
+        "query_rows": {
+          "cached": 0,
+          "total": 70,
+          "uncached": 70
+        },
+        "uncached_latency_population": {
+          "observations": 70,
+          "use": "descriptive_only"
+        }
+      },
+      "cell": {
+        "alias": "ragz-openai-text-embedding-3-small-d1536",
+        "cell_id": "openai-text-embedding-3-small-d1536",
+        "dimension": 1536,
+        "model": "text-embedding-3-small"
+      },
+      "cost": {
+        "actual_provider_cost_usd": "0.07953726",
+        "basis": "provider_calls_usage_only",
+        "by_endpoint": {
+          "embedding": {
+            "actual_provider_cost_usd": "0.00399006",
+            "cached_input_tokens": 0,
+            "calls": 71,
+            "input_tokens": 199503,
+            "output_tokens": 0
+          },
+          "generation": {
+            "actual_provider_cost_usd": "0.0349122",
+            "cached_input_tokens": 0,
+            "calls": 47,
+            "input_tokens": 111489,
+            "output_tokens": 10512
+          },
+          "judge": {
+            "actual_provider_cost_usd": "0.0406350",
+            "cached_input_tokens": 0,
+            "calls": 47,
+            "input_tokens": 120435,
+            "output_tokens": 13790
+          }
+        },
+        "cross_cell_comparability_reason": "observed spend is descriptive only; cache state and provider call mix differ across cells",
+        "cross_cell_comparable": false,
+        "rates_usd_per_million": {
+          "gpt-5.4-mini": {
+            "cached_input": "0.075",
+            "input": "0.75",
+            "output": "4.50"
+          },
+          "gpt-5.6-luna": {
+            "cached_input": "0.02",
+            "input": "0.20",
+            "output": "1.20"
+          },
+          "text-embedding-3-large": {
+            "cached_input": "0.13",
+            "input": "0.13",
+            "output": "0"
+          },
+          "text-embedding-3-small": {
+            "cached_input": "0.02",
+            "input": "0.02",
+            "output": "0"
+          }
+        }
+      },
+      "denominator": {
+        "answerable": 60,
+        "off_corpus": 10,
+        "total": 70
+      },
+      "errors": {
+        "provider_call_errors": 0,
+        "query_errors": 0
+      },
+      "provider_call_count": 165,
+      "rag_triad": {
+        "components": {
+          "answer_relevance": {
+            "answerable_only": {
+              "mean": 0.9663333333333333,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9704285714285715,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "context_relevance": {
+            "answerable_only": {
+              "mean": 0.9573333333333333,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.8408571428571429,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          },
+          "groundedness": {
+            "answerable_only": {
+              "mean": 0.9945,
+              "observations": 60,
+              "p50": 1.0,
+              "p95": 1.0
+            },
+            "mean": 0.9814285714285714,
+            "observations": 70,
+            "p50": 1.0,
+            "p95": 1.0
+          }
+        },
+        "secondary_composite": {
+          "definition": "secondary arithmetic mean of context_relevance, groundedness, and answer_relevance; not a canonical RAG Triad metric",
+          "mean": 0.9727222222222222,
+          "observations": 60,
+          "population": "answerable_only"
+        }
+      },
+      "retrieval_latency": {
+        "mean_ms": 479.73432428571425,
+        "observations": 70,
+        "p50_ms": 458.33005,
+        "p95_ms": 593.999645,
+        "p99_ms": 863.3897320000004
+      },
+      "retrieval_quality": {
+        "document_hit_or_evidence_coverage": {
+          "mean": 0.9833333333333333,
+          "observations": 60,
+          "p50": 1.0,
+          "p95": 1.0
+        },
+        "section_evidence": {
+          "available": false,
+          "reason": "chunk/document hits are not section-level qrels and are never promoted to section evidence",
+          "value": null
+        }
+      }
+    }
+  },
+  "holm_correction": {
+    "openai-text-embedding-3-large-d1024:answer_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.0765923407659234,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1024:context_relevance": {
+      "holm_p": 0.5777422257774223,
+      "raw_p": 0.021397860213978603,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1024:context_select_or_dense_retrieval": {
+      "holm_p": 1.0,
+      "raw_p": 0.7101289871012899,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1024:groundedness": {
+      "holm_p": 1.0,
+      "raw_p": 0.7511248875112488,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1280:answer_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.12098790120987901,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1280:context_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.19718028197180282,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1280:context_select_or_dense_retrieval": {
+      "holm_p": 1.0,
+      "raw_p": 0.049795020497950204,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1280:groundedness": {
+      "holm_p": 1.0,
+      "raw_p": 0.9684031596840316,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1536:answer_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.11688831116888311,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1536:context_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.05599440055994401,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1536:context_select_or_dense_retrieval": {
+      "holm_p": 0.06719328067193281,
+      "raw_p": 0.0020997900209979003,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1536:groundedness": {
+      "holm_p": 1.0,
+      "raw_p": 0.6862313768623137,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1792:answer_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.11888811118888111,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1792:context_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.06979302069793021,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d1792:context_select_or_dense_retrieval": {
+      "holm_p": 0.0230976902309769,
+      "raw_p": 0.0006999300069993001,
+      "reject_alpha_0_05": true
+    },
+    "openai-text-embedding-3-large-d1792:groundedness": {
+      "holm_p": 1.0,
+      "raw_p": 0.5912408759124088,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d2048:answer_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.1141885811418858,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d2048:context_relevance": {
+      "holm_p": 0.5683431656834317,
+      "raw_p": 0.0202979702029797,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d2048:context_select_or_dense_retrieval": {
+      "holm_p": 0.0035996400359964006,
+      "raw_p": 9.999000099990002e-05,
+      "reject_alpha_0_05": true
+    },
+    "openai-text-embedding-3-large-d2048:groundedness": {
+      "holm_p": 1.0,
+      "raw_p": 0.8921107889211078,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d2096:answer_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.07429257074292571,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d2096:context_relevance": {
+      "holm_p": 0.09299070092990701,
+      "raw_p": 0.0029997000299970002,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d2096:context_select_or_dense_retrieval": {
+      "holm_p": 0.0035996400359964006,
+      "raw_p": 9.999000099990002e-05,
+      "reject_alpha_0_05": true
+    },
+    "openai-text-embedding-3-large-d2096:groundedness": {
+      "holm_p": 1.0,
+      "raw_p": 0.7031296870312969,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d3072:answer_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.10008999100089991,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d3072:context_relevance": {
+      "holm_p": 0.40885911408859116,
+      "raw_p": 0.014098590140985901,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-large-d3072:context_select_or_dense_retrieval": {
+      "holm_p": 0.0035996400359964006,
+      "raw_p": 9.999000099990002e-05,
+      "reject_alpha_0_05": true
+    },
+    "openai-text-embedding-3-large-d3072:groundedness": {
+      "holm_p": 1.0,
+      "raw_p": 0.5111488851114888,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-small-d1280:answer_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.7453254674532547,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-small-d1280:context_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.8702129787021298,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-small-d1280:context_select_or_dense_retrieval": {
+      "holm_p": 1.0,
+      "raw_p": 0.3090690930906909,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-small-d1280:groundedness": {
+      "holm_p": 1.0,
+      "raw_p": 0.2765723427657234,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-small-d1536:answer_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.3558644135586441,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-small-d1536:context_relevance": {
+      "holm_p": 1.0,
+      "raw_p": 0.9482051794820517,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-small-d1536:context_select_or_dense_retrieval": {
+      "holm_p": 0.155984401559844,
+      "raw_p": 0.0051994800519948,
+      "reject_alpha_0_05": false
+    },
+    "openai-text-embedding-3-small-d1536:groundedness": {
+      "holm_p": 1.0,
+      "raw_p": 0.3140685931406859,
+      "reject_alpha_0_05": false
+    }
+  },
+  "paired_comparisons": {
+    "openai-text-embedding-3-large-d1024": {
+      "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+      "metrics": [
+        {
+          "bootstrap_ci95": [
+            0.0031666666666666657,
+            0.057666666666666665
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 0.5777422257774223,
+            "raw_p": 0.021397860213978603,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 0.5777422257774223,
+          "losses": 7,
+          "mean_delta": 0.024666666666666667,
+          "metric": "context_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.021397860213978603,
+          "sign_flip_p_value": 0.021397860213978603,
+          "ties": 36,
+          "w_t_l": [
+            17,
+            36,
+            7
+          ],
+          "wins": 17
+        },
+        {
+          "bootstrap_ci95": [
+            -0.004166666666666665,
+            0.006000000000000002
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.7511248875112488,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 7,
+          "mean_delta": 0.0010000000000000009,
+          "metric": "groundedness",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.7511248875112488,
+          "sign_flip_p_value": 0.7511248875112488,
+          "ties": 42,
+          "w_t_l": [
+            11,
+            42,
+            7
+          ],
+          "wins": 11
+        },
+        {
+          "bootstrap_ci95": [
+            0.0024999999999999983,
+            0.0575
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.0765923407659234,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 2,
+          "mean_delta": 0.025666666666666667,
+          "metric": "answer_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.0765923407659234,
+          "sign_flip_p_value": 0.0765923407659234,
+          "ties": 50,
+          "w_t_l": [
+            8,
+            50,
+            2
+          ],
+          "wins": 8
+        },
+        {
+          "bootstrap_ci95": [
+            -26.435684285714284,
+            40.04888714285714
+          ],
+          "direction": "lower",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.7101289871012899,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 37,
+          "mean_delta": 6.5883085714285725,
+          "metric": "context_select_or_dense_retrieval",
+          "paired_query_count": 70,
+          "population": "all_queries",
+          "section": "timings_ms",
+          "sign_flip_p": 0.7101289871012899,
+          "sign_flip_p_value": 0.7101289871012899,
+          "ties": 0,
+          "w_t_l": [
+            33,
+            0,
+            37
+          ],
+          "wins": 33
+        }
+      ]
+    },
+    "openai-text-embedding-3-large-d1280": {
+      "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+      "metrics": [
+        {
+          "bootstrap_ci95": [
+            -0.00366666666666667,
+            0.05233333333333333
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.19718028197180282,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 10,
+          "mean_delta": 0.019000000000000003,
+          "metric": "context_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.19718028197180282,
+          "sign_flip_p_value": 0.19718028197180282,
+          "ties": 33,
+          "w_t_l": [
+            17,
+            33,
+            10
+          ],
+          "wins": 17
+        },
+        {
+          "bootstrap_ci95": [
+            -0.007333333333333331,
+            0.005666666666666668
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.9684031596840316,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 6,
+          "mean_delta": -0.0003333333333333318,
+          "metric": "groundedness",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.9684031596840316,
+          "sign_flip_p_value": 0.9684031596840316,
+          "ties": 43,
+          "w_t_l": [
+            11,
+            43,
+            6
+          ],
+          "wins": 11
+        },
+        {
+          "bootstrap_ci95": [
+            0.0016666666666666663,
+            0.051666666666666666
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.12098790120987901,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 5,
+          "mean_delta": 0.021833333333333333,
+          "metric": "answer_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.12098790120987901,
+          "sign_flip_p_value": 0.12098790120987901,
+          "ties": 49,
+          "w_t_l": [
+            6,
+            49,
+            5
+          ],
+          "wins": 6
+        },
+        {
+          "bootstrap_ci95": [
+            -0.2981257142857162,
+            59.512044285714296
+          ],
+          "direction": "lower",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.049795020497950204,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 46,
+          "mean_delta": 31.117520000000006,
+          "metric": "context_select_or_dense_retrieval",
+          "paired_query_count": 70,
+          "population": "all_queries",
+          "section": "timings_ms",
+          "sign_flip_p": 0.049795020497950204,
+          "sign_flip_p_value": 0.049795020497950204,
+          "ties": 0,
+          "w_t_l": [
+            24,
+            0,
+            46
+          ],
+          "wins": 24
+        }
+      ]
+    },
+    "openai-text-embedding-3-large-d1536": {
+      "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+      "metrics": [
+        {
+          "bootstrap_ci95": [
+            0.0018333333333333368,
+            0.057
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.05599440055994401,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 8,
+          "mean_delta": 0.024333333333333335,
+          "metric": "context_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.05599440055994401,
+          "sign_flip_p_value": 0.05599440055994401,
+          "ties": 33,
+          "w_t_l": [
+            19,
+            33,
+            8
+          ],
+          "wins": 19
+        },
+        {
+          "bootstrap_ci95": [
+            -0.00366666666666667,
+            0.006000000000000004
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.6862313768623137,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 7,
+          "mean_delta": 0.0011666666666666676,
+          "metric": "groundedness",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.6862313768623137,
+          "sign_flip_p_value": 0.6862313768623137,
+          "ties": 43,
+          "w_t_l": [
+            10,
+            43,
+            7
+          ],
+          "wins": 10
+        },
+        {
+          "bootstrap_ci95": [
+            0.0006666666666666655,
+            0.051666666666666666
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.11688831116888311,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 5,
+          "mean_delta": 0.021,
+          "metric": "answer_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.11688831116888311,
+          "sign_flip_p_value": 0.11688831116888311,
+          "ties": 49,
+          "w_t_l": [
+            6,
+            49,
+            5
+          ],
+          "wins": 6
+        },
+        {
+          "bootstrap_ci95": [
+            20.742917142857152,
+            87.82515000000001
+          ],
+          "direction": "lower",
+          "holm": {
+            "holm_p": 0.06719328067193281,
+            "raw_p": 0.0020997900209979003,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 0.06719328067193281,
+          "losses": 54,
+          "mean_delta": 53.93219714285715,
+          "metric": "context_select_or_dense_retrieval",
+          "paired_query_count": 70,
+          "population": "all_queries",
+          "section": "timings_ms",
+          "sign_flip_p": 0.0020997900209979003,
+          "sign_flip_p_value": 0.0020997900209979003,
+          "ties": 0,
+          "w_t_l": [
+            16,
+            0,
+            54
+          ],
+          "wins": 16
+        }
+      ]
+    },
+    "openai-text-embedding-3-large-d1792": {
+      "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+      "metrics": [
+        {
+          "bootstrap_ci95": [
+            0.0010000000000000009,
+            0.06216666666666667
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.06979302069793021,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 9,
+          "mean_delta": 0.02616666666666667,
+          "metric": "context_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.06979302069793021,
+          "sign_flip_p_value": 0.06979302069793021,
+          "ties": 33,
+          "w_t_l": [
+            18,
+            33,
+            9
+          ],
+          "wins": 18
+        },
+        {
+          "bootstrap_ci95": [
+            -0.010833333333333332,
+            0.004833333333333336
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.5912408759124088,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 7,
+          "mean_delta": -0.0024999999999999983,
+          "metric": "groundedness",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.5912408759124088,
+          "sign_flip_p_value": 0.5912408759124088,
+          "ties": 43,
+          "w_t_l": [
+            10,
+            43,
+            7
+          ],
+          "wins": 10
+        },
+        {
+          "bootstrap_ci95": [
+            0.000999999999999999,
+            0.05466666666666666
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.11888811118888111,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 5,
+          "mean_delta": 0.023,
+          "metric": "answer_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.11888811118888111,
+          "sign_flip_p_value": 0.11888811118888111,
+          "ties": 49,
+          "w_t_l": [
+            6,
+            49,
+            5
+          ],
+          "wins": 6
+        },
+        {
+          "bootstrap_ci95": [
+            18.35002,
+            72.64919
+          ],
+          "direction": "lower",
+          "holm": {
+            "holm_p": 0.0230976902309769,
+            "raw_p": 0.0006999300069993001,
+            "reject_alpha_0_05": true
+          },
+          "holm_adjusted_p": 0.0230976902309769,
+          "losses": 50,
+          "mean_delta": 46.96537000000001,
+          "metric": "context_select_or_dense_retrieval",
+          "paired_query_count": 70,
+          "population": "all_queries",
+          "section": "timings_ms",
+          "sign_flip_p": 0.0006999300069993001,
+          "sign_flip_p_value": 0.0006999300069993001,
+          "ties": 0,
+          "w_t_l": [
+            20,
+            0,
+            50
+          ],
+          "wins": 20
+        }
+      ]
+    },
+    "openai-text-embedding-3-large-d2048": {
+      "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+      "metrics": [
+        {
+          "bootstrap_ci95": [
+            0.003833333333333335,
+            0.06483333333333334
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 0.5683431656834317,
+            "raw_p": 0.0202979702029797,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 0.5683431656834317,
+          "losses": 8,
+          "mean_delta": 0.02866666666666667,
+          "metric": "context_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.0202979702029797,
+          "sign_flip_p_value": 0.0202979702029797,
+          "ties": 33,
+          "w_t_l": [
+            19,
+            33,
+            8
+          ],
+          "wins": 19
+        },
+        {
+          "bootstrap_ci95": [
+            -0.006499999999999998,
+            0.006500000000000001
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.8921107889211078,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 7,
+          "mean_delta": 0.0006666666666666673,
+          "metric": "groundedness",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.8921107889211078,
+          "sign_flip_p_value": 0.8921107889211078,
+          "ties": 41,
+          "w_t_l": [
+            12,
+            41,
+            7
+          ],
+          "wins": 12
+        },
+        {
+          "bootstrap_ci95": [
+            0.002,
+            0.0555
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.1141885811418858,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 4,
+          "mean_delta": 0.023666666666666666,
+          "metric": "answer_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.1141885811418858,
+          "sign_flip_p_value": 0.1141885811418858,
+          "ties": 50,
+          "w_t_l": [
+            6,
+            50,
+            4
+          ],
+          "wins": 6
+        },
+        {
+          "bootstrap_ci95": [
+            89.09586142857144,
+            160.43794571428575
+          ],
+          "direction": "lower",
+          "holm": {
+            "holm_p": 0.0035996400359964006,
+            "raw_p": 9.999000099990002e-05,
+            "reject_alpha_0_05": true
+          },
+          "holm_adjusted_p": 0.0035996400359964006,
+          "losses": 63,
+          "mean_delta": 124.60153571428572,
+          "metric": "context_select_or_dense_retrieval",
+          "paired_query_count": 70,
+          "population": "all_queries",
+          "section": "timings_ms",
+          "sign_flip_p": 9.999000099990002e-05,
+          "sign_flip_p_value": 9.999000099990002e-05,
+          "ties": 0,
+          "w_t_l": [
+            7,
+            0,
+            63
+          ],
+          "wins": 7
+        }
+      ]
+    },
+    "openai-text-embedding-3-large-d2096": {
+      "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+      "metrics": [
+        {
+          "bootstrap_ci95": [
+            0.006499999999999996,
+            0.06366666666666668
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 0.09299070092990701,
+            "raw_p": 0.0029997000299970002,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 0.09299070092990701,
+          "losses": 6,
+          "mean_delta": 0.029166666666666667,
+          "metric": "context_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.0029997000299970002,
+          "sign_flip_p_value": 0.0029997000299970002,
+          "ties": 35,
+          "w_t_l": [
+            19,
+            35,
+            6
+          ],
+          "wins": 19
+        },
+        {
+          "bootstrap_ci95": [
+            -0.004999999999999997,
+            0.0070000000000000045
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.7031296870312969,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 6,
+          "mean_delta": 0.0013333333333333346,
+          "metric": "groundedness",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.7031296870312969,
+          "sign_flip_p_value": 0.7031296870312969,
+          "ties": 40,
+          "w_t_l": [
+            14,
+            40,
+            6
+          ],
+          "wins": 14
+        },
+        {
+          "bootstrap_ci95": [
+            0.002333333333333332,
+            0.05383333333333333
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.07429257074292571,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 3,
+          "mean_delta": 0.02266666666666667,
+          "metric": "answer_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.07429257074292571,
+          "sign_flip_p_value": 0.07429257074292571,
+          "ties": 49,
+          "w_t_l": [
+            8,
+            49,
+            3
+          ],
+          "wins": 8
+        },
+        {
+          "bootstrap_ci95": [
+            80.77829285714286,
+            147.86490714285713
+          ],
+          "direction": "lower",
+          "holm": {
+            "holm_p": 0.0035996400359964006,
+            "raw_p": 9.999000099990002e-05,
+            "reject_alpha_0_05": true
+          },
+          "holm_adjusted_p": 0.0035996400359964006,
+          "losses": 61,
+          "mean_delta": 114.91400142857144,
+          "metric": "context_select_or_dense_retrieval",
+          "paired_query_count": 70,
+          "population": "all_queries",
+          "section": "timings_ms",
+          "sign_flip_p": 9.999000099990002e-05,
+          "sign_flip_p_value": 9.999000099990002e-05,
+          "ties": 0,
+          "w_t_l": [
+            9,
+            0,
+            61
+          ],
+          "wins": 9
+        }
+      ]
+    },
+    "openai-text-embedding-3-large-d3072": {
+      "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+      "metrics": [
+        {
+          "bootstrap_ci95": [
+            0.004833333333333336,
+            0.06516666666666666
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 0.40885911408859116,
+            "raw_p": 0.014098590140985901,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 0.40885911408859116,
+          "losses": 8,
+          "mean_delta": 0.029333333333333336,
+          "metric": "context_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.014098590140985901,
+          "sign_flip_p_value": 0.014098590140985901,
+          "ties": 31,
+          "w_t_l": [
+            21,
+            31,
+            8
+          ],
+          "wins": 21
+        },
+        {
+          "bootstrap_ci95": [
+            -0.0034999999999999975,
+            0.007000000000000001
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.5111488851114888,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 7,
+          "mean_delta": 0.001833333333333335,
+          "metric": "groundedness",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.5111488851114888,
+          "sign_flip_p_value": 0.5111488851114888,
+          "ties": 39,
+          "w_t_l": [
+            14,
+            39,
+            7
+          ],
+          "wins": 14
+        },
+        {
+          "bootstrap_ci95": [
+            0.001999999999999998,
+            0.05633333333333333
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.10008999100089991,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 5,
+          "mean_delta": 0.024333333333333332,
+          "metric": "answer_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.10008999100089991,
+          "sign_flip_p_value": 0.10008999100089991,
+          "ties": 48,
+          "w_t_l": [
+            7,
+            48,
+            5
+          ],
+          "wins": 7
+        },
+        {
+          "bootstrap_ci95": [
+            175.53727285714285,
+            237.79649285714285
+          ],
+          "direction": "lower",
+          "holm": {
+            "holm_p": 0.0035996400359964006,
+            "raw_p": 9.999000099990002e-05,
+            "reject_alpha_0_05": true
+          },
+          "holm_adjusted_p": 0.0035996400359964006,
+          "losses": 68,
+          "mean_delta": 208.54405428571428,
+          "metric": "context_select_or_dense_retrieval",
+          "paired_query_count": 70,
+          "population": "all_queries",
+          "section": "timings_ms",
+          "sign_flip_p": 9.999000099990002e-05,
+          "sign_flip_p_value": 9.999000099990002e-05,
+          "ties": 0,
+          "w_t_l": [
+            2,
+            0,
+            68
+          ],
+          "wins": 2
+        }
+      ]
+    },
+    "openai-text-embedding-3-small-d1280": {
+      "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+      "metrics": [
+        {
+          "bootstrap_ci95": [
+            -0.006833333333333334,
+            0.0070000000000000045
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.8702129787021298,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 7,
+          "mean_delta": 0.0006666666666666677,
+          "metric": "context_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.8702129787021298,
+          "sign_flip_p_value": 0.8702129787021298,
+          "ties": 44,
+          "w_t_l": [
+            9,
+            44,
+            7
+          ],
+          "wins": 9
+        },
+        {
+          "bootstrap_ci95": [
+            -0.0005000000000000023,
+            0.004333333333333333
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.2765723427657234,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 3,
+          "mean_delta": 0.0016666666666666663,
+          "metric": "groundedness",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.2765723427657234,
+          "sign_flip_p_value": 0.2765723427657234,
+          "ties": 50,
+          "w_t_l": [
+            7,
+            50,
+            3
+          ],
+          "wins": 7
+        },
+        {
+          "bootstrap_ci95": [
+            -0.001666666666666668,
+            0.010166666666666668
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.7453254674532547,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 2,
+          "mean_delta": 0.002833333333333333,
+          "metric": "answer_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.7453254674532547,
+          "sign_flip_p_value": 0.7453254674532547,
+          "ties": 56,
+          "w_t_l": [
+            2,
+            56,
+            2
+          ],
+          "wins": 2
+        },
+        {
+          "bootstrap_ci95": [
+            -16.750434285714288,
+            52.92094428571428
+          ],
+          "direction": "lower",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.3090690930906909,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 38,
+          "mean_delta": 18.755845714285716,
+          "metric": "context_select_or_dense_retrieval",
+          "paired_query_count": 70,
+          "population": "all_queries",
+          "section": "timings_ms",
+          "sign_flip_p": 0.3090690930906909,
+          "sign_flip_p_value": 0.3090690930906909,
+          "ties": 0,
+          "w_t_l": [
+            32,
+            0,
+            38
+          ],
+          "wins": 32
+        }
+      ]
+    },
+    "openai-text-embedding-3-small-d1536": {
+      "baseline_cell_id": "openai-text-embedding-3-small-d1024",
+      "metrics": [
+        {
+          "bootstrap_ci95": [
+            -0.008833333333333335,
+            0.010000000000000005
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.9482051794820517,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 10,
+          "mean_delta": 0.0003333333333333353,
+          "metric": "context_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.9482051794820517,
+          "sign_flip_p_value": 0.9482051794820517,
+          "ties": 40,
+          "w_t_l": [
+            10,
+            40,
+            10
+          ],
+          "wins": 10
+        },
+        {
+          "bootstrap_ci95": [
+            -0.0011666666666666676,
+            0.004999999999999999
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.3140685931406859,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 4,
+          "mean_delta": 0.001833333333333333,
+          "metric": "groundedness",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.3140685931406859,
+          "sign_flip_p_value": 0.3140685931406859,
+          "ties": 47,
+          "w_t_l": [
+            9,
+            47,
+            4
+          ],
+          "wins": 9
+        },
+        {
+          "bootstrap_ci95": [
+            -0.0006666666666666673,
+            0.013666666666666667
+          ],
+          "direction": "higher",
+          "holm": {
+            "holm_p": 1.0,
+            "raw_p": 0.3558644135586441,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 1.0,
+          "losses": 4,
+          "mean_delta": 0.005,
+          "metric": "answer_relevance",
+          "paired_query_count": 60,
+          "population": "answerable_only",
+          "section": "judge",
+          "sign_flip_p": 0.3558644135586441,
+          "sign_flip_p_value": 0.3558644135586441,
+          "ties": 51,
+          "w_t_l": [
+            5,
+            51,
+            4
+          ],
+          "wins": 5
+        },
+        {
+          "bootstrap_ci95": [
+            14.790630000000004,
+            85.78031142857144
+          ],
+          "direction": "lower",
+          "holm": {
+            "holm_p": 0.155984401559844,
+            "raw_p": 0.0051994800519948,
+            "reject_alpha_0_05": false
+          },
+          "holm_adjusted_p": 0.155984401559844,
+          "losses": 52,
+          "mean_delta": 49.86989428571429,
+          "metric": "context_select_or_dense_retrieval",
+          "paired_query_count": 70,
+          "population": "all_queries",
+          "section": "timings_ms",
+          "sign_flip_p": 0.0051994800519948,
+          "sign_flip_p_value": 0.0051994800519948,
+          "ties": 0,
+          "w_t_l": [
+            18,
+            0,
+            52
+          ],
+          "wins": 18
+        }
+      ]
+    }
+  },
+  "pareto_frontier": {
+    "cells": [
+      {
+        "cell_id": "openai-text-embedding-3-large-d1024",
+        "quality_secondary_composite_mean": 0.9874444444444443,
+        "retrieval_observations": 70,
+        "retrieval_p95_ms": 541.58657
+      },
+      {
+        "cell_id": "openai-text-embedding-3-large-d2096",
+        "quality_secondary_composite_mean": 0.9880555555555556,
+        "retrieval_observations": 70,
+        "retrieval_p95_ms": 694.6605399999996
+      },
+      {
+        "cell_id": "openai-text-embedding-3-large-d3072",
+        "quality_secondary_composite_mean": 0.9888333333333333,
+        "retrieval_observations": 70,
+        "retrieval_p95_ms": 767.8657649999998
+      },
+      {
+        "cell_id": "openai-text-embedding-3-small-d1024",
+        "quality_secondary_composite_mean": 0.9703333333333333,
+        "retrieval_observations": 70,
+        "retrieval_p95_ms": 488.939275
+      }
+    ],
+    "definition": "secondary self-judge RAG Triad arithmetic composite maximize, fresh uncached retrieval p95 minimize; provider spend and total answer latency excluded because cache state is not cross-cell comparable",
+    "latency_metric": "uncached_context_select_or_dense_retrieval_p95_ms",
+    "provider_spend_included": false,
+    "quality_metric": "secondary_rag_triad_self_judge_answerable_mean"
+  },
+  "schema_version": 1
+}

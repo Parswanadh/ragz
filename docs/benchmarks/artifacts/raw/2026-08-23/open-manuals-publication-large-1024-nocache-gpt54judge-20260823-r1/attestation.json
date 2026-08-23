@@ -1,0 +1,82 @@
+{
+  "alias_contract": {
+    "alias": "ragz-openai-text-embedding-3-large-d1024",
+    "client_sends_dimensions": false,
+    "expected_dimension": 1024,
+    "observed_dimensions": [
+      1024
+    ],
+    "underlying_model": "text-embedding-3-large"
+  },
+  "artifacts_sha256": {
+    "per_query": "de1f27a711e667bcf7cc39cf9c4b1b67429359f47be42b1f4a564be98925bf80",
+    "provider_calls": "a970bf0df8fd2e744a6972ccf3788bdf4b72211eab6cdb6f3de83d85c148414f"
+  },
+  "attestation": "open-manuals-v2-matrix-cell",
+  "cache": {
+    "denominators": {
+      "chunk_embeddings": {
+        "cached": 0,
+        "total": 467,
+        "uncached": 467
+      },
+      "generation": {
+        "cached": 0,
+        "total": 70,
+        "uncached": 70
+      },
+      "judge": {
+        "cached": 0,
+        "total": 70,
+        "uncached": 70
+      },
+      "query_embeddings": {
+        "cached": 0,
+        "total": 70,
+        "uncached": 70
+      }
+    },
+    "hit_counts": {
+      "chunk_embeddings": 0,
+      "generation": 0,
+      "judge": 0,
+      "query_embeddings": 0
+    },
+    "latency_comparability": "all_query_timings_comparable",
+    "mode": "no-cache",
+    "publication_eligible": true
+  },
+  "cell": {
+    "alias": "ragz-openai-text-embedding-3-large-d1024",
+    "cell_id": "openai-text-embedding-3-large-d1024",
+    "dimension": 1024,
+    "model": "text-embedding-3-large"
+  },
+  "created_at_utc": "2026-08-23T13:25:34.699506+00:00",
+  "denominator": {
+    "answerable": 60,
+    "off_corpus": 10,
+    "total": 70
+  },
+  "error_count": 0,
+  "judge_independence": "separate_model_same_provider",
+  "privacy": {
+    "credentials_persisted": false,
+    "prompts_persisted": false,
+    "public_per_query_fields": [
+      "query_id",
+      "retrieved_ids",
+      "metrics",
+      "judge",
+      "timings_ms",
+      "usage",
+      "error_codes"
+    ],
+    "raw_artifacts_private_only": true,
+    "response_bodies_persisted": false
+  },
+  "provider_calls": 211,
+  "rag_triad": "exploratory_not_independent",
+  "schema_version": 1,
+  "status": "completed"
+}

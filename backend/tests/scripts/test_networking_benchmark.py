@@ -152,11 +152,39 @@ def test_embedding_tracks_pin_model_and_dimension() -> None:
 
     assert (hash_track.model, hash_track.dimension) == ("deterministic-hash", 1024)
     assert openai_track.model == "text-embedding-3-small"
+    assert openai_track.litellm_model_name == "ragz-openai-text-embedding-3-small-d1536"
     assert openai_track.dimension == 1536
     assert openai_track.provider_kind == "openai"
     assert openai_track.settings_backend == "litellm"
     with pytest.raises(ValueError):
         resolve_embedding_track("other")
+
+
+def test_openai_embedding_tracks_validate_model_dimension_matrix() -> None:
+    large = resolve_embedding_track(
+        "openai",
+        model="text-embedding-3-large",
+        dimension=2096,
+        litellm_model_name="ragz-openai-text-embedding-3-large-d2096",
+    )
+
+    assert large.model == "text-embedding-3-large"
+    assert large.dimension == 2096
+    assert large.litellm_model_name == "ragz-openai-text-embedding-3-large-d2096"
+    assert large.dense_label == "openai-text-embedding-3-large-2096"
+    with pytest.raises(ValueError):
+        resolve_embedding_track(
+            "openai", model="text-embedding-3-small", dimension=2096
+        )
+    with pytest.raises(ValueError, match="not the fixed alias"):
+        resolve_embedding_track(
+            "openai",
+            model="text-embedding-3-large",
+            dimension=2096,
+            litellm_model_name="attested-large-2096",
+        )
+    with pytest.raises(ValueError):
+        resolve_embedding_track("hash", dimension=1024)
 
 
 def test_comparison_lab_pins_shared_answer_model() -> None:

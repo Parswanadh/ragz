@@ -1,0 +1,47 @@
+{
+  "alias_contract": {
+    "alias": "ragz-openai-text-embedding-3-large-d3072",
+    "client_sends_dimensions": false,
+    "expected_dimension": 3072,
+    "observed_dimensions": [
+      3072
+    ],
+    "underlying_model": "text-embedding-3-large"
+  },
+  "artifacts_sha256": {
+    "per_query": "bc529e463dd22fdce4dcb6af034f6aea8309a923726e8c08c6ed47b793b15216",
+    "provider_calls": "e55c66218c620e74657079066d3b8816b740bb4dc919b184c05ac9940c16b993"
+  },
+  "attestation": "open-manuals-v2-matrix-cell",
+  "cell": {
+    "alias": "ragz-openai-text-embedding-3-large-d3072",
+    "cell_id": "openai-text-embedding-3-large-d3072",
+    "dimension": 3072,
+    "model": "text-embedding-3-large"
+  },
+  "created_at_utc": "2026-08-23T12:37:30.211619+00:00",
+  "denominator": {
+    "answerable": 60,
+    "off_corpus": 10,
+    "total": 70
+  },
+  "error_count": 0,
+  "privacy": {
+    "credentials_persisted": false,
+    "prompts_persisted": false,
+    "public_per_query_fields": [
+      "query_id",
+      "retrieved_ids",
+      "metrics",
+      "judge",
+      "timings_ms",
+      "usage",
+      "error_codes"
+    ],
+    "raw_artifacts_private_only": true,
+    "response_bodies_persisted": false
+  },
+  "provider_calls": 117,
+  "schema_version": 1,
+  "status": "completed"
+}

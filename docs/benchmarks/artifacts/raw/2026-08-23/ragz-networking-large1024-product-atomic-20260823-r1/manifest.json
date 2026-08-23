@@ -1,0 +1,439 @@
+{
+  "benchmark_status": "production_embedding_fixed_fusion",
+  "condition_order": "single-first",
+  "conditions": {
+    "multi": {
+      "abstention": {
+        "f1": null,
+        "false_negative": 21,
+        "false_positive": 0,
+        "precision": null,
+        "recall": 0.0,
+        "true_positive": 0
+      },
+      "abstention_observations": 105,
+      "answerable_queries": 12,
+      "atomic_latency_ms": {
+        "clock": "time.perf_counter wall clock",
+        "stages": {
+          "authorization_prefilter": {
+            "mean": 4.026052380952381,
+            "mean_total_share": 0.008401445140262758,
+            "observations": 105,
+            "p50": 3.9319,
+            "p95": 5.405659999999999,
+            "p99": 6.084356
+          },
+          "authorization_recheck": {
+            "mean": 1.4030780952380952,
+            "mean_total_share": 0.0029279012117221256,
+            "observations": 105,
+            "p50": 1.4571,
+            "p95": 1.73828,
+            "p99": 1.8055239999999997
+          },
+          "candidate_decode": {
+            "mean": 0.034486666666666665,
+            "mean_total_share": 7.19657398004319e-05,
+            "observations": 105,
+            "p50": 0.0391,
+            "p95": 0.043219999999999995,
+            "p99": 0.04797599999999998
+          },
+          "candidate_dedupe": {
+            "mean": 0.007468571428571429,
+            "mean_total_share": 1.558519045359109e-05,
+            "observations": 105,
+            "p50": 0.0078,
+            "p95": 0.0094,
+            "p99": 0.018063999999999948
+          },
+          "collection_ready": {
+            "mean": 2.8674161904761903,
+            "mean_total_share": 0.005983637950802876,
+            "observations": 105,
+            "p50": 2.9003,
+            "p95": 3.5908800000000003,
+            "p99": 4.365187999999997
+          },
+          "database_release": {
+            "mean": 1.1937190476190476,
+            "mean_total_share": 0.0024910170416326625,
+            "observations": 105,
+            "p50": 1.1674,
+            "p95": 1.4724,
+            "p99": 1.7354719999999992
+          },
+          "dense_embedding": {
+            "mean": 438.78335904761906,
+            "mean_total_share": 0.9156399298080545,
+            "observations": 105,
+            "p50": 468.4899,
+            "p95": 493.10220000000004,
+            "p99": 504.67676400000005
+          },
+          "embedder_resolution": {
+            "mean": 0.009924761904761905,
+            "mean_total_share": 2.0710694939667528e-05,
+            "observations": 105,
+            "p50": 0.0101,
+            "p95": 0.014559999999999998,
+            "p99": 0.01977599999999998
+          },
+          "embedding_usage_record": {
+            "mean": 0.10639809523809524,
+            "mean_total_share": 0.00022202834826502032,
+            "observations": 105,
+            "p50": 0.1199,
+            "p95": 0.13658,
+            "p99": 0.1683719999999998
+          },
+          "no_answer_probe": {
+            "mean": 11.446588571428572,
+            "mean_total_share": 0.023886397102281832,
+            "observations": 105,
+            "p50": 10.7407,
+            "p95": 17.626019999999997,
+            "p99": 18.790872
+          },
+          "query_expansion": {
+            "mean": 0.14225714285714286,
+            "mean_total_share": 0.00029685793140179817,
+            "observations": 105,
+            "p50": 0.1581,
+            "p95": 0.18145999999999998,
+            "p99": 0.223496
+          },
+          "sparse_embedding": {
+            "mean": 0.4256,
+            "mean_total_share": 0.0008881292922597279,
+            "observations": 105,
+            "p50": 0.4192,
+            "p95": 0.56314,
+            "p99": 0.6661679999999995
+          },
+          "unattributed_runner": {
+            "mean": 0.3625419047619048,
+            "mean_total_share": 0.0007565415537845023,
+            "observations": 105,
+            "p50": 0.3681,
+            "p95": 0.50006,
+            "p99": 0.5179
+          },
+          "vector_search": {
+            "mean": 15.201708571428572,
+            "mean_total_share": 0.031722468690511034,
+            "observations": 105,
+            "p50": 14.7302,
+            "p95": 18.22638,
+            "p99": 22.064239999999984
+          },
+          "workspace_model_resolution": {
+            "mean": 3.198907619047619,
+            "mean_total_share": 0.0066753843038275685,
+            "observations": 105,
+            "p50": 3.1773,
+            "p95": 3.95088,
+            "p99": 5.248751999999997
+          }
+        },
+        "successful_observations": 105
+      },
+      "errors": 0,
+      "latency_ms": {
+        "p50": 507.4786,
+        "p95": 536.82718,
+        "p99": 546.37404
+      },
+      "mean_ndcg_at_k": 0.5612324229642842,
+      "mean_recall_at_k": 0.24224849224849224,
+      "mean_reciprocal_rank": 0.9166666666666666,
+      "mode": "multi",
+      "observations": 105,
+      "quality_observations": 84,
+      "query_count": 15,
+      "repetitions": 7,
+      "unanswerable_queries": 3,
+      "warmups": 5
+    },
+    "single": {
+      "abstention": {
+        "f1": null,
+        "false_negative": 21,
+        "false_positive": 0,
+        "precision": null,
+        "recall": 0.0,
+        "true_positive": 0
+      },
+      "abstention_observations": 105,
+      "answerable_queries": 12,
+      "atomic_latency_ms": {
+        "clock": "time.perf_counter wall clock",
+        "stages": {
+          "authorization_prefilter": {
+            "mean": 4.284675238095238,
+            "mean_total_share": 0.011113524016838355,
+            "observations": 105,
+            "p50": 4.3063,
+            "p95": 5.79324,
+            "p99": 6.835627999999998
+          },
+          "authorization_recheck": {
+            "mean": 1.2253104761904763,
+            "mean_total_share": 0.003178191262701207,
+            "observations": 105,
+            "p50": 1.2385,
+            "p95": 1.5814,
+            "p99": 1.7340599999999995
+          },
+          "candidate_decode": {
+            "mean": 0.03060190476190476,
+            "mean_total_share": 7.93747447901369e-05,
+            "observations": 105,
+            "p50": 0.0327,
+            "p95": 0.04206,
+            "p99": 0.05574799999999994
+          },
+          "candidate_dedupe": {
+            "mean": 0.006363809523809524,
+            "mean_total_share": 1.6506350201907594e-05,
+            "observations": 105,
+            "p50": 0.0065,
+            "p95": 0.008879999999999999,
+            "p99": 0.009396
+          },
+          "collection_ready": {
+            "mean": 2.8094657142857145,
+            "mean_total_share": 0.007287148489713422,
+            "observations": 105,
+            "p50": 2.7271,
+            "p95": 3.56534,
+            "p99": 6.291703999999984
+          },
+          "database_release": {
+            "mean": 1.3898504761904762,
+            "mean_total_share": 0.0036049725565253567,
+            "observations": 105,
+            "p50": 1.3522,
+            "p95": 1.8624399999999997,
+            "p99": 2.3592839999999993
+          },
+          "dense_embedding": {
+            "mean": 358.5302314285714,
+            "mean_total_share": 0.9299501400520092,
+            "observations": 105,
+            "p50": 363.9672,
+            "p95": 419.34090000000003,
+            "p99": 480.25294399999973
+          },
+          "embedder_resolution": {
+            "mean": 0.009282857142857143,
+            "mean_total_share": 2.4077730532474306e-05,
+            "observations": 105,
+            "p50": 0.0086,
+            "p95": 0.013979999999999998,
+            "p99": 0.018947999999999975
+          },
+          "embedding_usage_record": {
+            "mean": 0.11098571428571428,
+            "mean_total_share": 0.00028787302017050303,
+            "observations": 105,
+            "p50": 0.1224,
+            "p95": 0.14428,
+            "p99": 0.16183999999999996
+          },
+          "no_answer_probe": {
+            "mean": 5.6083380952380955,
+            "mean_total_share": 0.014546820156126064,
+            "observations": 105,
+            "p50": 5.6293,
+            "p95": 6.91354,
+            "p99": 7.643167999999999
+          },
+          "query_expansion": {
+            "mean": 0.00042857142857142855,
+            "mean_total_share": 1.1116219082398108e-06,
+            "observations": 105,
+            "p50": 0.0004,
+            "p95": 0.0006,
+            "p99": 0.0006959999999999994
+          },
+          "sparse_embedding": {
+            "mean": 0.3775704761904762,
+            "mean_total_share": 0.0009793364308883664,
+            "observations": 105,
+            "p50": 0.3725,
+            "p95": 0.5228999999999999,
+            "p99": 0.554348
+          },
+          "unattributed_runner": {
+            "mean": 0.24789142857142857,
+            "mean_total_share": 0.0006429769333513498,
+            "observations": 105,
+            "p50": 0.2518,
+            "p95": 0.31623999999999997,
+            "p99": 0.338428
+          },
+          "vector_search": {
+            "mean": 8.763558095238094,
+            "mean_total_share": 0.022730780736531033,
+            "observations": 105,
+            "p50": 8.5297,
+            "p95": 12.968259999999999,
+            "p99": 15.359915999999998
+          },
+          "workspace_model_resolution": {
+            "mean": 2.1424933333333334,
+            "mean_total_share": 0.005557165897712505,
+            "observations": 105,
+            "p50": 2.1096,
+            "p95": 3.1313199999999997,
+            "p99": 3.246
+          }
+        },
+        "successful_observations": 105
+      },
+      "errors": 0,
+      "latency_ms": {
+        "p50": 391.0464,
+        "p95": 447.98998,
+        "p99": 508.50752399999976
+      },
+      "mean_ndcg_at_k": 0.5567646392963839,
+      "mean_recall_at_k": 0.25731721981721983,
+      "mean_reciprocal_rank": 0.8611111111111112,
+      "mode": "single",
+      "observations": 105,
+      "quality_observations": 84,
+      "query_count": 15,
+      "repetitions": 7,
+      "unanswerable_queries": 3,
+      "warmups": 5
+    }
+  },
+  "copyright_safe": true,
+  "corpus_stats": {
+    "books": [
+      {
+        "book_id": "forouzan-2022",
+        "chunk_ms": 40.7722,
+        "chunks": 3500,
+        "dense_embedding_ms": 102638.4575,
+        "pages": 861,
+        "parse_ms": 6691.3695,
+        "qdrant_upsert_ms": 3126.63,
+        "sparse_embedding_ms": 526.9904
+      },
+      {
+        "book_id": "kurose-2021",
+        "chunk_ms": 37.6232,
+        "chunks": 1851,
+        "dense_embedding_ms": 56344.6338,
+        "pages": 775,
+        "parse_ms": 4300.2131,
+        "qdrant_upsert_ms": 1790.205,
+        "sparse_embedding_ms": 442.4271
+      },
+      {
+        "book_id": "tanenbaum-2021",
+        "chunk_ms": 50.9115,
+        "chunks": 3023,
+        "dense_embedding_ms": 90043.628,
+        "pages": 946,
+        "parse_ms": 6824.0176,
+        "qdrant_upsert_ms": 2767.2087,
+        "sparse_embedding_ms": 580.0096
+      }
+    ],
+    "chunks": 8374,
+    "index_atomic_latency_ms": {
+      "chunk": 129.3069,
+      "dense_embedding": 249026.7193,
+      "parse": 17815.6002,
+      "qdrant_upsert": 7684.0436,
+      "sparse_embedding": 1549.4272
+    },
+    "index_embedding_calls_completed": 263,
+    "index_embedding_tokens": 1577342
+  },
+  "dataset_id": "networking-pdfs-v1",
+  "dense": "openai-text-embedding-3-large-1024",
+  "document_text_persisted": false,
+  "embedding_alias": "ragz-openai-text-embedding-3-large-d1024",
+  "embedding_dimension": 1024,
+  "embedding_engine": "openai",
+  "embedding_litellm_model_name": "ragz-openai-text-embedding-3-large-d1024",
+  "embedding_model": "text-embedding-3-large",
+  "embedding_provider": "openai",
+  "embedding_provider_calls": "not_exposed_nonzero",
+  "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "embedding_requested_dimension": 1024,
+  "embedding_transport": "litellm",
+  "expansion_provider_calls": 0,
+  "fusion": "qdrant-rrf",
+  "git_commit": "e38b9f99ab5e1fa8c6590d6702c3387215bf6d6b",
+  "git_dirty": true,
+  "no_answer_threshold": {
+    "calibration": "parity-zero-threshold-no-abstention-calibration",
+    "score_space": "maximum_dense_cosine",
+    "value": 0.0
+  },
+  "pdfs": [
+    {
+      "book_id": "forouzan-2022",
+      "filename": "1_Behrouz A. Forouzan - Data Communications and Networking with TCP_IP Protocol Suite-McGraw-Hill (2022).pdf",
+      "pages": 861,
+      "sha256": "fec3e7c7d583018633cbba69510cdb9bba01622f4eed6ef894f571b909c59f25",
+      "size_bytes": 33719680
+    },
+    {
+      "book_id": "kurose-2021",
+      "filename": "2_James W. Kurose, Keith W. Ross - Computer Networking_ A Top-Down Approach-Pearson (2021).pdf",
+      "pages": 775,
+      "sha256": "7599e188b2645104576b5502400565aff7892ef02abb866ed6899ef9b5865a9a",
+      "size_bytes": 19972617
+    },
+    {
+      "book_id": "tanenbaum-2021",
+      "filename": "3_Andrew S. Tanenbaum, Nick Feamster, David J. Wetherall - Computer Networks-Pearson (2021).pdf",
+      "pages": 946,
+      "sha256": "dca8648949db3f7f95f29917a32718d98a06888083c7f86712c9aa070cfebcb8",
+      "size_bytes": 35186267
+    }
+  ],
+  "provider_cost_usd": null,
+  "provider_progress": {
+    "index_embedding_calls_completed": 263,
+    "index_embedding_tokens": 1577342,
+    "query_embedding_attempts": 360
+  },
+  "python_version": "3.13.13",
+  "query_set": {
+    "count": 15,
+    "filename": "networking-multi-query-queries.json",
+    "sha256": "dc44eabf6842f80bd0c3800e5f40e7e07f6e3a6c7ce0ab68051b42ee15de1906"
+  },
+  "query_variants": "fixed-two-alternatives",
+  "repetitions": 7,
+  "reranker": "disabled",
+  "runner_version": "3.0",
+  "schema_version": "1.0",
+  "seed": 20260823,
+  "sparse": "fastembed-bm25",
+  "stage_timing_schema": {
+    "clock": "time.perf_counter wall clock",
+    "elapsed_ms_authoritative_total": true,
+    "unit": "milliseconds",
+    "version": "retrieval-atomic-v1",
+    "warmups_persisted": false
+  },
+  "status": "completed",
+  "tool_versions": {
+    "fastembed": "0.8.0",
+    "liteparse": "2.12.0",
+    "qdrant_client": "1.18.0"
+  },
+  "top_k": 5,
+  "tracked_diff_sha256": "c9ab35ae572daca6f19af27d49571722ae076d480985e3d2b5864ac7bb776689",
+  "warmups": 5
+}

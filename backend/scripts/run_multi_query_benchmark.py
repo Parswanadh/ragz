@@ -42,6 +42,7 @@ from testcontainers.qdrant import QdrantContainer  # type: ignore[import-untyped
 class EmbeddingTrack:
     engine: str
     model: str
+    litellm_model_name: str
     dimension: int
     provider_kind: str
     settings_backend: str
@@ -77,11 +78,20 @@ def write_progress(output: Path, progress: BenchmarkProgress) -> None:
     )
 
 
-def resolve_embedding_track(engine: str) -> EmbeddingTrack:
+def resolve_embedding_track(
+    engine: str,
+    *,
+    model: str | None = None,
+    dimension: int | None = None,
+    litellm_model_name: str | None = None,
+) -> EmbeddingTrack:
     if engine == "hash":
+        if model is not None or dimension is not None or litellm_model_name is not None:
+            raise ValueError("hash embedding track does not accept hosted model settings")
         return EmbeddingTrack(
             engine="hash",
             model="deterministic-hash",
+            litellm_model_name="deterministic-hash",
             dimension=1024,
             provider_kind="tei",
             settings_backend="hash",
@@ -90,13 +100,23 @@ def resolve_embedding_track(engine: str) -> EmbeddingTrack:
             provider_cost_usd=0.0,
         )
     if engine == "openai":
+        from embedding_benchmark_matrix import cell_for
+
+        selected_model = model or "text-embedding-3-small"
+        selected_dimension = dimension if dimension is not None else 1536
+        cell = cell_for(selected_model, selected_dimension)
+        if litellm_model_name is not None and litellm_model_name != cell.alias:
+            raise ValueError(
+                f"LiteLLM alias {litellm_model_name!r} is not the fixed alias for {cell.cell_id}"
+            )
         return EmbeddingTrack(
             engine="openai",
-            model="text-embedding-3-small",
-            dimension=1536,
+            model=cell.model,
+            litellm_model_name=cell.alias,
+            dimension=cell.dimension,
             provider_kind="openai",
             settings_backend="litellm",
-            dense_label="openai-text-embedding-3-small-1536",
+            dense_label=f"openai-{cell.model}-{cell.dimension}",
             provider_calls="not_exposed_nonzero",
             provider_cost_usd=None,
         )
@@ -331,10 +351,10 @@ async def _seed_corpus(
     from ragz.modules.auth.models import User
     from ragz.modules.documents.models import Document
     from ragz.modules.documents.parsers import LiteParseParser
-    from ragz.modules.documents.pipeline import chunk_document, embed_batch, upsert_points
+    from ragz.modules.documents.pipeline import chunk_document, upsert_points
     from ragz.modules.models.models import LOCAL_EMBEDDING_MODEL_ID, Model
     from ragz.modules.retrieval.client import COLLECTION
-    from ragz.modules.retrieval.embeddings import get_dense_embedder
+    from ragz.modules.retrieval.embeddings import embed_sparse, get_dense_embedder
     from ragz.modules.retrieval.service import ensure_collection
     from ragz.modules.tenancy.context import TenantContext
     from ragz.modules.tenancy.models import Organization, Workspace, WorkspaceMember
@@ -367,7 +387,7 @@ async def _seed_corpus(
             [
                 Model(
                     id=embedding_model_id,
-                    litellm_model_name=embedding_track.model,
+                    litellm_model_name=embedding_track.litellm_model_name,
                     display_name=f"{embedding_track.model} benchmark embeddings",
                     provider_kind=embedding_track.provider_kind,
                     modality="embedding",
@@ -419,10 +439,21 @@ async def _seed_corpus(
     dense_embedder = get_dense_embedder(
         embedding_model_id,
         provider_kind=embedding_track.provider_kind,
-        litellm_model_name=embedding_track.model,
+        litellm_model_name=embedding_track.litellm_model_name,
+        dimension=embedding_track.dimension,
     )
     document_map: dict[UUID, str] = {}
-    corpus_stats: dict[str, Any] = {"books": [], "chunks": 0}
+    corpus_stats: dict[str, Any] = {
+        "books": [],
+        "chunks": 0,
+        "index_atomic_latency_ms": {
+            "parse": 0.0,
+            "chunk": 0.0,
+            "dense_embedding": 0.0,
+            "sparse_embedding": 0.0,
+            "qdrant_upsert": 0.0,
+        },
+    }
     embedding_usage: list[int] = []
     for book_id, path in pdfs:
         progress.stage = f"indexing:{book_id}"
@@ -431,7 +462,9 @@ async def _seed_corpus(
         parse_started = time.perf_counter()
         blocks = await LiteParseParser().parse(data, path.name)
         parse_ms = (time.perf_counter() - parse_started) * 1000
+        chunk_started = time.perf_counter()
         chunks = chunk_document(blocks, method="heading")
+        chunk_ms = (time.perf_counter() - chunk_started) * 1000
         document_id = uuid4()
         document_map[document_id] = book_id
         async with factory() as session:
@@ -459,20 +492,24 @@ async def _seed_corpus(
             )
             await session.commit()
         index_batch_size = 32 if embedding_track.engine == "openai" else 64
+        book_dense_ms = book_sparse_ms = book_upsert_ms = 0.0
         for start in range(0, len(chunks), index_batch_size):
             batch = chunks[start : start + index_batch_size]
-            usage_count_before = len(embedding_usage)
-            dense, sparse = await embed_batch(
-                [chunk.text for chunk in batch],
-                dense_embedder,
-                usage_sink=embedding_usage,
-            )
+            texts = [chunk.text for chunk in batch]
+            dense_started = time.perf_counter()
+            dense, billed_tokens = await dense_embedder.embed_with_usage(texts)
+            dense_ms = (time.perf_counter() - dense_started) * 1000
+            embedding_usage.append(billed_tokens)
+            sparse_started = time.perf_counter()
+            sparse = await asyncio.to_thread(embed_sparse, texts)
+            sparse_ms = (time.perf_counter() - sparse_started) * 1000
+            book_dense_ms += dense_ms
+            book_sparse_ms += sparse_ms
             if embedding_track.engine == "openai":
                 progress.index_embedding_calls_completed += 1
-                progress.index_embedding_tokens += sum(
-                    embedding_usage[usage_count_before:]
-                )
+                progress.index_embedding_tokens += billed_tokens
                 write_progress(output, progress)
+            upsert_started = time.perf_counter()
             await upsert_points(
                 org_id=org_id,
                 workspace_id=workspace_id,
@@ -488,12 +525,24 @@ async def _seed_corpus(
                 collection_name=COLLECTION,
                 is_current=True,
             )
+            book_upsert_ms += (time.perf_counter() - upsert_started) * 1000
+        index_timings = corpus_stats["index_atomic_latency_ms"]
+        assert isinstance(index_timings, dict)
+        index_timings["parse"] += parse_ms
+        index_timings["chunk"] += chunk_ms
+        index_timings["dense_embedding"] += book_dense_ms
+        index_timings["sparse_embedding"] += book_sparse_ms
+        index_timings["qdrant_upsert"] += book_upsert_ms
         corpus_stats["books"].append(
             {
                 "book_id": book_id,
                 "pages": max((block.page for block in blocks), default=0),
                 "chunks": len(chunks),
                 "parse_ms": round(parse_ms, 4),
+                "chunk_ms": round(chunk_ms, 4),
+                "dense_embedding_ms": round(book_dense_ms, 4),
+                "sparse_embedding_ms": round(book_sparse_ms, 4),
+                "qdrant_upsert_ms": round(book_upsert_ms, 4),
             }
         )
         corpus_stats["chunks"] = int(corpus_stats["chunks"]) + len(chunks)
@@ -501,6 +550,10 @@ async def _seed_corpus(
     corpus_stats["index_embedding_calls_completed"] = (
         progress.index_embedding_calls_completed
     )
+    corpus_stats["index_atomic_latency_ms"] = {
+        stage: round(float(duration), 4)
+        for stage, duration in corpus_stats["index_atomic_latency_ms"].items()
+    }
     ctx = TenantContext(
         user_id=user_id,
         org_id=org_id,
@@ -773,7 +826,12 @@ async def _run_mode(
 
 async def run(args: argparse.Namespace) -> None:
     output = args.output.resolve()
-    embedding_track = resolve_embedding_track(args.embedding_engine)
+    embedding_track = resolve_embedding_track(
+        args.embedding_engine,
+        model=args.embedding_model,
+        dimension=args.embedding_dimension,
+        litellm_model_name=args.embedding_litellm_model_name,
+    )
     litellm_master_key = os.environ.get("RAGZ_LITELLM_MASTER_KEY", "")
     if embedding_track.engine == "openai" and not litellm_master_key:
         raise RuntimeError(
@@ -821,7 +879,10 @@ async def run(args: argparse.Namespace) -> None:
             "seed": args.seed,
             "embedding_engine": embedding_track.engine,
             "embedding_model": embedding_track.model,
+            "embedding_litellm_model_name": embedding_track.litellm_model_name,
+            "embedding_alias": embedding_track.litellm_model_name,
             "embedding_dimension": embedding_track.dimension,
+            "embedding_requested_dimension": embedding_track.dimension,
             "embedding_provider": embedding_track.provider_kind,
             "embedding_transport": (
                 "litellm" if embedding_track.engine == "openai" else "local"
@@ -960,7 +1021,21 @@ def main() -> None:
         "--embedding-engine",
         choices=("hash", "openai"),
         default="hash",
-        help="Dense embedding track; openai is pinned to text-embedding-3-small/1536",
+        help="Dense embedding track; OpenAI model and width are explicit matrix inputs",
+    )
+    parser.add_argument(
+        "--embedding-model",
+        choices=("text-embedding-3-small", "text-embedding-3-large"),
+        help="Underlying OpenAI embedding model; valid only with --embedding-engine openai",
+    )
+    parser.add_argument(
+        "--embedding-dimension",
+        type=int,
+        help="Requested OpenAI vector width; valid only with --embedding-engine openai",
+    )
+    parser.add_argument(
+        "--embedding-litellm-model-name",
+        help="Attested LiteLLM alias for the selected model/dimension cell",
     )
     parser.add_argument(
         "--litellm-url",
@@ -1024,7 +1099,12 @@ def main() -> None:
             if manifest_path.is_file():
                 failed_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             else:
-                failed_track = resolve_embedding_track(args.embedding_engine)
+                failed_track = resolve_embedding_track(
+                    args.embedding_engine,
+                    model=args.embedding_model,
+                    dimension=args.embedding_dimension,
+                    litellm_model_name=args.embedding_litellm_model_name,
+                )
                 failed_manifest = {
                     "schema_version": 1,
                     "runner_version": "3.0",
@@ -1033,7 +1113,10 @@ def main() -> None:
                     "query_set_filename": args.queries.name,
                     "embedding_engine": failed_track.engine,
                     "embedding_model": failed_track.model,
+                    "embedding_litellm_model_name": failed_track.litellm_model_name,
+                    "embedding_alias": failed_track.litellm_model_name,
                     "embedding_dimension": failed_track.dimension,
+                    "embedding_requested_dimension": failed_track.dimension,
                     "embedding_provider": failed_track.provider_kind,
                     "embedding_transport": (
                         "litellm" if failed_track.engine == "openai" else "local"

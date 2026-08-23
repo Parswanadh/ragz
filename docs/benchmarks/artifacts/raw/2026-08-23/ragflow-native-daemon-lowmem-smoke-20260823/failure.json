@@ -1,0 +1,10 @@
+{
+  "compose_project": "ragflow-bench-native-20260823",
+  "credentials_persisted": false,
+  "error_type": "SmokeError",
+  "provider_calls": 0,
+  "stage": "runtime",
+  "status": "failed",
+  "stop_error_type": null,
+  "stop_scope": "not_started"
+}

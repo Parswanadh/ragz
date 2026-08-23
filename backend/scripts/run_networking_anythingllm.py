@@ -13,12 +13,13 @@ import asyncio
 import hashlib
 import json
 import math
+import os
 import shutil
 import socket
 import statistics
 import subprocess
 import time
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,8 @@ RELEASE_COMMIT = "55b6ebcea132f0d7ac146da99a0cd0db507b9030"
 RUNNER_VERSION = "4.0"
 ANSWER_MODEL = "gpt-5.6-luna"
 ANSWER_TEMPERATURE = 1.0
+DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+DEFAULT_EMBEDDING_DIMENSION = 1536
 
 
 def batches[T](values: Sequence[T], size: int) -> Iterator[Sequence[T]]:
@@ -57,10 +60,7 @@ def ranking_metrics(retrieved: list[str], relevant: set[str], k: int) -> dict[st
     recall = len({item for item in ranked if item in relevant}) / len(relevant)
     mrr = 1.0 / hit_ranks[0] if hit_ranks else 0.0
     dcg = sum(1.0 / math.log2(rank + 1) for rank in hit_ranks)
-    ideal = sum(
-        1.0 / math.log2(rank + 1)
-        for rank in range(1, min(len(relevant), k) + 1)
-    )
+    ideal = sum(1.0 / math.log2(rank + 1) for rank in range(1, min(len(relevant), k) + 1))
     return {"recall_at_k": recall, "mrr_at_k": mrr, "ndcg_at_k": dcg / ideal}
 
 
@@ -89,16 +89,14 @@ def summarize(records: list[dict[str, Any]], *, top_k: int) -> dict[str, Any]:
     f1 = (
         2 * precision * recall / (precision + recall)
         if precision is not None and recall is not None and precision + recall
-        else 0.0 if tp + fp + fn else None
+        else 0.0
+        if tp + fp + fn
+        else None
     )
     latencies = [float(row["latency_ms"]) for row in abstention]
 
     def mean_metric(name: str) -> float | None:
-        return (
-            statistics.mean(float(row["metrics"][name]) for row in quality)
-            if quality
-            else None
-        )
+        return statistics.mean(float(row["metrics"][name]) for row in quality) if quality else None
 
     return {
         "top_k": top_k,
@@ -128,8 +126,38 @@ def _jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
-def _command(args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(args, check=check, capture_output=True, text=True)  # noqa: S603
+def _command(
+    args: list[str],
+    *,
+    check: bool = True,
+    env: Mapping[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(  # noqa: S603
+        args,
+        check=check,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+
+def _required_litellm_api_key(env: Mapping[str, str] | None = None) -> str:
+    """Return the LiteLLM key without ever including it in a command argument."""
+
+    source = os.environ if env is None else env
+    key = source.get("RAGZ_LITELLM_MASTER_KEY") or source.get("LITELLM_MASTER_KEY")
+    if not key:
+        raise RuntimeError(
+            "RAGZ_LITELLM_MASTER_KEY (or LITELLM_MASTER_KEY) is required for LiteLLM"
+        )
+    return key
+
+
+def safe_http_status(exc: BaseException) -> int | None:
+    """Extract only a non-sensitive upstream status from HTTP client errors."""
+    response = getattr(exc, "response", None)
+    status_code = getattr(response, "status_code", None)
+    return int(status_code) if isinstance(status_code, int) else None
 
 
 def _port() -> int:
@@ -150,6 +178,25 @@ async def _wait_ready(client: Any, timeout_seconds: int = 180) -> None:
             last_error = type(exc).__name__
         await asyncio.sleep(1)
     raise TimeoutError(f"AnythingLLM readiness timeout: {last_error}")
+
+
+async def vector_search_with_retries(
+    client: Any,
+    path: str,
+    payload: Mapping[str, object],
+    *,
+    max_retries: int,
+) -> tuple[Any, int]:
+    """Retry only transient native-search failures and expose the retry count."""
+    transient_statuses = {429, 500, 502, 503, 504}
+    for attempt in range(max_retries + 1):
+        response = await client.post(path, json=dict(payload))
+        if response.status_code < 400:
+            return response, attempt
+        if response.status_code not in transient_statuses or attempt == max_retries:
+            response.raise_for_status()
+        await asyncio.sleep(min(2.0**attempt, 5.0))
+    raise AssertionError("unreachable retry loop")
 
 
 def _memory_bytes(container: str) -> int | None:
@@ -210,8 +257,34 @@ def validate_storage_path(storage: Path, allowed_root: Path) -> tuple[Path, Path
     return storage, allowed_root
 
 
-def embedding_configuration(engine: str) -> tuple[list[str], str, object, object]:
+def _embedding_cell(model: str | None, dimension: int | None) -> Any:
+    """Resolve an OpenAI matrix cell without duplicating the matrix contract."""
+
+    from embedding_benchmark_matrix import cell_for
+
+    return cell_for(
+        model or DEFAULT_EMBEDDING_MODEL,
+        dimension if dimension is not None else DEFAULT_EMBEDDING_DIMENSION,
+    )
+
+
+def embedding_configuration(
+    engine: str,
+    model: str | None = None,
+    dimension: int | None = None,
+    alias: str | None = None,
+    dataset_id: str | None = None,
+) -> tuple[list[str], str, object, object]:
+    """Build AnythingLLM environment flags for one embedding track.
+
+    The four-element return value is retained for callers of the original
+    runner.  Hosted configuration is now selected by a matrix cell and sends
+    only that cell's immutable LiteLLM alias to AnythingLLM.
+    """
+
     if engine == "native":
+        if model is not None or dimension is not None or alias is not None:
+            raise ValueError("native embedding does not accept hosted model settings")
         return (
             [
                 "-e",
@@ -224,18 +297,181 @@ def embedding_configuration(engine: str) -> tuple[list[str], str, object, object
             0.0,
         )
     if engine == "litellm":
+        cell = _embedding_cell(model, dimension)
+        if alias is not None and alias != cell.alias:
+            raise ValueError(f"LiteLLM alias {alias!r} is not the fixed alias for {cell.cell_id}")
+        prefix = dataset_id or "common-20-page-segments"
         return (
             [
+                "--add-host",
+                "host.docker.internal:host-gateway",
                 "-e",
                 "EMBEDDING_ENGINE=litellm",
                 "-e",
-                "EMBEDDING_MODEL_PREF=text-embedding-3-small",
+                f"EMBEDDING_MODEL_PREF={cell.alias}",
+                "-e",
+                "LITE_LLM_BASE_PATH=http://host.docker.internal:54000/v1",
+                "-e",
+                "LITE_LLM_API_KEY",
             ],
-            "common-20-page-segments-openai-lancedb",
+            f"{prefix}-openai-lancedb",
             "not_exposed_nonzero",
             None,
         )
     raise ValueError("embedding engine must be native or litellm")
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _attestation_records(payload: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    cells = payload.get("cells")
+    if isinstance(cells, list):
+        return [item for item in cells if isinstance(item, Mapping)]
+    # Endpoint probes use one top-level model/dimension record.  Keep this
+    # shape supported while requiring the fixed alias supplied by the caller.
+    return [payload]
+
+
+def embedding_attestation(
+    artifact: Path,
+    *,
+    model: str,
+    dimension: int,
+    alias: str,
+    proxy_fingerprint: str,
+    expected_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Validate a CLI-supplied, privacy-safe proof of alias vector width.
+
+    The artifact may contain a single endpoint-probe record or a ``cells``
+    array from the embedding matrix runner.  The matching record must bind the
+    model, fixed alias, requested width, and measured width.  A proxy
+    fingerprint, when present, must match the runner's fingerprint.
+    """
+
+    path = artifact.expanduser().resolve()
+    if not path.is_file():
+        raise ValueError(f"embedding width attestation does not exist: {path}")
+    artifact_sha256 = _sha256_file(path)
+    if expected_sha256 is not None:
+        if len(expected_sha256) != 64 or any(
+            character not in "0123456789abcdef" for character in expected_sha256
+        ):
+            raise ValueError("embedding width attestation hash must be a lowercase SHA-256")
+        if expected_sha256 != artifact_sha256:
+            raise ValueError("embedding width attestation hash does not match artifact")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ValueError("embedding width attestation must be valid JSON") from exc
+    if not isinstance(payload, Mapping):
+        raise ValueError("embedding width attestation must contain an object")
+    match: Mapping[str, Any] | None = None
+    for record in _attestation_records(payload):
+        record_alias = record.get("alias") or record.get("embedding_litellm_model_name")
+        record_model = record.get("model") or record.get("embedding_model")
+        record_dimension = record.get("dimension") or record.get("expected_dimension")
+        if record_alias == alias and record_model == model and record_dimension == dimension:
+            match = record
+            break
+    # Single-model endpoint probes do not persist an alias; the alias is still
+    # cryptographically bound by this runner's deterministic cell mapping.
+    if match is None and "cells" not in payload:
+        record_model = payload.get("model") or payload.get("embedding_model")
+        record_dimension = payload.get("dimension") or payload.get("expected_dimension")
+        if record_model == model and record_dimension == dimension:
+            match = payload
+    if match is None:
+        raise ValueError("embedding alias is not present in the width attestation")
+    actual = match.get("actual_dimension")
+    if actual is None:
+        actual = match.get("actual_width")
+    if actual is None:
+        actual = match.get("vector_dimension")
+    # The endpoint probe's dimension is the observed response width; matrix
+    # records may also expose it as ``dimension``.
+    if actual is None and "cells" not in payload:
+        actual = match.get("dimension")
+    if actual is None and "cells" in payload:
+        status = str(match.get("probe_status") or match.get("status") or "").lower()
+        if status in {"passed", "completed", "attested", "post_run_attested"}:
+            actual = match.get("dimension") or match.get("expected_dimension")
+    if actual is None:
+        raise ValueError("embedding width attestation has no actual vector width")
+    try:
+        actual_dimension = int(actual)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("embedding width attestation has no actual vector width") from exc
+    if actual_dimension != dimension:
+        raise ValueError(
+            f"embedding alias {alias!r} is attested at width {actual_dimension}, "
+            f"expected {dimension}"
+        )
+    status = str(match.get("probe_status") or match.get("status") or "").lower()
+    if status and status not in {"passed", "completed", "attested", "post_run_attested"}:
+        raise ValueError("embedding width attestation is not successful")
+    attested_proxy = match.get("embedding_proxy_fingerprint_sha256") or match.get(
+        "proxy_fingerprint_sha256"
+    )
+    if attested_proxy is not None and attested_proxy != proxy_fingerprint:
+        raise ValueError("embedding width attestation proxy fingerprint does not match")
+    return {
+        "artifact": str(path),
+        "artifact_path": str(path),
+        "artifact_sha256": artifact_sha256,
+        "sha256": artifact_sha256,
+        "actual_dimension": actual_dimension,
+        "alias": alias,
+        "model": model,
+        "requested_dimension": dimension,
+    }
+
+
+def _dataset_identity(
+    dataset: Path,
+    documents: Sequence[Mapping[str, Any]],
+    queries: Sequence[Mapping[str, Any]],
+    qrels: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Use a converted dataset manifest when present, with safe count fallback."""
+
+    path = dataset / "manifest.json"
+    payload: Mapping[str, Any] = {}
+    if path.is_file():
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            loaded = None
+        if isinstance(loaded, Mapping):
+            payload = loaded
+    dataset_id = str(payload.get("dataset_id") or payload.get("id") or dataset.name)
+
+    counts = payload.get("counts")
+    nested_counts = counts if isinstance(counts, Mapping) else {}
+
+    def count(name: str, fallback: int, *aliases: str) -> int:
+        for key in (name, *aliases):
+            value = payload.get(key)
+            if isinstance(value, int) and value >= 0:
+                return value
+            nested = nested_counts.get(key)
+            if isinstance(nested, int) and nested >= 0:
+                return nested
+        return fallback
+
+    return {
+        "dataset_id": dataset_id,
+        "dataset_manifest_sha256": _sha256_file(path) if path.is_file() else None,
+        "document_count": count("document_count", len(documents), "documents"),
+        "query_count": count("query_count", len(queries), "queries"),
+        "qrel_count": count("qrel_count", len(qrels), "qrels"),
+    }
 
 
 def generation_configuration(model: str = ANSWER_MODEL) -> list[str]:
@@ -251,7 +487,7 @@ def generation_configuration(model: str = ANSWER_MODEL) -> list[str]:
         "-e",
         "LITE_LLM_BASE_PATH=http://host.docker.internal:54000/v1",
         "-e",
-        "LITE_LLM_API_KEY=sk-ragz-dev-master",
+        "LITE_LLM_API_KEY",
     ]
 
 
@@ -276,6 +512,7 @@ async def run(args: argparse.Namespace) -> Path:
     documents = _jsonl(dataset / "documents.jsonl")
     queries = _jsonl(dataset / "queries.jsonl")
     qrels = _jsonl(dataset / "qrels.jsonl")
+    dataset_identity = _dataset_identity(dataset, documents, queries, qrels)
     qrels_by_query: dict[str, set[str]] = {}
     for row in qrels:
         if float(row.get("relevance", 0)) > 0:
@@ -283,19 +520,55 @@ async def run(args: argparse.Namespace) -> Path:
     storage, _ = validate_storage_path(args.storage, args.allowed_storage_root)
     if storage.exists():
         raise FileExistsError(f"refusing existing storage {storage}")
-    storage.mkdir(parents=True)
+    embedding_model_arg = getattr(args, "embedding_model", None)
+    embedding_dimension_arg = getattr(args, "embedding_dimension", None)
+    embedding_alias_arg = getattr(args, "embedding_litellm_model_name", None)
     embedding_args, track, provider_calls, hosted_cost = embedding_configuration(
-        args.embedding_engine
+        args.embedding_engine,
+        model=embedding_model_arg,
+        dimension=embedding_dimension_arg,
+        alias=embedding_alias_arg,
+        dataset_id=dataset_identity["dataset_id"],
     )
+    embedding_model = (
+        DEFAULT_EMBEDDING_MODEL
+        if args.embedding_engine == "litellm" and embedding_model_arg is None
+        else embedding_model_arg
+    )
+    embedding_dimension = (
+        DEFAULT_EMBEDDING_DIMENSION
+        if args.embedding_engine == "litellm" and embedding_dimension_arg is None
+        else embedding_dimension_arg
+    )
+    embedding_alias: str | None = None
     proxy_fingerprint = str(args.embedding_proxy_fingerprint or "")
     if args.embedding_engine == "litellm" and (
         len(proxy_fingerprint) != 64
         or any(character not in "0123456789abcdef" for character in proxy_fingerprint)
     ):
         raise ValueError(
-            "litellm embedding runs require a lowercase SHA-256 "
-            "--embedding-proxy-fingerprint"
+            "litellm embedding runs require a lowercase SHA-256 --embedding-proxy-fingerprint"
         )
+    width_attestation: dict[str, Any] | None = None
+    if args.embedding_engine == "litellm":
+        cell = _embedding_cell(embedding_model, embedding_dimension)
+        embedding_model = cell.model
+        embedding_dimension = cell.dimension
+        embedding_alias = cell.alias
+        width_attestation_path = getattr(args, "embedding_width_attestation", None)
+        if width_attestation_path is None:
+            raise ValueError(
+                "litellm embedding runs require a CLI-supplied embedding width attestation"
+            )
+        width_attestation = embedding_attestation(
+            width_attestation_path,
+            model=cell.model,
+            dimension=cell.dimension,
+            alias=cell.alias,
+            proxy_fingerprint=proxy_fingerprint,
+            expected_sha256=getattr(args, "embedding_width_attestation_sha256", None),
+        )
+    storage.mkdir(parents=True)
     if args.embedding_engine == "native" and args.model_cache:
         shutil.copytree(args.model_cache.resolve(), storage / "models")
     container = f"ragz-networking-anything-{uuid4().hex[:8]}"
@@ -306,8 +579,12 @@ async def run(args: argparse.Namespace) -> Path:
     uploads_completed = 0
     index_batches_completed = 0
     locations_indexed = 0
+    active_query_id: str | None = None
     indexing_started = time.perf_counter()
     indexing_ms: float | None = None
+    docker_env = os.environ.copy()
+    if args.embedding_engine == "litellm":
+        docker_env["LITE_LLM_API_KEY"] = _required_litellm_api_key(docker_env)
     try:
         _command(
             [
@@ -335,7 +612,8 @@ async def run(args: argparse.Namespace) -> Path:
                 "-e",
                 "VECTOR_DB=lancedb",
                 IMAGE_REF,
-            ]
+            ],
+            env=docker_env,
         )
         async with httpx.AsyncClient(
             base_url=f"http://127.0.0.1:{port}",
@@ -355,9 +633,7 @@ async def run(args: argparse.Namespace) -> Path:
             client.headers["Authorization"] = f"Bearer {secret}"
             workspace_response = await client.post(
                 "/api/v1/workspace/new",
-                json=workspace_configuration(
-                    f"networking-{uuid4().hex[:8]}", args.candidate_depth
-                ),
+                json=workspace_configuration(f"networking-{uuid4().hex[:8]}", args.candidate_depth),
             )
             workspace_response.raise_for_status()
             slug = str(workspace_response.json()["workspace"]["slug"])
@@ -406,13 +682,16 @@ async def run(args: argparse.Namespace) -> Path:
             stage = "warmup"
             for _ in range(args.warmups):
                 for query in queries:
-                    response = await client.post(
+                    active_query_id = str(query["query_id"])
+                    response, _ = await vector_search_with_retries(
+                        client,
                         f"/api/v1/workspace/{slug}/vector-search",
-                        json={
+                        {
                             "query": str(query["query"]),
                             "topN": args.candidate_depth,
                             "scoreThreshold": 0.0,
                         },
+                        max_retries=args.retrieval_retries,
                     )
                     response.raise_for_status()
             stage = "scored_retrieval"
@@ -421,14 +700,18 @@ async def run(args: argparse.Namespace) -> Path:
                     started_at = time.perf_counter()
                     error: str | None = None
                     results: list[dict[str, Any]] = []
+                    retries = 0
                     try:
-                        response = await client.post(
+                        active_query_id = str(query["query_id"])
+                        response, retries = await vector_search_with_retries(
+                            client,
                             f"/api/v1/workspace/{slug}/vector-search",
-                            json={
+                            {
                                 "query": str(query["query"]),
                                 "topN": args.candidate_depth,
                                 "scoreThreshold": 0.0,
                             },
+                            max_retries=args.retrieval_retries,
                         )
                         response.raise_for_status()
                         results = list(response.json().get("results", []))
@@ -456,6 +739,7 @@ async def run(args: argparse.Namespace) -> Path:
                             "no_answer": not retrieved,
                             "latency_ms": round(latency_ms, 4),
                             "error": error,
+                            "retries": retries,
                         }
                     )
             memory = _memory_bytes(container)
@@ -477,6 +761,8 @@ async def run(args: argparse.Namespace) -> Path:
             "status": status,
             "stage": stage,
             "error_type": type(exc).__name__,
+            "upstream_http_status": safe_http_status(exc),
+            "query_id": active_query_id,
             "quality_score_emitted": False,
             "indexing_ms": indexing_ms,
             "peak_container_memory_bytes": max(memory_samples, default=None),
@@ -512,16 +798,40 @@ async def run(args: argparse.Namespace) -> Path:
         "image_digest": IMAGE_DIGEST,
         "release_commit": RELEASE_COMMIT,
         "track": track,
+        "dataset_id": dataset_identity["dataset_id"],
+        "dataset_manifest_sha256": dataset_identity["dataset_manifest_sha256"],
         "embedding_model": (
-            "text-embedding-3-small"
-            if args.embedding_engine == "litellm"
-            else "Xenova/all-MiniLM-L6-v2"
+            embedding_model if args.embedding_engine == "litellm" else "Xenova/all-MiniLM-L6-v2"
         ),
-        "embedding_dimension": 1536 if args.embedding_engine == "litellm" else 384,
+        "embedding_dimension": (embedding_dimension if args.embedding_engine == "litellm" else 384),
+        "embedding_underlying_model": (
+            embedding_model if args.embedding_engine == "litellm" else "Xenova/all-MiniLM-L6-v2"
+        ),
+        "embedding_requested_dimension": (
+            embedding_dimension if args.embedding_engine == "litellm" else 384
+        ),
+        "embedding_litellm_model_name": embedding_alias,
+        "embedding_alias": embedding_alias,
         "embedding_provider": "openai" if args.embedding_engine == "litellm" else "native",
         "embedding_transport": "litellm" if args.embedding_engine == "litellm" else "local",
         "embedding_proxy_fingerprint_sha256": (
             proxy_fingerprint if args.embedding_engine == "litellm" else None
+        ),
+        "embedding_width_attestation": width_attestation,
+        "embedding_width_attestation_artifact": (
+            width_attestation["artifact"] if width_attestation else None
+        ),
+        "embedding_width_attestation_sha256": (
+            width_attestation["artifact_sha256"] if width_attestation else None
+        ),
+        "embedding_attestation_artifact": (
+            width_attestation["artifact"] if width_attestation else None
+        ),
+        "embedding_attestation_sha256": (
+            width_attestation["artifact_sha256"] if width_attestation else None
+        ),
+        "embedding_actual_dimension": (
+            width_attestation["actual_dimension"] if width_attestation else None
         ),
         "answer_model": args.answer_model,
         "answer_provider": "litellm",
@@ -530,12 +840,14 @@ async def run(args: argparse.Namespace) -> Path:
         "answer_generation_executed": False,
         "answer_provider_calls": 0,
         "dataset_hash_sha256": _dataset_hash(dataset),
-        "document_count": len(documents),
-        "query_count": len(queries),
+        "document_count": dataset_identity["document_count"],
+        "query_count": dataset_identity["query_count"],
+        "qrel_count": dataset_identity["qrel_count"],
         "top_k": args.top_k,
         "native_candidate_depth": args.candidate_depth,
         "warmups_per_query": args.warmups,
         "repetitions": args.repetitions,
+        "retrieval_retries": args.retrieval_retries,
         "index_batch_size": args.index_batch_size,
         "container_limits": {"memory": args.memory_limit, "cpus": args.cpus},
         "provider_calls": provider_calls,
@@ -580,15 +892,45 @@ def main() -> None:
     parser.add_argument("--allowed-storage-root", required=True, type=Path)
     parser.add_argument("--model-cache", type=Path)
     parser.add_argument("--embedding-engine", choices=("native", "litellm"), default="native")
+    parser.add_argument(
+        "--embedding-model",
+        help="Underlying OpenAI embedding model for the LiteLLM matrix track",
+    )
+    parser.add_argument(
+        "--embedding-dimension",
+        type=int,
+        help="Requested OpenAI vector width for the LiteLLM matrix track",
+    )
+    parser.add_argument(
+        "--embedding-litellm-model-name",
+        "--embedding-alias",
+        dest="embedding_litellm_model_name",
+        help="Fixed, attested LiteLLM alias for the selected matrix cell",
+    )
     parser.add_argument("--answer-model", default=ANSWER_MODEL)
     parser.add_argument(
         "--embedding-proxy-fingerprint",
         help="Non-secret SHA-256 identity of the LiteLLM instance/configuration",
     )
+    parser.add_argument(
+        "--embedding-width-attestation",
+        "--embedding-width-attestation-artifact",
+        "--embedding-attestation",
+        dest="embedding_width_attestation",
+        type=Path,
+        help="JSON artifact proving the selected alias returned the requested width",
+    )
+    parser.add_argument(
+        "--embedding-width-attestation-sha256",
+        "--embedding-attestation-sha256",
+        dest="embedding_width_attestation_sha256",
+        help="Optional expected SHA-256 for the width attestation artifact",
+    )
     parser.add_argument("--top-k", type=int, default=5)
     parser.add_argument("--candidate-depth", type=int, default=20)
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repetitions", type=int, default=3)
+    parser.add_argument("--retrieval-retries", type=int, default=2)
     parser.add_argument("--index-batch-size", type=int, default=4)
     parser.add_argument("--memory-limit", default="2g")
     parser.add_argument("--cpus", type=float, default=2.0)
@@ -597,6 +939,7 @@ def main() -> None:
         min(args.top_k, args.repetitions, args.index_batch_size) < 1
         or args.candidate_depth < args.top_k
         or args.warmups < 0
+        or args.retrieval_retries < 0
     ):
         parser.error("top-k/repetitions/batch size must be positive; warmups non-negative")
     output = asyncio.run(run(args))

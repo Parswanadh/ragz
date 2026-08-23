@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "created_at_utc": "2026-08-23T10:53:46Z",
+  "system_id": "ragflow-v0.27.0-docker-desktop-image-acquisition",
+  "status": "docker_desktop_content_store_gated",
+  "classification": "runtime_attempt_not_quality_benchmark",
+  "ragflow": {
+    "version": "v0.27.0",
+    "commit": "ec9c08d809f63ba2815090182fa225899d2437d5",
+    "application_image_available": false,
+    "stack_started": false,
+    "provider_calls": 0,
+    "quality_score_emitted": false
+  },
+  "planned_runtime": {
+    "document_engine": "infinity",
+    "local_model_services": [],
+    "external_generation_model": "gpt-5.6-luna",
+    "external_embedding_model": "OpenAI text-embedding-3 matrix",
+    "compose_project": "ragflow-bench-20260823",
+    "loopback_only_ports": true,
+    "memory_budget_bytes": 3000000000,
+    "restart_policy": "no"
+  },
+  "docker": {
+    "endpoint": "Docker Desktop context",
+    "memory_total_bytes": 3864363008,
+    "acquisition_attempts": 6,
+    "failure_stage": "image_layer_commit",
+    "failure_type": "DockerContentStoreCommitError",
+    "failure_message_persisted": false,
+    "observed_failed_layer_digests": [
+      "sha256:3ddbd68de72344a994c65f005907381551402351358ba37ab8f0c5871332daa2",
+      "sha256:d36bf0362a7bdf86ca6ac3913102fe7d18545adbdf3396fb36630a83ada3cc1f",
+      "sha256:890289bf359d6278afb482c833954c5064e74336527079e2b8505910c3125253",
+      "sha256:b148ef2734d6b5d70ea1b4b1927ad78db5693b6c93f4296832331ae6201cf641"
+    ],
+    "registries_attempted": [
+      "docker.io/infiniflow/ragflow:v0.27.0",
+      "swr.cn-north-4.myhuaweicloud.com/infiniflow/ragflow:v0.27.0"
+    ],
+    "daemon_restart_or_repair_attempted": false,
+    "daemon_not_restarted_reason": "would interrupt unrelated running RAGZ and AGNO workloads"
+  },
+  "dependency_images_acquired": [
+    {
+      "image": "infiniflow/infinity:v0.7.3-x64-v3",
+      "digest": "sha256:6640409359e6d515287d6255657ee78a86fdce996196fbb4d371a2e39243309f",
+      "size_bytes": 322519270
+    },
+    {
+      "image": "mysql:8.0.40",
+      "digest": "sha256:d58ac93387f644e4e040c636b8f50494e78e5afc27ca0a87348b2f577da2b7ff",
+      "size_bytes": 170979582
+    },
+    {
+      "image": "pgsty/silo:RELEASE.2026-08-06T00-00-00Z",
+      "digest": "sha256:29a498b24669cae1fed11c1a2fb2b3d73c68829a0a9c0b14e71b386671d38fac",
+      "size_bytes": 54546911
+    },
+    {
+      "image": "valkey/valkey:8",
+      "digest": "sha256:f0ba225266310efba5fb33383e21c64fbd07907304224786c780606e7ebd7327",
+      "size_bytes": 43001106
+    }
+  ],
+  "host_pressure": {
+    "before": {
+      "mem_available_bytes": 732069888,
+      "swap_used_bytes": 20821528576,
+      "memory_some_psi_avg10": 3.03,
+      "memory_full_psi_avg10": 3.03
+    },
+    "after": {
+      "mem_available_bytes": 1923891200,
+      "swap_used_bytes": 16981786624,
+      "memory_some_psi_avg10": 0.0,
+      "memory_full_psi_avg10": 0.0
+    },
+    "stress_abort_triggered": false,
+    "interpretation": "image acquisition failed while host pressure improved; no evidence of a runtime OOM because the stack never started"
+  },
+  "credentials_persisted": false,
+  "response_bodies_persisted": false,
+  "followup": {
+    "native_daemon_endpoint": "unix:///var/run/docker.sock",
+    "native_daemon_attempt": "ragflow-native-daemon-lowmem-smoke-20260823-r5",
+    "native_daemon_status": "runtime_resource_limited"
+  }
+}

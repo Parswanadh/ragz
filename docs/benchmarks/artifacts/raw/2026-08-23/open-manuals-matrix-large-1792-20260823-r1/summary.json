@@ -1,0 +1,139 @@
+{
+  "benchmark": "open-manuals-v2",
+  "cell": {
+    "alias": "ragz-openai-text-embedding-3-large-d1792",
+    "cell_id": "openai-text-embedding-3-large-d1792",
+    "dimension": 1792,
+    "model": "text-embedding-3-large"
+  },
+  "cost": {
+    "committed_estimated_plus_actual_usd": "0.17698994",
+    "hard_budget_usd": "3.00"
+  },
+  "dataset_sha256": {
+    "documents": "a7e6f35fda062cf04ab1435ffac269486f3920a6abe520f0a384673f64e9d335",
+    "queries": "e743da70e48aab4392744dec18330c83da232bd883ce2c0ea5a1bff34c169c57"
+  },
+  "denominator": {
+    "answerable": 60,
+    "off_corpus": 10,
+    "total": 70
+  },
+  "latency": {
+    "stages": {
+      "answer_pipeline_without_live_retrieval": {
+        "mean_ms": 905.67475,
+        "observations": 70,
+        "p50_ms": 489.5557,
+        "p95_ms": 3072.107775,
+        "p99_ms": 3457.741521000001
+      },
+      "context_select_or_dense_retrieval": {
+        "mean_ms": 476.8298,
+        "observations": 70,
+        "p50_ms": 477.54335000000003,
+        "p95_ms": 611.24758,
+        "p99_ms": 632.4882240000001
+      },
+      "generation_provider": {
+        "mean_ms": 2497.500575,
+        "observations": 12,
+        "p50_ms": 2459.51365,
+        "p95_ms": 3041.3213049999995,
+        "p99_ms": 3273.596821
+      },
+      "generation_total": {
+        "mean_ms": 428.8047314285714,
+        "observations": 70,
+        "p50_ms": 0.2649,
+        "p95_ms": 2594.5847999999996,
+        "p99_ms": 2968.0019650000013
+      },
+      "judge_provider": {
+        "mean_ms": 4277.285841666667,
+        "observations": 12,
+        "p50_ms": 4051.68905,
+        "p95_ms": 6531.003314999999,
+        "p99_ms": 6708.104503
+      },
+      "judge_total": {
+        "mean_ms": 733.4797485714286,
+        "observations": 70,
+        "p50_ms": 0.15945,
+        "p95_ms": 5185.571284999997,
+        "p99_ms": 6475.088764000001
+      },
+      "postprocess": {
+        "mean_ms": 0.03304857142857143,
+        "observations": 70,
+        "p50_ms": 0.03105,
+        "p95_ms": 0.048069999999999974,
+        "p99_ms": 0.06677500000000001
+      },
+      "total_with_judge": {
+        "mean_ms": 1639.1914614285713,
+        "observations": 70,
+        "p50_ms": 489.7395,
+        "p95_ms": 8312.353615,
+        "p99_ms": 9031.890375
+      }
+    },
+    "successful_observations": 70
+  },
+  "models": {
+    "embedding_alias": "ragz-openai-text-embedding-3-large-d1792",
+    "generation": "gpt-5.6-luna",
+    "judge": "gpt-5.6-luna"
+  },
+  "observed_embedding_dimensions": [
+    1792
+  ],
+  "privacy": {
+    "credentials_persisted": false,
+    "prompts_persisted": false,
+    "public_per_query_fields": [
+      "query_id",
+      "retrieved_ids",
+      "metrics",
+      "judge",
+      "timings_ms",
+      "usage",
+      "error_codes"
+    ],
+    "raw_artifacts_private_only": true,
+    "response_bodies_persisted": false
+  },
+  "provider_call_errors": {},
+  "provider_calls": 95,
+  "schema_version": 1,
+  "source_summary_metrics": {
+    "abstention": {
+      "evaluated_queries": 70,
+      "f1": 0.9,
+      "precision": 0.9,
+      "recall": 0.9
+    },
+    "citation": {
+      "document_coverage": 0.9833333333333333,
+      "evidence_coverage": 0.9833333333333333,
+      "invalid_citation_rate": 0.0,
+      "validity": 1.0
+    },
+    "mean_judge_scores": {
+      "answer_relevance": 0.9852857142857143,
+      "citation_completeness": 0.9197142857142856,
+      "citation_entailment": 0.9194285714285714,
+      "citation_precision": 0.929,
+      "context_relevance": 0.8664285714285714,
+      "correctness": 0.9764285714285713,
+      "groundedness": 0.9762857142857143
+    },
+    "reliability": {
+      "failed_queries": 0,
+      "failure_rate": 0.0,
+      "query_count": 70
+    },
+    "retrieval_required_evidence_hit_rate": 1.0
+  },
+  "status": "completed"
+}

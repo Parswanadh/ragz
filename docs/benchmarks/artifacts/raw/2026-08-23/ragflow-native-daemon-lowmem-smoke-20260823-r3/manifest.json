@@ -1,0 +1,63 @@
+{
+  "app_service": "ragflow-cpu",
+  "benchmark_eligibility_reasons": [
+    "smoke_has_no_corpus_quality_measurement",
+    "smoke_does_not_compare_embedding_dimensions",
+    "smoke_does_not_measure_rag_stage_latency"
+  ],
+  "benchmark_eligible": false,
+  "classification": "smoke_only",
+  "commit": "ec9c08d809f63ba2815090182fa225899d2437d5",
+  "compose_project": "ragflow-bench-native-20260823",
+  "created_at_utc": "2026-08-23T11:32:07.041970+00:00",
+  "credentials_persisted": false,
+  "dependency_services": [
+    "mysql",
+    "minio",
+    "redis",
+    "infinity"
+  ],
+  "docker_daemon": {
+    "cpus": 22,
+    "endpoint": "unix:///var/run/docker.sock",
+    "fingerprint_sha256": "1605fb9a952db68dc6c6235b63c7fb36e7327fd77bdd3b960c5b8cadf91398b4",
+    "memory_bytes": 16246616064
+  },
+  "document_engine": "infinity",
+  "host_port": 28080,
+  "local_model_services_started": false,
+  "memory_limit_bytes": 3000000000,
+  "model_mode": "external_api_only",
+  "provider_calls": 0,
+  "repository": "https://github.com/infiniflow/ragflow",
+  "response_bodies_persisted": false,
+  "run_kind": "low_memory_smoke",
+  "runner_version": "1.0",
+  "samples_file": "samples.jsonl",
+  "schema_version": 1,
+  "selected_services": [
+    "mysql",
+    "minio",
+    "redis",
+    "infinity",
+    "ragflow-cpu"
+  ],
+  "stack_left_running": false,
+  "stack_started": true,
+  "status": "aborted_threshold",
+  "swap_guard": {
+    "baseline_swap_used_bytes": 17144373248,
+    "max_growth_bytes": 536870912,
+    "mode": "relative_growth"
+  },
+  "system_id": "ragflow",
+  "thresholds": {
+    "host_min_available_bytes": 536870912,
+    "max_container_memory_ratio": 0.95,
+    "max_oom_kills": 0,
+    "max_psi_avg10": 20.0,
+    "max_restarts": 0,
+    "max_swap_growth_bytes": 536870912
+  },
+  "version": "v0.27.0"
+}

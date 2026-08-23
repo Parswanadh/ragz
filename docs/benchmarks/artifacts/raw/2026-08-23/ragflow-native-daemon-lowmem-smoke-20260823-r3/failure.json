@@ -1,0 +1,16 @@
+{
+  "compose_project": "ragflow-bench-native-20260823",
+  "credentials_persisted": false,
+  "error_type": "ResourceThresholdExceeded",
+  "failures": [
+    "swap_growth_above_ceiling"
+  ],
+  "provider_calls": 0,
+  "sample_sequence": 3,
+  "stage": "sampling",
+  "status": "aborted_threshold",
+  "stop_scope": "compose_project_only",
+  "swap_baseline_used_bytes": 17144373248,
+  "swap_current_used_bytes": 17719058432,
+  "swap_growth_bytes": 574685184
+}

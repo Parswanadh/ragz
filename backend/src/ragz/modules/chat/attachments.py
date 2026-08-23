@@ -230,6 +230,7 @@ async def route_attachment(
     dense_embedder = get_dense_embedder(
         ephemeral_model.id, provider_kind=ephemeral_model.provider_kind,
         litellm_model_name=ephemeral_model.litellm_model_name,
+        dimension=ephemeral_model.dimension,
     )
     dense, sparse = await embed_batch([c.text for c in chunks], dense_embedder)
     await ensure_ephemeral_collection()
@@ -238,4 +239,3 @@ async def route_attachment(
         chunks=chunks, dense=dense, sparse=sparse,
     )
     return None
-

@@ -1,0 +1,6 @@
+{
+  "index_embedding_calls_completed": 263,
+  "index_embedding_tokens": 1577342,
+  "query_embedding_attempts": 360,
+  "stage": "completed"
+}
