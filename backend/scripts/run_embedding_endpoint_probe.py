@@ -51,6 +51,35 @@ def summarize(records: list[dict[str, Any]], *, repetitions: int) -> dict[str, A
         raise ValueError("endpoint probe contains a failed scored observation")
     if [int(record["sequence"]) for record in records] != list(range(1, len(records) + 1)):
         raise ValueError("endpoint probe sequence is not contiguous")
+    expected_fields = {
+        "direct_1": {"path": "direct OpenAI", "input_count": 1, "total_tokens": 5},
+        "proxy_1": {"path": "LiteLLM to OpenAI", "input_count": 1, "total_tokens": 5},
+        "direct_3": {"path": "direct OpenAI", "input_count": 3, "total_tokens": 15},
+        "proxy_3": {"path": "LiteLLM to OpenAI", "input_count": 3, "total_tokens": 15},
+    }
+    for repetition in range(1, repetitions + 1):
+        expected_order = _CONDITIONS if repetition % 2 else tuple(reversed(_CONDITIONS))
+        rows = [record for record in records if int(record["repetition"]) == repetition]
+        actual_order = [
+            (str(record["condition"]), int(record["order_index"])) for record in rows
+        ]
+        if actual_order != [
+            (condition, order_index)
+            for order_index, condition in enumerate(expected_order, 1)
+        ]:
+            raise ValueError("endpoint probe condition order is invalid")
+    for record in records:
+        condition = str(record["condition"])
+        expected = expected_fields.get(condition)
+        if expected is None:
+            raise ValueError("endpoint probe contains an unknown condition")
+        if (
+            record["path"] != expected["path"]
+            or int(record["input_count"]) != expected["input_count"]
+            or int(record["total_tokens"]) != expected["total_tokens"]
+            or int(record["status_code"]) != 200
+        ):
+            raise ValueError("endpoint probe row metadata is invalid")
     output: dict[str, Any] = {}
     for condition in _CONDITIONS:
         rows = [record for record in records if record["condition"] == condition]

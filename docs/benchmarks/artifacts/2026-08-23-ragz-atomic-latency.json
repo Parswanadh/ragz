@@ -1,0 +1,453 @@
+{
+  "agno_boundary": {
+    "evidence_scope": "architecture boundary only; no AGNO latency row",
+    "participates_in_ragz_measurement": false,
+    "reason": "separate application, database, Qdrant, model and benchmark runner",
+    "repository": "Parswanadh/Rag_agno"
+  },
+  "configuration": {
+    "dense": "openai-text-embedding-3-small-1536",
+    "embedding_dimension": 1536,
+    "embedding_model": "text-embedding-3-small",
+    "embedding_provider": "openai",
+    "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+    "embedding_transport": "litellm",
+    "fusion": "qdrant-rrf",
+    "git_commit": "235f77c4c674ef26d71b1fd67a5fc3b94dedbae5",
+    "no_answer_threshold": {
+      "calibration": "unthresholded OpenAI parity track aligned to AnythingLLM empty-result policy; not calibrated for abstention",
+      "score_space": "maximum_dense_cosine",
+      "value": 0.0
+    },
+    "query_variants": "fixed-two-alternatives",
+    "reranker": "disabled",
+    "scored_repetitions_per_query_per_order": 3,
+    "sparse": "fastembed-bm25",
+    "timing_schema": "retrieval-atomic-v1",
+    "top_k": 20,
+    "warmups_per_mode_per_order": 30,
+    "warmups_per_query_per_order": 2
+  },
+  "corpus_identity": {
+    "pdfs": [
+      {
+        "book_id": "forouzan-2022",
+        "filename": "1_Behrouz A. Forouzan - Data Communications and Networking with TCP_IP Protocol Suite-McGraw-Hill (2022).pdf",
+        "pages": 861,
+        "sha256": "fec3e7c7d583018633cbba69510cdb9bba01622f4eed6ef894f571b909c59f25",
+        "size_bytes": 33719680
+      },
+      {
+        "book_id": "kurose-2021",
+        "filename": "2_James W. Kurose, Keith W. Ross - Computer Networking_ A Top-Down Approach-Pearson (2021).pdf",
+        "pages": 775,
+        "sha256": "7599e188b2645104576b5502400565aff7892ef02abb866ed6899ef9b5865a9a",
+        "size_bytes": 19972617
+      },
+      {
+        "book_id": "tanenbaum-2021",
+        "filename": "3_Andrew S. Tanenbaum, Nick Feamster, David J. Wetherall - Computer Networks-Pearson (2021).pdf",
+        "pages": 946,
+        "sha256": "dca8648949db3f7f95f29917a32718d98a06888083c7f86712c9aa070cfebcb8",
+        "size_bytes": 35186267
+      }
+    ],
+    "query_set": {
+      "count": 15,
+      "filename": "networking-multi-query-queries.json",
+      "sha256": "dc44eabf6842f80bd0c3800e5f40e7e07f6e3a6c7ce0ab68051b42ee15de1906"
+    }
+  },
+  "dataset_id": "networking-pdfs-v1",
+  "embedding_endpoint_probe": {
+    "conditions": {
+      "direct_1": {
+        "input_count": 1,
+        "mean_ms": 408.00162,
+        "observations": 10,
+        "p50_ms": 379.1595,
+        "p95_ms": 579.2067649999998,
+        "path": "direct OpenAI",
+        "tokens_per_request": 5
+      },
+      "direct_3": {
+        "input_count": 3,
+        "mean_ms": 462.28915,
+        "observations": 10,
+        "p50_ms": 460.79765,
+        "p95_ms": 486.48966,
+        "path": "direct OpenAI",
+        "tokens_per_request": 15
+      },
+      "proxy_1": {
+        "input_count": 1,
+        "mean_ms": 350.86375,
+        "observations": 10,
+        "p50_ms": 344.62025,
+        "p95_ms": 416.182935,
+        "path": "LiteLLM to OpenAI",
+        "tokens_per_request": 5
+      },
+      "proxy_3": {
+        "input_count": 3,
+        "mean_ms": 373.039,
+        "observations": 10,
+        "p50_ms": 429.99365,
+        "p95_ms": 496.58575499999995,
+        "path": "LiteLLM to OpenAI",
+        "tokens_per_request": 15
+      }
+    },
+    "manifest": {
+      "condition_order": "counterbalanced forward/reverse",
+      "conditions": {
+        "direct_1": {
+          "input_count": 1,
+          "mean_ms": 408.00162,
+          "observations": 10,
+          "p50_ms": 379.1595,
+          "p95_ms": 579.2067649999998,
+          "path": "direct OpenAI",
+          "tokens_per_request": 5
+        },
+        "direct_3": {
+          "input_count": 3,
+          "mean_ms": 462.28915,
+          "observations": 10,
+          "p50_ms": 460.79765,
+          "p95_ms": 486.48966,
+          "path": "direct OpenAI",
+          "tokens_per_request": 15
+        },
+        "proxy_1": {
+          "input_count": 1,
+          "mean_ms": 350.86375,
+          "observations": 10,
+          "p50_ms": 344.62025,
+          "p95_ms": 416.182935,
+          "path": "LiteLLM to OpenAI",
+          "tokens_per_request": 5
+        },
+        "proxy_3": {
+          "input_count": 3,
+          "mean_ms": 373.039,
+          "observations": 10,
+          "p50_ms": 429.99365,
+          "p95_ms": 496.58575499999995,
+          "path": "LiteLLM to OpenAI",
+          "tokens_per_request": 15
+        }
+      },
+      "created_at_utc": "2026-08-23T03:23:58.117584+00:00",
+      "credentials_persisted": false,
+      "dimension": 1536,
+      "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+      "git_commit": "4f0242b351e499e7f157640ad1427380967d77ad",
+      "git_dirty": false,
+      "http_client_lifecycle": "new client per request",
+      "input_text_persisted": false,
+      "model": "text-embedding-3-small",
+      "per_request_sha256": "d8dc019e816a7925a1b5e5e50d2a24e12e50f7b0b952051ddd39477dd7d08710",
+      "provider_calls_including_warmups": 48,
+      "provider_input_tokens_including_warmups": 480,
+      "proxy_minus_direct_mean_ms": {
+        "one_input": -57.13787000000002,
+        "three_inputs": -89.25015000000002
+      },
+      "runner_version": "1.0",
+      "schema_version": 1,
+      "scored_errors": 0,
+      "scored_repetitions_per_condition": 10,
+      "status": "completed",
+      "synthetic_input": true,
+      "warmups_per_condition": 2
+    },
+    "proxy_minus_direct_mean_ms": {
+      "one_input": -57.13787000000002,
+      "three_inputs": -89.25015000000002
+    }
+  },
+  "historical_hash_baseline": {
+    "dense_embedding": "deterministic-hash-1024",
+    "multi": {
+      "mean_ms": 42.990808888888886,
+      "observations": 90,
+      "p50_ms": 42.4225,
+      "p95_ms": 50.399345
+    },
+    "residual_vs_hash_mean": {
+      "multi_relative_increase": 0.2449950283947,
+      "single_relative_increase": 0.25085174985324676
+    },
+    "single": {
+      "mean_ms": 27.56351777777778,
+      "observations": 90,
+      "p50_ms": 28.003950000000003,
+      "p95_ms": 31.690865
+    },
+    "source_runs": [
+      "ragz-networking-mq-segment-depth20-20260822-ad70b7f-r14",
+      "ragz-networking-mq-segment-depth20-20260822-ad70b7f-r15"
+    ]
+  },
+  "modes": {
+    "multi": {
+      "mean_ms": 485.47110444444445,
+      "mean_without_dense_embedding_ms": 53.523343333333344,
+      "observations": 90,
+      "p50_ms": 507.26245,
+      "p95_ms": 553.17163,
+      "p99_ms": 568.249694,
+      "query_count": 15,
+      "stages": {
+        "authorization_prefilter": {
+          "mean_ms": 4.489408888888889,
+          "mean_total_share": 0.009247530589954278,
+          "observations": 90,
+          "p50_ms": 4.51205,
+          "p95_ms": 5.743364999999999
+        },
+        "authorization_recheck": {
+          "mean_ms": 1.4960555555555555,
+          "mean_total_share": 0.0030816572641693828,
+          "observations": 90,
+          "p50_ms": 1.5286,
+          "p95_ms": 1.82169
+        },
+        "candidate_decode": {
+          "mean_ms": 0.07786222222222222,
+          "mean_total_share": 0.00016038487462878955,
+          "observations": 90,
+          "p50_ms": 0.08695,
+          "p95_ms": 0.10395
+        },
+        "candidate_dedupe": {
+          "mean_ms": 0.01920888888888889,
+          "mean_total_share": 3.9567522583802074e-05,
+          "observations": 90,
+          "p50_ms": 0.02065,
+          "p95_ms": 0.02632
+        },
+        "collection_ready": {
+          "mean_ms": 3.199238888888889,
+          "mean_total_share": 0.006589967682113608,
+          "observations": 90,
+          "p50_ms": 3.1690500000000004,
+          "p95_ms": 4.143994999999999
+        },
+        "database_release": {
+          "mean_ms": 1.3380022222222223,
+          "mean_total_share": 0.0027560903418822084,
+          "observations": 90,
+          "p50_ms": 1.3109000000000002,
+          "p95_ms": 1.6773099999999999
+        },
+        "dense_embedding": {
+          "mean_ms": 431.9477611111111,
+          "mean_total_share": 0.8897496826415991,
+          "observations": 90,
+          "p50_ms": 454.15755,
+          "p95_ms": 502.717885
+        },
+        "embedder_resolution": {
+          "mean_ms": 0.010403333333333334,
+          "mean_total_share": 2.1429356429438848e-05,
+          "observations": 90,
+          "p50_ms": 0.0101,
+          "p95_ms": 0.015555
+        },
+        "embedding_usage_record": {
+          "mean_ms": 0.10536222222222222,
+          "mean_total_share": 0.00021703088249257376,
+          "observations": 90,
+          "p50_ms": 0.09165,
+          "p95_ms": 0.149335
+        },
+        "no_answer_probe": {
+          "mean_ms": 14.033845555555555,
+          "mean_total_share": 0.02890768457087756,
+          "observations": 90,
+          "p50_ms": 13.733049999999999,
+          "p95_ms": 17.89014
+        },
+        "query_expansion": {
+          "mean_ms": 0.15888888888888889,
+          "mean_total_share": 0.00032728804543519756,
+          "observations": 90,
+          "p50_ms": 0.17775000000000002,
+          "p95_ms": 0.20404999999999998
+        },
+        "sparse_embedding": {
+          "mean_ms": 0.4580855555555556,
+          "mean_total_share": 0.0009435897448103984,
+          "observations": 90,
+          "p50_ms": 0.49085,
+          "p95_ms": 0.5663
+        },
+        "unattributed_runner": {
+          "mean_ms": 0.4622888888888889,
+          "mean_total_share": 0.0009522480012850932,
+          "observations": 90,
+          "p50_ms": 0.48660000000000003,
+          "p95_ms": 0.617065
+        },
+        "vector_search": {
+          "mean_ms": 24.28062111111111,
+          "mean_total_share": 0.050014554705365984,
+          "observations": 90,
+          "p50_ms": 23.599,
+          "p95_ms": 29.440324999999998
+        },
+        "workspace_model_resolution": {
+          "mean_ms": 3.3940711111111113,
+          "mean_total_share": 0.006991293776372465,
+          "observations": 90,
+          "p50_ms": 3.38965,
+          "p95_ms": 4.28147
+        }
+      }
+    },
+    "single": {
+      "mean_ms": 377.3482633333333,
+      "mean_without_dense_embedding_ms": 34.47787444444441,
+      "observations": 90,
+      "p50_ms": 388.7552,
+      "p95_ms": 451.0687,
+      "p99_ms": 466.933831,
+      "query_count": 15,
+      "stages": {
+        "authorization_prefilter": {
+          "mean_ms": 4.500755555555555,
+          "mean_total_share": 0.01192732547858523,
+          "observations": 90,
+          "p50_ms": 4.563000000000001,
+          "p95_ms": 5.83339
+        },
+        "authorization_recheck": {
+          "mean_ms": 2.0731377777777777,
+          "mean_total_share": 0.005493964009439356,
+          "observations": 90,
+          "p50_ms": 1.512,
+          "p95_ms": 6.404879999999997
+        },
+        "candidate_decode": {
+          "mean_ms": 0.07212222222222223,
+          "mean_total_share": 0.0001911290689007691,
+          "observations": 90,
+          "p50_ms": 0.08165,
+          "p95_ms": 0.098705
+        },
+        "candidate_dedupe": {
+          "mean_ms": 0.01776222222222222,
+          "mean_total_share": 4.70711646194376e-05,
+          "observations": 90,
+          "p50_ms": 0.01975,
+          "p95_ms": 0.0254
+        },
+        "collection_ready": {
+          "mean_ms": 3.2455833333333333,
+          "mean_total_share": 0.008601028939853166,
+          "observations": 90,
+          "p50_ms": 3.20725,
+          "p95_ms": 4.0767549999999995
+        },
+        "database_release": {
+          "mean_ms": 1.407941111111111,
+          "mean_total_share": 0.003731145066559896,
+          "observations": 90,
+          "p50_ms": 1.3498999999999999,
+          "p95_ms": 1.654985
+        },
+        "dense_embedding": {
+          "mean_ms": 342.8703888888889,
+          "mean_total_share": 0.9086311564285957,
+          "observations": 90,
+          "p50_ms": 355.19865,
+          "p95_ms": 415.60916999999995
+        },
+        "embedder_resolution": {
+          "mean_ms": 0.01117888888888889,
+          "mean_total_share": 2.962485845340684e-05,
+          "observations": 90,
+          "p50_ms": 0.0107,
+          "p95_ms": 0.0173
+        },
+        "embedding_usage_record": {
+          "mean_ms": 0.11075444444444445,
+          "mean_total_share": 0.00029350723245970983,
+          "observations": 90,
+          "p50_ms": 0.09820000000000001,
+          "p95_ms": 0.148005
+        },
+        "no_answer_probe": {
+          "mean_ms": 7.308343333333333,
+          "mean_total_share": 0.01936763473819795,
+          "observations": 90,
+          "p50_ms": 7.2245,
+          "p95_ms": 8.66156
+        },
+        "query_expansion": {
+          "mean_ms": 0.0004944444444444444,
+          "mean_total_share": 1.3103132901069518e-06,
+          "observations": 90,
+          "p50_ms": 0.0005,
+          "p95_ms": 0.0007
+        },
+        "sparse_embedding": {
+          "mean_ms": 0.39128444444444443,
+          "mean_total_share": 0.0010369318808784353,
+          "observations": 90,
+          "p50_ms": 0.35355000000000003,
+          "p95_ms": 0.52476
+        },
+        "unattributed_runner": {
+          "mean_ms": 0.31687333333333334,
+          "mean_total_share": 0.0008397370920279578,
+          "observations": 90,
+          "p50_ms": 0.32775,
+          "p95_ms": 0.394305
+        },
+        "vector_search": {
+          "mean_ms": 12.503614444444445,
+          "mean_total_share": 0.03313547632097961,
+          "observations": 90,
+          "p50_ms": 12.35775,
+          "p95_ms": 15.107629999999999
+        },
+        "workspace_model_resolution": {
+          "mean_ms": 2.518028888888889,
+          "mean_total_share": 0.006672957407159365,
+          "observations": 90,
+          "p50_ms": 2.5221,
+          "p95_ms": 3.162505
+        }
+      }
+    }
+  },
+  "multi_minus_single": {
+    "dense_embedding_share_of_total_delta": 0.8238534180828907,
+    "mean_total_ms": 108.12284111111114,
+    "stage_mean_ms": {
+      "authorization_prefilter": -0.011346666666666394,
+      "authorization_recheck": -0.5770822222222223,
+      "candidate_decode": 0.005739999999999995,
+      "candidate_dedupe": 0.001446666666666669,
+      "collection_ready": -0.0463444444444443,
+      "database_release": -0.06993888888888877,
+      "dense_embedding": 89.07737222222221,
+      "embedder_resolution": -0.0007755555555555554,
+      "embedding_usage_record": -0.005392222222222229,
+      "no_answer_probe": 6.725502222222222,
+      "query_expansion": 0.15839444444444445,
+      "sparse_embedding": 0.06680111111111114,
+      "unattributed_runner": 0.14541555555555558,
+      "vector_search": 11.777006666666665,
+      "workspace_model_resolution": 0.8760422222222224
+    }
+  },
+  "schema_version": 1,
+  "source_runs": [
+    "ragz-networking-openai-atomic-depth20-20260823-235f77c-r1",
+    "ragz-networking-openai-atomic-depth20-20260823-235f77c-r2"
+  ]
+}

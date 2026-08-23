@@ -1,0 +1,44 @@
+{
+  "conditions": {
+    "direct_1": {
+      "input_count": 1,
+      "mean_ms": 408.00162,
+      "observations": 10,
+      "p50_ms": 379.1595,
+      "p95_ms": 579.2067649999998,
+      "path": "direct OpenAI",
+      "tokens_per_request": 5
+    },
+    "direct_3": {
+      "input_count": 3,
+      "mean_ms": 462.28915,
+      "observations": 10,
+      "p50_ms": 460.79765,
+      "p95_ms": 486.48966,
+      "path": "direct OpenAI",
+      "tokens_per_request": 15
+    },
+    "proxy_1": {
+      "input_count": 1,
+      "mean_ms": 350.86375,
+      "observations": 10,
+      "p50_ms": 344.62025,
+      "p95_ms": 416.182935,
+      "path": "LiteLLM to OpenAI",
+      "tokens_per_request": 5
+    },
+    "proxy_3": {
+      "input_count": 3,
+      "mean_ms": 373.039,
+      "observations": 10,
+      "p50_ms": 429.99365,
+      "p95_ms": 496.58575499999995,
+      "path": "LiteLLM to OpenAI",
+      "tokens_per_request": 15
+    }
+  },
+  "proxy_minus_direct_mean_ms": {
+    "one_input": -57.13787000000002,
+    "three_inputs": -89.25015000000002
+  }
+}

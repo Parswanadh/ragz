@@ -24,6 +24,15 @@ def aggregate_mode(run_roots: list[Path], mode: str) -> dict[str, Any]:
     stage_sets = [set(record.get("stage_timings_ms") or {}) for record in records]
     if not stage_sets[0] or any(stages != stage_sets[0] for stages in stage_sets[1:]):
         raise ValueError(f"{mode} atomic stage schema is missing or inconsistent")
+    if any(
+        abs(
+            sum(float(value) for value in record["stage_timings_ms"].values())
+            - float(record["elapsed_ms"])
+        )
+        > 0.05
+        for record in records
+    ):
+        raise ValueError(f"{mode} atomic stages do not close to elapsed_ms")
     totals = [float(record["elapsed_ms"]) for record in records]
     mean_total = statistics.mean(totals)
     stages: dict[str, Any] = {}
@@ -334,8 +343,8 @@ def markdown(result: dict[str, Any]) -> str:
         "of multi mean latency.\n"
         "- Removing dense-provider time leaves "
         f"`{_fmt(single['mean_without_dense_embedding_ms'])}` "
-        f"ms single and `{_fmt(multi['mean_without_dense_embedding_ms'])}` ms multi—close "
-        "to the historical hash-embedding latency.\n"
+        f"ms single and `{_fmt(multi['mean_without_dense_embedding_ms'])}` ms multi—the "
+        "same tens-of-milliseconds range as the hash track, but about 25% higher.\n"
         f"- Multi adds `{_fmt(deltas['mean_total_ms'])}` ms mean latency; dense embedding "
         f"explains `{_fmt(float(deltas['dense_embedding_share_of_total_delta']) * 100, 1)}%` "
         "of that delta.\n\n"
@@ -351,10 +360,13 @@ def markdown(result: dict[str, Any]) -> str:
         "|---|---:|---:|---:|\n"
         + probe_rows
         + "\n\n"
-        "The LiteLLM path measured a higher mean in this small diagnostic, especially for "
-        "three inputs, while direct OpenAI was already hundreds of milliseconds. The "
-        "provider/network path dominates; these unpaired samples do not prove a fixed proxy "
-        "penalty.\n\n"
+        "The LiteLLM and direct paths differed by "
+        f"`{_fmt(abs(float(probe['proxy_1']['mean_ms']) - float(probe['direct_1']['mean_ms'])))}` "
+        "ms for one input and "
+        f"`{_fmt(abs(float(probe['proxy_3']['mean_ms']) - float(probe['direct_3']['mean_ms'])))}` "
+        "ms for three inputs in this small diagnostic. Both paths remained hundreds "
+        "of milliseconds; the provider/network path dominates, and these unpaired samples "
+        "do not prove a fixed proxy speedup or penalty.\n\n"
         "## Why the earlier report showed about 50 ms\n\n"
         f"The historical baseline used `{old['dense_embedding']}` with no provider call: "
         f"single mean/p50/p95 `{_fmt(old['single']['mean_ms'])}` / "

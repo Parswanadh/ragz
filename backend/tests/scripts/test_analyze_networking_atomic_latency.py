@@ -1,3 +1,4 @@
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -10,9 +11,11 @@ if str(SCRIPTS) not in sys.path:
 
 from analyze_networking_atomic_latency import (  # noqa: E402
     aggregate_mode,
+    load_endpoint_probe,
     manifest_identity,
     validate_run_records,
 )
+from run_embedding_endpoint_probe import summarize as summarize_endpoint_probe  # noqa: E402
 
 
 def _write_run(root: Path, *, error: str | None = None) -> None:
@@ -70,6 +73,15 @@ def test_aggregate_mode_rejects_errors_and_inconsistent_stage_schema(
     path.write_text("".join(json.dumps(row) + "\n" for row in rows))
     with pytest.raises(ValueError, match="inconsistent"):
         aggregate_mode([inconsistent], "single")
+
+    bad_closure = tmp_path / "bad-closure"
+    _write_run(bad_closure)
+    path = bad_closure / "single" / "per_query.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    rows[0]["stage_timings_ms"]["dense_embedding"] += 1.0
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    with pytest.raises(ValueError, match="close"):
+        aggregate_mode([bad_closure], "single")
 
 
 def test_validate_run_records_rejects_duplicate_query_repetitions(tmp_path: Path) -> None:
@@ -132,3 +144,56 @@ def test_manifest_identity_includes_every_fairness_control() -> None:
         "no_answer_threshold",
         "stage_timing_schema",
     }
+    mismatched = dict(manifest, top_k=5)
+    assert manifest_identity(mismatched) != identity
+
+
+def test_load_endpoint_probe_recomputes_rows_and_checks_hash(tmp_path: Path) -> None:
+    root = tmp_path / "probe"
+    root.mkdir()
+    records: list[dict[str, object]] = []
+    sequence = 0
+    for repetition in range(1, 3):
+        forward = ("direct_1", "proxy_1", "direct_3", "proxy_3")
+        order = forward if repetition % 2 else tuple(reversed(forward))
+        for order_index, condition in enumerate(order, 1):
+            sequence += 1
+            count = int(condition.rsplit("_", 1)[1])
+            records.append(
+                {
+                    "sequence": sequence,
+                    "repetition": repetition,
+                    "order_index": order_index,
+                    "condition": condition,
+                    "path": (
+                        "direct OpenAI"
+                        if condition.startswith("direct")
+                        else "LiteLLM to OpenAI"
+                    ),
+                    "input_count": count,
+                    "elapsed_ms": 100.0 + sequence,
+                    "dimension": 1536,
+                    "total_tokens": count * 5,
+                    "status_code": 200,
+                    "error": None,
+                }
+            )
+    raw = "".join(json.dumps(record, sort_keys=True) + "\n" for record in records)
+    (root / "per_request.jsonl").write_text(raw)
+    summary = summarize_endpoint_probe(records, repetitions=2)
+    (root / "summary.json").write_text(json.dumps(summary))
+    manifest = {
+        "status": "completed",
+        "git_dirty": False,
+        "scored_repetitions_per_condition": 2,
+        "per_request_sha256": hashlib.sha256(raw.encode()).hexdigest(),
+    }
+    (root / "manifest.json").write_text(json.dumps(manifest))
+
+    loaded = load_endpoint_probe(root)
+
+    assert loaded["conditions"] == summary["conditions"]
+    manifest["per_request_sha256"] = "0" * 64
+    (root / "manifest.json").write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="hash"):
+        load_endpoint_probe(root)

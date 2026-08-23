@@ -1,0 +1,64 @@
+{
+  "condition_order": "counterbalanced forward/reverse",
+  "conditions": {
+    "direct_1": {
+      "input_count": 1,
+      "mean_ms": 408.00162,
+      "observations": 10,
+      "p50_ms": 379.1595,
+      "p95_ms": 579.2067649999998,
+      "path": "direct OpenAI",
+      "tokens_per_request": 5
+    },
+    "direct_3": {
+      "input_count": 3,
+      "mean_ms": 462.28915,
+      "observations": 10,
+      "p50_ms": 460.79765,
+      "p95_ms": 486.48966,
+      "path": "direct OpenAI",
+      "tokens_per_request": 15
+    },
+    "proxy_1": {
+      "input_count": 1,
+      "mean_ms": 350.86375,
+      "observations": 10,
+      "p50_ms": 344.62025,
+      "p95_ms": 416.182935,
+      "path": "LiteLLM to OpenAI",
+      "tokens_per_request": 5
+    },
+    "proxy_3": {
+      "input_count": 3,
+      "mean_ms": 373.039,
+      "observations": 10,
+      "p50_ms": 429.99365,
+      "p95_ms": 496.58575499999995,
+      "path": "LiteLLM to OpenAI",
+      "tokens_per_request": 15
+    }
+  },
+  "created_at_utc": "2026-08-23T03:23:58.117584+00:00",
+  "credentials_persisted": false,
+  "dimension": 1536,
+  "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "git_commit": "4f0242b351e499e7f157640ad1427380967d77ad",
+  "git_dirty": false,
+  "http_client_lifecycle": "new client per request",
+  "input_text_persisted": false,
+  "model": "text-embedding-3-small",
+  "per_request_sha256": "d8dc019e816a7925a1b5e5e50d2a24e12e50f7b0b952051ddd39477dd7d08710",
+  "provider_calls_including_warmups": 48,
+  "provider_input_tokens_including_warmups": 480,
+  "proxy_minus_direct_mean_ms": {
+    "one_input": -57.13787000000002,
+    "three_inputs": -89.25015000000002
+  },
+  "runner_version": "1.0",
+  "schema_version": 1,
+  "scored_errors": 0,
+  "scored_repetitions_per_condition": 10,
+  "status": "completed",
+  "synthetic_input": true,
+  "warmups_per_condition": 2
+}
