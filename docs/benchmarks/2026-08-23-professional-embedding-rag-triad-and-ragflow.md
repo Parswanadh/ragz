@@ -351,6 +351,8 @@ professional benchmark.
 
 ## Evidence map
 
+- Three-system source, dominance, atomic-latency and foundational analysis:
+  `docs/benchmarks/2026-08-23-three-system-foundational-and-code-analysis.md`
 - Atomic endpoint matrix:
   `docs/benchmarks/artifacts/raw/2026-08-23/openai-embedding-atomic-matrix-20260823-r1/`
 - Width/proxy attestation:

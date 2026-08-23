@@ -310,6 +310,8 @@ or paid plan was created.
   `docs/benchmarks/2026-08-22-complete-rag-review.html`
 - Professional embedding/RAG-Triad/RAGFlow report:
   `docs/benchmarks/2026-08-23-professional-embedding-rag-triad-and-ragflow.md`
+- Three-system source, dominance, atomic-latency and foundational analysis:
+  `docs/benchmarks/2026-08-23-three-system-foundational-and-code-analysis.md`
 - Atomic ten-cell endpoint matrix:
   `docs/benchmarks/artifacts/raw/2026-08-23/openai-embedding-atomic-matrix-20260823-r1/`
 - Clean no-cache publication cells:
