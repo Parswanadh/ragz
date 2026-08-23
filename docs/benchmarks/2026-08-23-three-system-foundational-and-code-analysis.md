@@ -194,6 +194,127 @@ Lance search, result materialization, filtering and source curation. Any claim
 that a particular AnythingLLM substage dominates would be inference, not a
 measurement.
 
+## How to make RAGZ materially faster and better
+
+The order matters. Optimizing a 0.35 ms sparse encoder while ignoring a 342 ms
+hosted embedding call cannot move the user experience.
+
+### P0: remove or hide hosted-model waits
+
+| Change | Measured basis | Expected effect | Main risk / required guard |
+|---|---|---|---|
+| Versioned query-embedding cache | Dense embedding is 341.95 ms / 92.76% of single retrieval | Repeated-query hits can remove most of ~342 ms | Key by model, dimension and normalized-query hash; bound TTL/size; never persist raw query text |
+| Versioned answer cache | Generation is ~3.15 s / 60.25% of measured end-to-end | Repeated approved answers can save seconds | Key by org, workspace, ACL/security projection, document-index generation, model and prompt version; fail closed on any mismatch |
+| Context/token budgeter | Generation dominates and five chunks are always available | Fewer input tokens should reduce generation latency and cost | Keep required evidence; quality/citation floors must gate rollout |
+| Speculative multi-query | Current code waits for Luna expansion before original retrieval | Start original embedding/search immediately; late-fuse alternatives within a deadline | Generated alternatives must not delay or replace a good single result |
+| Cache query expansion | Same normalized query/model/prompt produces reusable alternatives | Removes the live Luna expansion wait on repeats | Version prompt/model; hash-only key; bounded TTL; original query always retained |
+
+The multi-query controller should have a strict latency budget. A practical
+flow is:
+
+1. Start original-query dense/sparse retrieval immediately.
+2. Start Luna expansion concurrently.
+3. If alternatives arrive before the frozen budget, batch-embed them and fuse.
+4. Otherwise return the single-query result and optionally record a late result
+   for offline analysis; never hold the user request indefinitely.
+
+This preserves the measured single-query floor while allowing multi-query to
+help ambiguous queries. The current fixed-three-query result improves MRR by
+`+0.0556` and nDCG by `+0.0045`, but lowers Recall by `-0.0151`; it does not
+justify enabling expansion for every query.
+
+### P1: shorten the retrieval critical path
+
+| Change | Current cost | Target |
+|---|---:|---:|
+| Launch dense no-answer probe concurrently with the fused Qdrant request | 5.62 ms single / 11.37 ms multi after fusion | Hide most of the probe behind vector search |
+| Cache successful collection schema readiness by `(collection, dimension)` | 2.76--2.80 ms/request | Pay once per process/model generation |
+| Consolidate workspace/model/ACL reads without weakening the post-query recheck | ~7--10 ms combined DB/security stages | Save round trips while retaining fail-closed enforcement |
+| Reuse one application-scoped LiteLLM HTTP client | Client currently constructed in every `embed_with_usage()` call | Reduce connection/object churn; validate with a controlled same-order probe |
+
+The no-answer probe can run beside the RRF request because both depend only on
+the already-computed dense vectors and authorization filter. Its result is
+needed only at the final decision. This changes scheduling, not threshold
+semantics.
+
+Do not remove the post-query ACL recheck for speed. It closes a real
+read-then-query race, costs only about 1.2--1.4 ms, and is not the bottleneck.
+
+### P1: make indexing incremental and provider-efficient
+
+Dense embedding is 90.24% of index time. The current batch size of 32 is
+correct: the atomic matrix shows a large/1,024 batch of 32 completes in
+724.5 ms total, versus 328.7 ms for one input. Improvements should therefore
+focus on avoiding calls rather than shrinking Python chunking code.
+
+- Cache document embeddings by `(model, dimension, canonical-text SHA-256)`.
+- Reuse unchanged chunk vectors across document versions and duplicate uploads.
+- Persist an index manifest mapping source hash to chunk hash and vector ID.
+- Re-embed only changed chunks; delete superseded vectors transactionally.
+- Adapt batch concurrency to provider rate-limit headers while keeping batch
+  width at the measured efficient point.
+- Keep Qdrant upserts batched; they are only 2.77% of current indexing time.
+
+### P1: improve quality without applying expensive features globally
+
+- Enable multi-query only for ambiguous, multi-hop or demonstrated low-recall
+  query classes. Exact/simple questions should stay single-query.
+- Invoke a reranker only inside an uncertainty band, for example when top
+  candidates are close or the dense/no-answer confidence is marginal.
+- Use hybrid lane weights or RRF parameters selected on the development split,
+  then freeze them before the locked run.
+- Add parent/section-aware context assembly so repeated chunks from one document
+  do not crowd out other required evidence.
+- Calibrate abstention separately for dense cosine, RRF and reranker score
+  spaces. One numeric threshold is not portable across them.
+- Route low-risk document-level workspaces to small/1,024 only after a frozen
+  quality gate. On Open Manuals it saves about 16 ms retrieval mean and lowers
+  cost, but the current differences are not statistically decisive and do not
+  cover exact-page networking quality.
+
+### P2: improve perceived answer latency
+
+Generation, not retrieval, dominates the full answer path. Add and optimize:
+
+- provider time-to-first-token, first-byte and tokens/second spans;
+- immediate SSE flush once the first provider token arrives;
+- prompt-prefix caching where supported;
+- smaller evidence payloads selected by the context budgeter;
+- concise answer/output-token defaults with user-overridable depth;
+- optional answer generation started from high-confidence early retrieval only
+  when later retrieval cannot invalidate the cited evidence.
+
+The benchmark judge is not on the production path and must never be included
+in user-facing latency SLOs.
+
+### Optimization acceptance gates
+
+Every optimization must run against the same commit/corpus/query order and
+publish both cold and warm results.
+
+| Gate | Required outcome |
+|---|---|
+| Security | All tenant/ACL/current-version and race-closure tests pass; no permissive fallback |
+| Reliability | Exact denominator, zero unclassified errors, no OOM/restart |
+| Retrieval quality | No Recall@5 regression larger than 0.02; MRR/nDCG reported with paired CI |
+| Answer quality | No material groundedness/citation regression; human-calibrated sample included |
+| Single-query latency | Improve p50 and p95 against 380.7/461.6 ms networking baselines |
+| Multi-query latency | Live expansion has a frozen deadline; p95 cannot exceed the agreed SLO |
+| End-to-end latency | Report TTFT separately; reduce retrieval+generation, not benchmark-judge time |
+| Cost | Usage-derived embedding/generation cost cannot increase without a predeclared quality gain |
+
+### Recommended implementation order
+
+1. Add TTFT/token and missing cache-hit telemetry.
+2. Implement document-vector reuse and query-embedding cache with versioned,
+   privacy-safe keys.
+3. Parallelize the no-answer probe and cache collection readiness.
+4. Implement speculative, deadline-bound multi-query with expansion caching.
+5. Add context budgeting and prompt-prefix caching.
+6. Add uncertainty-gated reranking and query-class-gated multi-query.
+7. Re-run the normalized and native foundational tracks before changing any
+   production default.
+
 ## Foundational benchmark audit
 
 | Requirement | Current status |
