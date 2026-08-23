@@ -15,6 +15,7 @@ from ragz.modules.retrieval.embeddings import embed_sparse, get_dense_embedder
 from ragz.modules.retrieval.query_expansion import ExpandedQueries
 from ragz.modules.retrieval.service import (
     RetrievedChunk,
+    _capture_stage,
     _dedupe_hq,
     delete_document_points,
     ensure_collection,
@@ -33,6 +34,17 @@ _LOCAL_MODEL_KW = {
     "provider_kind": "tei",
     "litellm_model_name": "local-embeddings",
 }
+
+
+def test_atomic_stage_timing_records_failure_without_sensitive_context() -> None:
+    timings: dict[str, float] = {}
+
+    with pytest.raises(RuntimeError, match="synthetic failure"):
+        with _capture_stage(timings, "failed_stage"):
+            raise RuntimeError("synthetic failure")
+
+    assert timings.keys() == {"failed_stage"}
+    assert timings["failed_stage"] >= 0
 
 
 async def seed_workspace(
@@ -200,15 +212,34 @@ async def test_enabled_multi_query_builds_six_filtered_prefetches_and_records_us
         return await original_query_points(*args, **kwargs)
 
     monkeypatch.setattr(client, "query_points", spy_query_points)
+    stage_timings_ms: dict[str, float] = {}
 
     result = await retrieve(
-        session, ctx, ws.id, "alpha beta", query_expander=expander
+        session,
+        ctx,
+        ws.id,
+        "alpha beta",
+        query_expander=expander,
+        stage_timings_ms=stage_timings_ms,
     )
 
     assert result.chunks
     assert expander.calls == [("alpha beta", "utility-model")]
     assert len(captured_prefetches) == 6
     assert all(prefetch.filter is not None for prefetch in captured_prefetches)
+    assert {
+        "workspace_model_resolution",
+        "database_release",
+        "collection_ready",
+        "query_expansion",
+        "dense_embedding",
+        "sparse_embedding",
+        "authorization_prefilter",
+        "vector_search",
+        "authorization_recheck",
+        "no_answer_probe",
+    } <= stage_timings_ms.keys()
+    assert all(value >= 0 for value in stage_timings_ms.values())
     usage = (
         await session.execute(
             select(UsageRecord).where(

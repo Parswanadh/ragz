@@ -160,8 +160,9 @@ def safe_query_record(
     retrieved: list[dict[str, object]],
     metrics: dict[str, float] | None,
     elapsed_ms: float,
-    expansion_count: int,
+    expansion_count: int | None,
     error: str | None,
+    stage_timings_ms: dict[str, float] | None = None,
     repetition: int = 1,
     answerable: bool = True,
     no_answer: bool | None = False,
@@ -174,9 +175,48 @@ def safe_query_record(
         "metrics": metrics,
         "elapsed_ms": round(elapsed_ms, 4),
         "expansion_count": expansion_count,
+        "stage_timings_ms": {
+            stage: round(float(duration), 4)
+            for stage, duration in sorted((stage_timings_ms or {}).items())
+        },
         "answerable": answerable,
         "no_answer": no_answer,
         "error": error,
+    }
+
+
+def summarize_stage_timings(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """Aggregate privacy-safe successful per-query wall-clock stage timings."""
+    successful = [record for record in records if record["error"] is None]
+    stages = sorted(
+        {
+            str(stage)
+            for record in successful
+            for stage in (record.get("stage_timings_ms") or {})
+        }
+    )
+    total_latencies = [float(record["elapsed_ms"]) for record in successful]
+    mean_total = statistics.mean(total_latencies) if total_latencies else None
+    output: dict[str, Any] = {}
+    for stage in stages:
+        values = [
+            float(record["stage_timings_ms"][stage])
+            for record in successful
+            if stage in (record.get("stage_timings_ms") or {})
+        ]
+        mean = statistics.mean(values)
+        output[stage] = {
+            "observations": len(values),
+            "mean": mean,
+            "p50": percentile(values, 0.50),
+            "p95": percentile(values, 0.95),
+            "p99": percentile(values, 0.99),
+            "mean_total_share": mean / mean_total if mean_total else None,
+        }
+    return {
+        "successful_observations": len(successful),
+        "clock": "time.perf_counter wall clock",
+        "stages": output,
     }
 
 
@@ -532,13 +572,16 @@ async def _run_mode(
                     if mode == "multi"
                     else None
                 )
-                started = time.perf_counter()
                 error: str | None = None
                 result: Any = None
+                stage_timings_ms: dict[str, float] = {}
+                if provider_backed_embeddings:
+                    progress.query_embedding_attempts += 1
+                    write_progress(progress_output, progress)
+                # Provider progress is durability bookkeeping, not retrieval.
+                # Keep its file I/O outside the user-visible latency clock.
+                started = time.perf_counter()
                 try:
-                    if provider_backed_embeddings:
-                        progress.query_embedding_attempts += 1
-                        write_progress(progress_output, progress)
                     result = await retrieve(
                         session,
                         ctx,
@@ -546,10 +589,15 @@ async def _run_mode(
                         record["query"],
                         top_k=top_k,
                         query_expander=expander,
+                        stage_timings_ms=stage_timings_ms,
                     )
                 except Exception as exc:  # noqa: BLE001 - typed failure only
                     error = type(exc).__name__
                 elapsed_ms = (time.perf_counter() - started) * 1000
+                attributed_ms = sum(stage_timings_ms.values())
+                stage_timings_ms["unattributed_runner"] = round(
+                    max(0.0, elapsed_ms - attributed_ms), 4
+                )
                 retrieved: list[dict[str, object]] = []
                 evidence_ids: list[str] = []
                 if result is not None:
@@ -580,8 +628,11 @@ async def _run_mode(
                         retrieved=retrieved,
                         metrics=metrics,
                         elapsed_ms=elapsed_ms,
-                        expansion_count=3 if mode == "multi" else 1,
+                        expansion_count=(
+                            int(result.query_count) if result is not None else None
+                        ),
                         error=error,
+                        stage_timings_ms=stage_timings_ms,
                         repetition=repetition,
                         answerable=answerable,
                         no_answer=(
@@ -679,10 +730,24 @@ async def _run_mode(
             "p95": percentile(latencies, 0.95),
             "p99": percentile(latencies, 0.99),
         },
+        "atomic_latency_ms": summarize_stage_timings(records),
     }
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    atomic_lines = [
+        "| Stage | Mean ms | p50 ms | p95 ms | Mean share |",
+        "|---|---:|---:|---:|---:|",
+        *(
+            f"| {stage} | {values['mean']:.3f} | {values['p50']:.3f} | "
+            f"{values['p95']:.3f} | {values['mean_total_share'] * 100:.1f}% |"
+            for stage, values in sorted(
+                summary["atomic_latency_ms"]["stages"].items(),
+                key=lambda item: float(item[1]["mean"]),
+                reverse=True,
+            )
+        ),
+    ]
     (output / "summary.md").write_text(
         "# RAGZ networking retrieval summary\n\n"
         f"- Mode: `{mode}`\n"
@@ -697,7 +762,10 @@ async def _run_mode(
         f"- p50/p95/p99: `{summary['latency_ms']['p50']:.3f}` / "
         f"`{summary['latency_ms']['p95']:.3f}` / "
         f"`{summary['latency_ms']['p99']:.3f}` ms\n"
-        f"- Errors: `{summary['errors']}`\n",
+        f"- Errors: `{summary['errors']}`\n"
+        + "\n## Atomic retrieval latency\n\n"
+        + "\n".join(atomic_lines)
+        + "\n",
         encoding="utf-8",
     )
     return summary
@@ -739,7 +807,7 @@ async def run(args: argparse.Namespace) -> None:
     )
     manifest.update(
         {
-            "runner_version": "2.0",
+            "runner_version": "3.0",
             "git_commit": git_commit,
             "git_dirty": bool(git_status),
             "tracked_diff_sha256": hashlib.sha256(tracked_diff).hexdigest(),
@@ -775,6 +843,13 @@ async def run(args: argparse.Namespace) -> None:
                 else "synthetic_fusion_pilot"
             ),
             "status": "running",
+            "stage_timing_schema": {
+                "version": "retrieval-atomic-v1",
+                "clock": "time.perf_counter wall clock",
+                "unit": "milliseconds",
+                "warmups_persisted": False,
+                "elapsed_ms_authoritative_total": True,
+            },
         }
     )
     (output / "manifest.json").write_text(
@@ -952,7 +1027,7 @@ def main() -> None:
                 failed_track = resolve_embedding_track(args.embedding_engine)
                 failed_manifest = {
                     "schema_version": 1,
-                    "runner_version": "2.0",
+                    "runner_version": "3.0",
                     "dataset_id": "networking-pdfs-v1",
                     "source_pdf_count": len(args.pdf),
                     "query_set_filename": args.queries.name,

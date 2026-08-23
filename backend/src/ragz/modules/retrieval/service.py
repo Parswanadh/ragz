@@ -25,9 +25,11 @@ EITHER filter function — `test_tenant_isolation.py`-style tests for
 """
 
 import asyncio
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import date, datetime
+from time import perf_counter
 from uuid import UUID, uuid5
 
 import structlog
@@ -63,6 +65,28 @@ class RetrievalResult:
     chunks: list[RetrievedChunk]
     no_answer: bool
     query_count: int = 1
+
+
+@contextmanager
+def _capture_stage(
+    timings_ms: dict[str, float] | None, stage: str
+) -> Iterator[None]:
+    """Optionally capture one non-overlapping retrieval stage for diagnostics.
+
+    The production path passes no sink and pays only this context-manager call.
+    Benchmark callers supply a request-local dictionary. Values contain timing
+    only—never query, document, tenant, model response, or credential data—and
+    the failure path is recorded just like the Prometheus stage histograms.
+    """
+    if timings_ms is None:
+        yield
+        return
+    started = perf_counter()
+    try:
+        yield
+    finally:
+        elapsed_ms = (perf_counter() - started) * 1000
+        timings_ms[stage] = round(timings_ms.get(stage, 0.0) + elapsed_ms, 4)
 
 
 @dataclass(frozen=True)
@@ -468,6 +492,7 @@ async def retrieve(
     *,
     query_expander: QueryExpander | None = None,
     multi_query_enabled_override: bool | None = None,
+    stage_timings_ms: dict[str, float] | None = None,
 ) -> RetrievalResult:
     """Hybrid retrieval — the one code path (spec §3.3), Plan E additions:
 
@@ -504,72 +529,79 @@ async def retrieve(
     """
     from ragz.modules.models import service as models_service
 
-    ws = await get_workspace_checked(session, ctx, workspace_id)
-    k = top_k if top_k is not None else ws.top_k
-    multi_query_enabled = (
-        ws.multi_query_enabled
-        if multi_query_enabled_override is None
-        else multi_query_enabled_override
-    )
-    embedding_model = await models_service.get_model(session, ws.embedding_model_id)
-    utility_model = (
-        await models_service.resolve_utility_model(session)
-        if multi_query_enabled
-        else None
-    )
+    with _capture_stage(stage_timings_ms, "workspace_model_resolution"):
+        ws = await get_workspace_checked(session, ctx, workspace_id)
+        k = top_k if top_k is not None else ws.top_k
+        multi_query_enabled = (
+            ws.multi_query_enabled
+            if multi_query_enabled_override is None
+            else multi_query_enabled_override
+        )
+        embedding_model = await models_service.get_model(session, ws.embedding_model_id)
+        utility_model = (
+            await models_service.resolve_utility_model(session)
+            if multi_query_enabled
+            else None
+        )
     # Workspace/model resolution above is read-only. End that transaction before
     # waiting on Qdrant setup, the expansion LLM, and embedding providers so a
     # slow external service never pins an otherwise-idle pooled DB connection.
     # All production callers enter retrieve() with prior writes already committed;
     # retrieve owns the usage rows it stages after this boundary.
-    await session.commit()
+    with _capture_stage(stage_timings_ms, "database_release"):
+        await session.commit()
     collection_name = embedding_model.collection_name
     assert collection_name is not None  # embedding-modality models always set this
-    await ensure_collection(collection_name, embedding_model.dimension)  # type: ignore[arg-type]
-    dense_embedder = get_dense_embedder(
-        embedding_model.id, provider_kind=embedding_model.provider_kind,
-        litellm_model_name=embedding_model.litellm_model_name,
-    )
+    with _capture_stage(stage_timings_ms, "collection_ready"):
+        await ensure_collection(collection_name, embedding_model.dimension)  # type: ignore[arg-type]
+    with _capture_stage(stage_timings_ms, "embedder_resolution"):
+        dense_embedder = get_dense_embedder(
+            embedding_model.id, provider_kind=embedding_model.provider_kind,
+            litellm_model_name=embedding_model.litellm_model_name,
+        )
     queries: tuple[str, ...] = (query,)
-    if multi_query_enabled:
-        if utility_model is None:
-            structlog.get_logger().warning(
-                "multi_query_no_utility_model",
-                workspace_id=str(workspace_id),
-            )
-        else:
-            expander = query_expander or build_query_expander(get_settings())
-            try:
-                expanded = await expander.expand(
-                    query, model=utility_model.litellm_model_name
-                )
-            except UpstreamError as exc:
+    with _capture_stage(stage_timings_ms, "query_expansion"):
+        if multi_query_enabled:
+            if utility_model is None:
                 structlog.get_logger().warning(
-                    "multi_query_expansion_failed",
+                    "multi_query_no_utility_model",
                     workspace_id=str(workspace_id),
-                    error=type(exc).__name__,
                 )
             else:
-                queries = expanded.queries or (query,)
-                expansion_tokens = expanded.prompt_tokens + expanded.completion_tokens
-                if expansion_tokens > 0:
-                    await quota_service.record_usage(
-                        session,
-                        org_id=ctx.org_id,
-                        user_id=ctx.user_id,
-                        workspace_id=workspace_id,
-                        model_id=utility_model.id,
-                        feature="query_expansion",
-                        prompt_tokens=expanded.prompt_tokens,
-                        completion_tokens=expanded.completion_tokens,
-                        commit=False,
+                expander = query_expander or build_query_expander(get_settings())
+                try:
+                    expanded = await expander.expand(
+                        query, model=utility_model.litellm_model_name
                     )
-                structlog.get_logger().info(
-                    "multi_query_expanded",
-                    workspace_id=str(workspace_id),
-                    query_count=len(queries),
-                )
-    with observe_stage("embed_dense"):
+                except UpstreamError as exc:
+                    structlog.get_logger().warning(
+                        "multi_query_expansion_failed",
+                        workspace_id=str(workspace_id),
+                        error=type(exc).__name__,
+                    )
+                else:
+                    queries = expanded.queries or (query,)
+                    expansion_tokens = expanded.prompt_tokens + expanded.completion_tokens
+                    if expansion_tokens > 0:
+                        await quota_service.record_usage(
+                            session,
+                            org_id=ctx.org_id,
+                            user_id=ctx.user_id,
+                            workspace_id=workspace_id,
+                            model_id=utility_model.id,
+                            feature="query_expansion",
+                            prompt_tokens=expanded.prompt_tokens,
+                            completion_tokens=expanded.completion_tokens,
+                            commit=False,
+                        )
+                    structlog.get_logger().info(
+                        "multi_query_expanded",
+                        workspace_id=str(workspace_id),
+                        query_count=len(queries),
+                    )
+    with _capture_stage(stage_timings_ms, "dense_embedding"), observe_stage(
+        "embed_dense"
+    ):
         dense_vecs, embed_tokens = await dense_embedder.embed_with_usage(list(queries))
     # Cost reporting (design 2026-08-15 §2): the query embedding's billed tokens
     # (hosted providers only; self-hosted TEI / the hash test backend report 0).
@@ -577,13 +609,16 @@ async def retrieve(
     # (the chat/no-answer/general-knowledge record_usage) rather than adding a
     # blocking round-trip before the LLM even starts streaming. Zero tokens ->
     # nothing to bill, skip the row entirely.
-    if embed_tokens > 0:
-        await quota_service.record_usage(
-            session, org_id=ctx.org_id, user_id=ctx.user_id, workspace_id=workspace_id,
-            model_id=embedding_model.id, feature="embedding",
-            prompt_tokens=embed_tokens, completion_tokens=0, commit=False,
-        )
-    with observe_stage("embed_sparse"):
+    with _capture_stage(stage_timings_ms, "embedding_usage_record"):
+        if embed_tokens > 0:
+            await quota_service.record_usage(
+                session, org_id=ctx.org_id, user_id=ctx.user_id, workspace_id=workspace_id,
+                model_id=embedding_model.id, feature="embedding",
+                prompt_tokens=embed_tokens, completion_tokens=0, commit=False,
+            )
+    with _capture_stage(stage_timings_ms, "sparse_embedding"), observe_stage(
+        "embed_sparse"
+    ):
         sparse_vecs = await asyncio.to_thread(embed_sparse, list(queries))
     # Fail-closed ACL projection (review P0): documents whose committed security
     # state has not reached this collection are excluded from the query. Local
@@ -592,14 +627,15 @@ async def retrieve(
     # service call, never that module's ORM.
     from ragz.modules.documents import service as documents_service
 
-    unprojected = await documents_service.unprojected_document_ids(
-        session, ctx.org_id, workspace_id
-    )
-    flt = _tenant_filter(
-        org_id=ctx.org_id, workspace_id=workspace_id, acl_group_ids=_ctx_acl(ctx),
-        current_only=True, metadata_clauses=metadata_clauses,
-        unprojected_document_ids=unprojected,
-    )
+    with _capture_stage(stage_timings_ms, "authorization_prefilter"):
+        unprojected = await documents_service.unprojected_document_ids(
+            session, ctx.org_id, workspace_id
+        )
+        flt = _tenant_filter(
+            org_id=ctx.org_id, workspace_id=workspace_id, acl_group_ids=_ctx_acl(ctx),
+            current_only=True, metadata_clauses=metadata_clauses,
+            unprojected_document_ids=unprojected,
+        )
     client = get_qdrant()
     fetch_k = _RERANK_PREFETCH if ws.rerank_enabled else k
     prefetch_limit = max(fetch_k, k * 4)
@@ -621,7 +657,9 @@ async def retrieve(
             ),
         )
     ]
-    with observe_stage("vector_search"):
+    with _capture_stage(stage_timings_ms, "vector_search"), observe_stage(
+        "vector_search"
+    ):
         fused = await client.query_points(
             collection_name,
             prefetch=prefetch,
@@ -630,7 +668,8 @@ async def retrieve(
             limit=fetch_k,
             with_payload=True,
         )
-    candidates = [_chunk_from_point(p) for p in fused.points]
+    with _capture_stage(stage_timings_ms, "candidate_decode"):
+        candidates = [_chunk_from_point(p) for p in fused.points]
     # Close the read-then-query window (Cubic P0). The pre-query exclusion above
     # is a SNAPSHOT: an ACL can commit between that read and query_points, and
     # Qdrant would still be serving the pre-change payload for a document the
@@ -643,24 +682,27 @@ async def retrieve(
     # served. This pass can only ever REMOVE candidates, never admit one the
     # vector filter excluded, so its failure mode is a needless denial rather
     # than a leak. The allow-decision still lives entirely in the Qdrant filter.
-    recheck = await documents_service.unprojected_document_ids(
-        session, ctx.org_id, workspace_id
-    )
-    newly_unprojected = recheck - unprojected
-    if newly_unprojected:
-        candidates = [c for c in candidates if c.document_id not in newly_unprojected]
-        structlog.get_logger().info(
-            "retrieval_dropped_newly_unprojected",
-            workspace_id=str(workspace_id), count=len(newly_unprojected),
+    with _capture_stage(stage_timings_ms, "authorization_recheck"):
+        recheck = await documents_service.unprojected_document_ids(
+            session, ctx.org_id, workspace_id
         )
-    candidates = _dedupe_hq(candidates)
+        newly_unprojected = recheck - unprojected
+        if newly_unprojected:
+            candidates = [c for c in candidates if c.document_id not in newly_unprojected]
+            structlog.get_logger().info(
+                "retrieval_dropped_newly_unprojected",
+                workspace_id=str(workspace_id), count=len(newly_unprojected),
+            )
+    with _capture_stage(stage_timings_ms, "candidate_dedupe"):
+        candidates = _dedupe_hq(candidates)
     if not candidates:
         return RetrievalResult(chunks=[], no_answer=True, query_count=len(queries))
 
     if ws.rerank_enabled:
         try:
-            reranker = await get_reranker(session, get_settings())
-            with observe_stage("rerank"):
+            with _capture_stage(stage_timings_ms, "reranker_resolution"):
+                reranker = await get_reranker(session, get_settings())
+            with _capture_stage(stage_timings_ms, "rerank"), observe_stage("rerank"):
                 scores = await reranker.rerank(query, [c.text for c in candidates])
         except RerankUnavailable as exc:
             structlog.get_logger().warning(
@@ -692,19 +734,20 @@ async def retrieve(
             )
 
     chunks = candidates[:k]
-    top_dense_results = await asyncio.gather(
-        *(
-            client.query_points(
-                collection_name,
-                query=dense_vec,
-                using="dense",
-                query_filter=flt,
-                limit=1,
-                with_payload=False,
+    with _capture_stage(stage_timings_ms, "no_answer_probe"):
+        top_dense_results = await asyncio.gather(
+            *(
+                client.query_points(
+                    collection_name,
+                    query=dense_vec,
+                    using="dense",
+                    query_filter=flt,
+                    limit=1,
+                    with_payload=False,
+                )
+                for dense_vec in dense_vecs
             )
-            for dense_vec in dense_vecs
         )
-    )
     best_cosine = max(
         (
             float(result.points[0].score)

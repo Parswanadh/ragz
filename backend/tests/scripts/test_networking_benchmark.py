@@ -18,6 +18,7 @@ from run_multi_query_benchmark import (  # noqa: E402
     ranking_metrics,
     resolve_embedding_track,
     safe_query_record,
+    summarize_stage_timings,
 )
 from seed_networking_comparison_lab import validate_lab_target  # noqa: E402
 
@@ -164,6 +165,7 @@ def test_safe_record_never_contains_query_or_alternatives() -> None:
         elapsed_ms=12.5,
         expansion_count=3,
         error=None,
+        stage_timings_ms={"dense_embedding": 9.87654, "vector_search": 2.34567},
     )
 
     assert "query" not in record
@@ -172,6 +174,41 @@ def test_safe_record_never_contains_query_or_alternatives() -> None:
     assert record["expansion_count"] == 3
     assert record["answerable"] is True
     assert record["no_answer"] is False
+    assert record["stage_timings_ms"] == {
+        "dense_embedding": 9.8765,
+        "vector_search": 2.3457,
+    }
+
+
+def test_atomic_timing_summary_excludes_errors_and_does_not_invent_stages() -> None:
+    records = [
+        {
+            "error": None,
+            "elapsed_ms": 12.0,
+            "stage_timings_ms": {"dense_embedding": 8.0, "vector_search": 2.0},
+        },
+        {
+            "error": None,
+            "elapsed_ms": 16.0,
+            "stage_timings_ms": {"dense_embedding": 10.0},
+        },
+        {
+            "error": "UpstreamError",
+            "elapsed_ms": 99.0,
+            "stage_timings_ms": {"dense_embedding": 99.0, "failed_only": 1.0},
+        },
+    ]
+
+    summary = summarize_stage_timings(records)
+
+    assert summary["successful_observations"] == 2
+    assert set(summary["stages"]) == {"dense_embedding", "vector_search"}
+    assert summary["stages"]["dense_embedding"]["mean"] == 9.0
+    assert summary["stages"]["dense_embedding"]["observations"] == 2
+    assert summary["stages"]["vector_search"]["observations"] == 1
+    assert summary["stages"]["dense_embedding"]["mean_total_share"] == pytest.approx(
+        9 / 14
+    )
 
 
 def test_paired_summary_excludes_unanswerable_and_error_rows(tmp_path: Path) -> None:
