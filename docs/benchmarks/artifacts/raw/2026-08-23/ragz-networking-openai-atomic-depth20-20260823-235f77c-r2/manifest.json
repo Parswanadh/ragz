@@ -1,0 +1,417 @@
+{
+  "benchmark_status": "production_embedding_fixed_fusion",
+  "condition_order": "multi-first",
+  "conditions": {
+    "multi": {
+      "abstention": {
+        "f1": null,
+        "false_negative": 9,
+        "false_positive": 0,
+        "precision": null,
+        "recall": 0.0,
+        "true_positive": 0
+      },
+      "abstention_observations": 45,
+      "answerable_queries": 12,
+      "atomic_latency_ms": {
+        "clock": "time.perf_counter wall clock",
+        "stages": {
+          "authorization_prefilter": {
+            "mean": 4.331208888888889,
+            "mean_total_share": 0.008697357730972799,
+            "observations": 45,
+            "p50": 4.3596,
+            "p95": 5.3639399999999995,
+            "p99": 5.760360000000001
+          },
+          "authorization_recheck": {
+            "mean": 1.48484,
+            "mean_total_share": 0.0029816582355072247,
+            "observations": 45,
+            "p50": 1.5276,
+            "p95": 1.80582,
+            "p99": 2.0563080000000005
+          },
+          "candidate_decode": {
+            "mean": 0.07691333333333333,
+            "mean_total_share": 0.0001544471281442079,
+            "observations": 45,
+            "p50": 0.0864,
+            "p95": 0.10108,
+            "p99": 0.10582800000000002
+          },
+          "candidate_dedupe": {
+            "mean": 0.018426666666666668,
+            "mean_total_share": 3.700198164085903e-05,
+            "observations": 45,
+            "p50": 0.0205,
+            "p95": 0.027379999999999995,
+            "p99": 0.029868
+          },
+          "collection_ready": {
+            "mean": 3.1512266666666666,
+            "mean_total_share": 0.006327874345125836,
+            "observations": 45,
+            "p50": 3.1564,
+            "p95": 4.134539999999999,
+            "p99": 4.716528000000001
+          },
+          "database_release": {
+            "mean": 1.3310733333333333,
+            "mean_total_share": 0.002672884463240071,
+            "observations": 45,
+            "p50": 1.3122,
+            "p95": 1.5470000000000002,
+            "p99": 1.61362
+          },
+          "dense_embedding": {
+            "mean": 445.61726444444446,
+            "mean_total_share": 0.8948293327328053,
+            "observations": 45,
+            "p50": 475.3203,
+            "p95": 508.99816,
+            "p99": 519.245736
+          },
+          "embedder_resolution": {
+            "mean": 0.010575555555555555,
+            "mean_total_share": 2.1236424340189114e-05,
+            "observations": 45,
+            "p50": 0.0105,
+            "p95": 0.01568,
+            "p99": 0.018356000000000004
+          },
+          "embedding_usage_record": {
+            "mean": 0.10055777777777777,
+            "mean_total_share": 0.00020192675726368934,
+            "observations": 45,
+            "p50": 0.0885,
+            "p95": 0.14218,
+            "p99": 0.15086400000000005
+          },
+          "no_answer_probe": {
+            "mean": 13.774515555555556,
+            "mean_total_share": 0.027660150417785485,
+            "observations": 45,
+            "p50": 13.5481,
+            "p95": 17.4732,
+            "p99": 19.474288
+          },
+          "query_expansion": {
+            "mean": 0.15986,
+            "mean_total_share": 0.0003210095939819677,
+            "observations": 45,
+            "p50": 0.1787,
+            "p95": 0.21736,
+            "p99": 0.2510760000000001
+          },
+          "sparse_embedding": {
+            "mean": 0.4518511111111111,
+            "mean_total_share": 0.0009073473146383007,
+            "observations": 45,
+            "p50": 0.4926,
+            "p95": 0.56122,
+            "p99": 0.5735640000000001
+          },
+          "unattributed_runner": {
+            "mean": 0.4447933333333333,
+            "mean_total_share": 0.0008931748238409818,
+            "observations": 45,
+            "p50": 0.4293,
+            "p95": 0.61572,
+            "p99": 0.628684
+          },
+          "vector_search": {
+            "mean": 23.696566666666666,
+            "mean_total_share": 0.04758429403498872,
+            "observations": 45,
+            "p50": 23.5307,
+            "p95": 27.286179999999998,
+            "p99": 29.596184000000008
+          },
+          "workspace_model_resolution": {
+            "mean": 3.3416733333333335,
+            "mean_total_share": 0.006710304015724397,
+            "observations": 45,
+            "p50": 3.2928,
+            "p95": 4.27462,
+            "p99": 4.6303920000000005
+          }
+        },
+        "successful_observations": 45
+      },
+      "errors": 0,
+      "latency_ms": {
+        "p50": 528.7492,
+        "p95": 562.6396,
+        "p99": 575.4026240000001
+      },
+      "mean_ndcg_at_k": 0.5351883293997985,
+      "mean_recall_at_k": 0.4843617031117031,
+      "mean_reciprocal_rank": 0.7777777777777778,
+      "mode": "multi",
+      "observations": 45,
+      "quality_observations": 36,
+      "query_count": 15,
+      "repetitions": 3,
+      "unanswerable_queries": 3,
+      "warmups": 2
+    },
+    "single": {
+      "abstention": {
+        "f1": null,
+        "false_negative": 9,
+        "false_positive": 0,
+        "precision": null,
+        "recall": 0.0,
+        "true_positive": 0
+      },
+      "abstention_observations": 45,
+      "answerable_queries": 12,
+      "atomic_latency_ms": {
+        "clock": "time.perf_counter wall clock",
+        "stages": {
+          "authorization_prefilter": {
+            "mean": 4.4017711111111115,
+            "mean_total_share": 0.011456800235202545,
+            "observations": 45,
+            "p50": 4.433,
+            "p95": 5.952179999999999,
+            "p99": 6.072363999999999
+          },
+          "authorization_recheck": {
+            "mean": 1.9000866666666667,
+            "mean_total_share": 0.004945489626805446,
+            "observations": 45,
+            "p50": 1.4431,
+            "p95": 5.767459999999999,
+            "p99": 6.9545200000000005
+          },
+          "candidate_decode": {
+            "mean": 0.07056888888888889,
+            "mean_total_share": 0.0001836746260566287,
+            "observations": 45,
+            "p50": 0.0813,
+            "p95": 0.09639999999999999,
+            "p99": 0.10227600000000002
+          },
+          "candidate_dedupe": {
+            "mean": 0.017797777777777777,
+            "mean_total_share": 4.632353193373029e-05,
+            "observations": 45,
+            "p50": 0.0197,
+            "p95": 0.02548,
+            "p99": 0.027124000000000006
+          },
+          "collection_ready": {
+            "mean": 3.0861466666666666,
+            "mean_total_share": 0.008032531670555485,
+            "observations": 45,
+            "p50": 3.1039,
+            "p95": 3.58962,
+            "p99": 4.275252000000001
+          },
+          "database_release": {
+            "mean": 1.3508866666666666,
+            "mean_total_share": 0.003516048038329718,
+            "observations": 45,
+            "p50": 1.3532,
+            "p95": 1.61344,
+            "p99": 1.655072
+          },
+          "dense_embedding": {
+            "mean": 350.3500622222222,
+            "mean_total_share": 0.9118808256837281,
+            "observations": 45,
+            "p50": 361.773,
+            "p95": 425.31984,
+            "p99": 446.19015200000007
+          },
+          "embedder_resolution": {
+            "mean": 0.01052,
+            "mean_total_share": 2.7381146232273592e-05,
+            "observations": 45,
+            "p50": 0.0104,
+            "p95": 0.016579999999999994,
+            "p99": 0.0173
+          },
+          "embedding_usage_record": {
+            "mean": 0.1126888888888889,
+            "mean_total_share": 0.00029330332180789903,
+            "observations": 45,
+            "p50": 0.1024,
+            "p95": 0.1431,
+            "p99": 0.1650560000000001
+          },
+          "no_answer_probe": {
+            "mean": 7.2813,
+            "mean_total_share": 0.01895155323774275,
+            "observations": 45,
+            "p50": 6.9528,
+            "p95": 8.653659999999999,
+            "p99": 10.463000000000006
+          },
+          "query_expansion": {
+            "mean": 0.0004911111111111111,
+            "mean_total_share": 1.2782495389379941e-06,
+            "observations": 45,
+            "p50": 0.0005,
+            "p95": 0.0007,
+            "p99": 0.0007560000000000003
+          },
+          "sparse_embedding": {
+            "mean": 0.4191533333333333,
+            "mean_total_share": 0.001090959953778034,
+            "observations": 45,
+            "p50": 0.3498,
+            "p95": 0.5274399999999999,
+            "p99": 1.8054680000000052
+          },
+          "unattributed_runner": {
+            "mean": 0.31192888888888887,
+            "mean_total_share": 0.0008118793270662821,
+            "observations": 45,
+            "p50": 0.3146,
+            "p95": 0.38602,
+            "p99": 0.41382000000000013
+          },
+          "vector_search": {
+            "mean": 12.410668888888889,
+            "mean_total_share": 0.03230212354439117,
+            "observations": 45,
+            "p50": 12.4063,
+            "p95": 14.932979999999999,
+            "p99": 15.108156
+          },
+          "workspace_model_resolution": {
+            "mean": 2.4819044444444445,
+            "mean_total_share": 0.006459827806831092,
+            "observations": 45,
+            "p50": 2.3997,
+            "p95": 3.1480799999999993,
+            "p99": 3.5334080000000005
+          }
+        },
+        "successful_observations": 45
+      },
+      "errors": 0,
+      "latency_ms": {
+        "p50": 399.3604,
+        "p95": 455.12611999999996,
+        "p99": 479.2332760000001
+      },
+      "mean_ndcg_at_k": 0.5017265217751801,
+      "mean_recall_at_k": 0.4461402023902024,
+      "mean_reciprocal_rank": 0.8083333333333333,
+      "mode": "single",
+      "observations": 45,
+      "quality_observations": 36,
+      "query_count": 15,
+      "repetitions": 3,
+      "unanswerable_queries": 3,
+      "warmups": 2
+    }
+  },
+  "copyright_safe": true,
+  "corpus_stats": {
+    "books": [
+      {
+        "book_id": "forouzan-2022",
+        "chunks": 3500,
+        "pages": 861,
+        "parse_ms": 7631.4764
+      },
+      {
+        "book_id": "kurose-2021",
+        "chunks": 1851,
+        "pages": 775,
+        "parse_ms": 6484.0562
+      },
+      {
+        "book_id": "tanenbaum-2021",
+        "chunks": 3023,
+        "pages": 946,
+        "parse_ms": 7219.1232
+      }
+    ],
+    "chunks": 8374,
+    "index_embedding_calls_completed": 263,
+    "index_embedding_tokens": 1577342
+  },
+  "dataset_id": "networking-pdfs-v1",
+  "dense": "openai-text-embedding-3-small-1536",
+  "document_text_persisted": false,
+  "embedding_dimension": 1536,
+  "embedding_engine": "openai",
+  "embedding_model": "text-embedding-3-small",
+  "embedding_provider": "openai",
+  "embedding_provider_calls": "not_exposed_nonzero",
+  "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "embedding_transport": "litellm",
+  "expansion_provider_calls": 0,
+  "fusion": "qdrant-rrf",
+  "git_commit": "235f77c4c674ef26d71b1fd67a5fc3b94dedbae5",
+  "git_dirty": false,
+  "no_answer_threshold": {
+    "calibration": "unthresholded OpenAI parity track aligned to AnythingLLM empty-result policy; not calibrated for abstention",
+    "score_space": "maximum_dense_cosine",
+    "value": 0.0
+  },
+  "pdfs": [
+    {
+      "book_id": "forouzan-2022",
+      "filename": "1_Behrouz A. Forouzan - Data Communications and Networking with TCP_IP Protocol Suite-McGraw-Hill (2022).pdf",
+      "pages": 861,
+      "sha256": "fec3e7c7d583018633cbba69510cdb9bba01622f4eed6ef894f571b909c59f25",
+      "size_bytes": 33719680
+    },
+    {
+      "book_id": "kurose-2021",
+      "filename": "2_James W. Kurose, Keith W. Ross - Computer Networking_ A Top-Down Approach-Pearson (2021).pdf",
+      "pages": 775,
+      "sha256": "7599e188b2645104576b5502400565aff7892ef02abb866ed6899ef9b5865a9a",
+      "size_bytes": 19972617
+    },
+    {
+      "book_id": "tanenbaum-2021",
+      "filename": "3_Andrew S. Tanenbaum, Nick Feamster, David J. Wetherall - Computer Networks-Pearson (2021).pdf",
+      "pages": 946,
+      "sha256": "dca8648949db3f7f95f29917a32718d98a06888083c7f86712c9aa070cfebcb8",
+      "size_bytes": 35186267
+    }
+  ],
+  "provider_cost_usd": null,
+  "provider_progress": {
+    "index_embedding_calls_completed": 263,
+    "index_embedding_tokens": 1577342,
+    "query_embedding_attempts": 150
+  },
+  "python_version": "3.13.13",
+  "query_set": {
+    "count": 15,
+    "filename": "networking-multi-query-queries.json",
+    "sha256": "dc44eabf6842f80bd0c3800e5f40e7e07f6e3a6c7ce0ab68051b42ee15de1906"
+  },
+  "query_variants": "fixed-two-alternatives",
+  "repetitions": 3,
+  "reranker": "disabled",
+  "runner_version": "3.0",
+  "schema_version": "1.0",
+  "seed": 42,
+  "sparse": "fastembed-bm25",
+  "stage_timing_schema": {
+    "clock": "time.perf_counter wall clock",
+    "elapsed_ms_authoritative_total": true,
+    "unit": "milliseconds",
+    "version": "retrieval-atomic-v1",
+    "warmups_persisted": false
+  },
+  "status": "completed",
+  "tool_versions": {
+    "fastembed": "0.8.0",
+    "liteparse": "2.12.0",
+    "qdrant_client": "1.18.0"
+  },
+  "top_k": 20,
+  "tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "warmups": 2
+}

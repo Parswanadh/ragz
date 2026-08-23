@@ -1,0 +1,134 @@
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+from analyze_networking_atomic_latency import (  # noqa: E402
+    aggregate_mode,
+    manifest_identity,
+    validate_run_records,
+)
+
+
+def _write_run(root: Path, *, error: str | None = None) -> None:
+    mode = root / "single"
+    mode.mkdir(parents=True)
+    rows = [
+        {
+            "query_id": "q1",
+            "elapsed_ms": total,
+            "error": error,
+            "stage_timings_ms": {
+                "dense_embedding": dense,
+                "vector_search": search,
+                "unattributed_runner": total - dense - search,
+            },
+        }
+        for total, dense, search in ((10.0, 7.0, 2.0), (20.0, 15.0, 3.0))
+    ]
+    (mode / "per_query.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8"
+    )
+
+
+def test_aggregate_mode_reports_atomic_means_and_provider_excluded_time(
+    tmp_path: Path,
+) -> None:
+    first, second = tmp_path / "first", tmp_path / "second"
+    _write_run(first)
+    _write_run(second)
+
+    result = aggregate_mode([first, second], "single")
+
+    assert result["observations"] == 4
+    assert result["mean_ms"] == 15.0
+    assert result["stages"]["dense_embedding"]["mean_ms"] == 11.0
+    assert result["mean_without_dense_embedding_ms"] == 4.0
+    assert result["stages"]["vector_search"]["mean_total_share"] == pytest.approx(
+        2.5 / 15
+    )
+
+
+def test_aggregate_mode_rejects_errors_and_inconsistent_stage_schema(
+    tmp_path: Path,
+) -> None:
+    failed = tmp_path / "failed"
+    _write_run(failed, error="UpstreamError")
+    with pytest.raises(ValueError, match="zero-error"):
+        aggregate_mode([failed], "single")
+
+    inconsistent = tmp_path / "inconsistent"
+    _write_run(inconsistent)
+    path = inconsistent / "single" / "per_query.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    rows[1]["stage_timings_ms"].pop("vector_search")
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    with pytest.raises(ValueError, match="inconsistent"):
+        aggregate_mode([inconsistent], "single")
+
+
+def test_validate_run_records_rejects_duplicate_query_repetitions(tmp_path: Path) -> None:
+    root = tmp_path / "run"
+    _write_run(root)
+    path = root / "single" / "per_query.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    for repetition, row in enumerate(rows, 1):
+        row.update({"repetition": repetition, "expansion_count": 1})
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+
+    validate_run_records(root, mode="single", expected_query_count=1, repetitions=2)
+    rows[1]["repetition"] = 1
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    with pytest.raises(ValueError, match="duplicate"):
+        validate_run_records(root, mode="single", expected_query_count=1, repetitions=2)
+
+
+def test_manifest_identity_includes_every_fairness_control() -> None:
+    manifest = {
+        "dataset_id": "d",
+        "query_set": {"count": 15, "sha256": "q"},
+        "pdfs": [{"book_id": "b", "sha256": "p"}],
+        "top_k": 20,
+        "warmups": 2,
+        "repetitions": 3,
+        "embedding_model": "text-embedding-3-small",
+        "embedding_dimension": 1536,
+        "embedding_provider": "openai",
+        "embedding_transport": "litellm",
+        "embedding_proxy_fingerprint_sha256": "a" * 64,
+        "dense": "openai-text-embedding-3-small-1536",
+        "sparse": "fastembed-bm25",
+        "fusion": "qdrant-rrf",
+        "reranker": "disabled",
+        "query_variants": "fixed-two-alternatives",
+        "no_answer_threshold": {"value": 0.0},
+        "stage_timing_schema": {"version": "retrieval-atomic-v1"},
+    }
+
+    identity = manifest_identity(manifest)
+
+    assert set(identity) == {
+        "dataset_id",
+        "query_set",
+        "pdfs",
+        "top_k",
+        "warmups",
+        "repetitions",
+        "embedding_model",
+        "embedding_dimension",
+        "embedding_provider",
+        "embedding_transport",
+        "embedding_proxy_fingerprint_sha256",
+        "dense",
+        "sparse",
+        "fusion",
+        "reranker",
+        "query_variants",
+        "no_answer_threshold",
+        "stage_timing_schema",
+    }
