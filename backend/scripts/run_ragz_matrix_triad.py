@@ -53,7 +53,7 @@ DEFAULT_PROVIDER_RUNNER = Path(
     "/home/parshu/projects/ragz/no_rel/ragz-benchmark-lab/scripts/run_openai_qa.py"
 )
 COLLECTION = "chunks_bge_m3"
-EMBEDDING_ALIAS = "openai-text-embedding-3-large-1024"
+EMBEDDING_ALIAS = "ragz-openai-text-embedding-3-large-d1024"
 EMBEDDING_MODEL = "text-embedding-3-large"
 EMBEDDING_DIMENSION = 1024
 RERANK_MODEL = "rerank-v4.0-fast"
@@ -527,12 +527,10 @@ async def run(args: argparse.Namespace) -> None:
         )
         try:
             async with factory() as session:
-                model = (
-                    await session.execute(
-                        select(Model).where(Model.id == Workspace.embedding_model_id)
-                        .join(Workspace, Workspace.embedding_model_id == Model.id)
-                    )
-                ).scalar_one()
+                workspace = await session.get(Workspace, workspace_id)
+                assert workspace is not None
+                model = await session.get(Model, workspace.embedding_model_id)
+                assert model is not None
                 if (
                     model.litellm_model_name != EMBEDDING_ALIAS
                     or model.dimension != EMBEDDING_DIMENSION

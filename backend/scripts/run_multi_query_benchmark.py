@@ -1039,6 +1039,10 @@ async def run(args: argparse.Namespace) -> None:
     write_progress(output, progress)
     queries = load_query_set(args.queries.resolve())
     manifest = build_manifest(args.pdf, args.queries.resolve())
+    # The original helper was networking-specific.  Matrix campaigns now use
+    # other three-PDF corpora as well, so the caller must be able to replace
+    # that legacy label without changing any source hashes or query content.
+    manifest["dataset_id"] = args.dataset_id
     git_executable = shutil.which("git")
     if git_executable is None:
         raise RuntimeError("git executable not found")
@@ -1280,6 +1284,11 @@ async def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--dataset-id",
+        default="networking-pdfs-v1",
+        help="non-secret corpus identity written to the benchmark manifest",
+    )
     parser.add_argument("--pdf", action="append", required=True, type=parse_pdf_arg)
     parser.add_argument("--queries", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
@@ -1360,6 +1369,8 @@ def main() -> None:
         default="single-first",
     )
     args = parser.parse_args()
+    if not args.dataset_id.strip() or len(args.dataset_id) > 200:
+        raise ValueError("dataset-id must be 1-200 characters")
     if len(args.pdf) != 3 or len({book_id for book_id, _ in args.pdf}) != 3:
         raise ValueError("exactly three uniquely named PDFs are required")
     if not 1 <= args.top_k <= 50:
@@ -1407,7 +1418,7 @@ def main() -> None:
                 failed_manifest = {
                     "schema_version": 1,
                     "runner_version": "3.0",
-                    "dataset_id": "networking-pdfs-v1",
+                    "dataset_id": args.dataset_id,
                     "source_pdf_count": len(args.pdf),
                     "query_set_filename": args.queries.name,
                     "embedding_engine": failed_track.engine,
