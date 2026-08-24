@@ -1,6 +1,6 @@
 # ADR-0007: Bounded Multi-Query Retrieval with Rank Fusion
 
-**Status:** Accepted  
+**Status:** Accepted
 **Date:** 2026-08-21
 
 ## Context
