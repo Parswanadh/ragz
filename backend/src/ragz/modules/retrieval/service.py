@@ -38,18 +38,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import get_settings
 from ragz.core.errors import NotFoundError, UpstreamError, WorkspaceAccessDenied
-from ragz.core.metrics import observe_stage
+from ragz.core.metrics import observe_stage, query_expansion_outcomes_total
 from ragz.modules.documents.pipeline import Chunk
 from ragz.modules.quotas import service as quota_service
 from ragz.modules.retrieval.client import EPHEMERAL_COLLECTION, get_qdrant
 from ragz.modules.retrieval.embeddings import (
+    DenseEmbedder,
     QueryEmbeddingCache,
     embed_sparse,
     get_dense_embedder,
     get_query_embedding_cache,
     query_embedding_cache_namespace,
 )
-from ragz.modules.retrieval.query_expansion import QueryExpander, build_query_expander
+from ragz.modules.retrieval.query_expansion import (
+    ExpandedQueries,
+    QueryExpander,
+    build_query_expander,
+)
 from ragz.modules.retrieval.rerank import RerankUnavailable, get_reranker
 from ragz.modules.tenancy.context import TenantContext
 from ragz.modules.tenancy.service import get_workspace_checked
@@ -75,6 +80,14 @@ class RetrievalResult:
     embedding_cache_misses: int = 0
 
 
+@dataclass(frozen=True)
+class _EmbeddedQueryBatch:
+    vectors: list[list[float]]
+    billed_tokens: int
+    cache_hits: int
+    cache_misses: int
+
+
 @contextmanager
 def _capture_stage(
     timings_ms: dict[str, float] | None, stage: str
@@ -95,6 +108,59 @@ def _capture_stage(
     finally:
         elapsed_ms = (perf_counter() - started) * 1000
         timings_ms[stage] = round(timings_ms.get(stage, 0.0) + elapsed_ms, 4)
+
+
+async def _embed_query_batch(
+    *,
+    queries: Sequence[str],
+    dense_embedder: DenseEmbedder,
+    query_cache: QueryEmbeddingCache | None,
+    cache_namespace: str,
+    expected_dimension: int,
+    stage_timings_ms: dict[str, float] | None,
+) -> _EmbeddedQueryBatch:
+    with _capture_stage(stage_timings_ms, "embedding_cache_lookup"):
+        cached_vectors: list[list[float] | None]
+        cached_vectors = (
+            await query_cache.get_many(cache_namespace, queries)
+            if query_cache is not None
+            else [None] * len(queries)
+        )
+    if len(cached_vectors) != len(queries):
+        raise UpstreamError("query embedding cache returned the wrong vector count")
+    if any(
+        vector is not None and len(vector) != expected_dimension
+        for vector in cached_vectors
+    ):
+        raise UpstreamError("query embedding cache returned the wrong vector width")
+    miss_indices = [index for index, vector in enumerate(cached_vectors) if vector is None]
+    miss_texts = [queries[index] for index in miss_indices]
+    miss_vectors: list[list[float]] = []
+    billed_tokens = 0
+    with _capture_stage(stage_timings_ms, "dense_embedding"), observe_stage(
+        "embed_dense"
+    ):
+        if miss_texts:
+            miss_vectors, billed_tokens = await dense_embedder.embed_with_usage(
+                miss_texts
+            )
+    if len(miss_vectors) != len(miss_indices):
+        raise UpstreamError("dense embedder returned the wrong vector count")
+    if any(len(vector) != expected_dimension for vector in miss_vectors):
+        raise UpstreamError("dense embedder returned the wrong vector width")
+    for index, vector in zip(miss_indices, miss_vectors, strict=True):
+        cached_vectors[index] = vector
+    with _capture_stage(stage_timings_ms, "embedding_cache_store"):
+        if query_cache is not None and miss_texts:
+            await query_cache.set_many(cache_namespace, miss_texts, miss_vectors)
+    if any(vector is None for vector in cached_vectors):
+        raise UpstreamError("query embedding cache left an unresolved vector")
+    return _EmbeddedQueryBatch(
+        vectors=[vector for vector in cached_vectors if vector is not None],
+        billed_tokens=billed_tokens,
+        cache_hits=len(queries) - len(miss_indices),
+        cache_misses=len(miss_indices),
+    )
 
 
 @dataclass(frozen=True)
@@ -504,6 +570,7 @@ async def retrieve(
     rerank_candidate_pool_override: int | None = None,
     query_embedding_cache: QueryEmbeddingCache | None = None,
     query_embedding_cache_enabled_override: bool | None = None,
+    multi_query_expansion_timeout_ms_override: int | None = None,
     strict_rerank: bool = False,
     stage_timings_ms: dict[str, float] | None = None,
 ) -> RetrievalResult:
@@ -546,7 +613,13 @@ async def retrieve(
         raise ValueError("multi_query_count_override must be 1, 3, or 5")
     if rerank_candidate_pool_override not in (None, 10, 20, 50):
         raise ValueError("rerank_candidate_pool_override must be 10, 20, or 50")
+    if (
+        multi_query_expansion_timeout_ms_override is not None
+        and multi_query_expansion_timeout_ms_override < 1
+    ):
+        raise ValueError("multi_query_expansion_timeout_ms_override must be positive")
     requested_query_count = multi_query_count_override or 3
+    settings = get_settings()
 
     with _capture_stage(stage_timings_ms, "workspace_model_resolution"):
         ws = await get_workspace_checked(session, ctx, workspace_id)
@@ -579,52 +652,10 @@ async def retrieve(
             litellm_model_name=embedding_model.litellm_model_name,
             dimension=embedding_model.dimension,
         )
-    queries: tuple[str, ...] = (query,)
-    with _capture_stage(stage_timings_ms, "query_expansion"):
-        if multi_query_enabled:
-            if utility_model is None:
-                structlog.get_logger().warning(
-                    "multi_query_no_utility_model",
-                    workspace_id=str(workspace_id),
-                )
-            else:
-                expander = query_expander or build_query_expander(
-                    get_settings(), max_queries=requested_query_count
-                )
-                try:
-                    expanded = await expander.expand(
-                        query, model=utility_model.litellm_model_name
-                    )
-                except UpstreamError as exc:
-                    structlog.get_logger().warning(
-                        "multi_query_expansion_failed",
-                        workspace_id=str(workspace_id),
-                        error=type(exc).__name__,
-                    )
-                else:
-                    queries = (expanded.queries or (query,))[:requested_query_count]
-                    expansion_tokens = expanded.prompt_tokens + expanded.completion_tokens
-                    if expansion_tokens > 0:
-                        await quota_service.record_usage(
-                            session,
-                            org_id=ctx.org_id,
-                            user_id=ctx.user_id,
-                            workspace_id=workspace_id,
-                            model_id=utility_model.id,
-                            feature="query_expansion",
-                            prompt_tokens=expanded.prompt_tokens,
-                            completion_tokens=expanded.completion_tokens,
-                            commit=False,
-                        )
-                    structlog.get_logger().info(
-                        "multi_query_expanded",
-                        workspace_id=str(workspace_id),
-                        query_count=len(queries),
-                    )
     active_query_embedding_cache = query_embedding_cache
     if active_query_embedding_cache is None:
         active_query_embedding_cache = get_query_embedding_cache(
-            get_settings(), enabled_override=query_embedding_cache_enabled_override
+            settings, enabled_override=query_embedding_cache_enabled_override
         )
     cache_namespace = query_embedding_cache_namespace(
         model_id=embedding_model.id,
@@ -632,45 +663,102 @@ async def retrieve(
         model=embedding_model.litellm_model_name,
         dimension=embedding_model.dimension,
     )
-    with _capture_stage(stage_timings_ms, "embedding_cache_lookup"):
-        cached_vectors: list[list[float] | None]
-        if active_query_embedding_cache is not None:
-            cached_vectors = await active_query_embedding_cache.get_many(
-                cache_namespace, queries
+    expected_dimension = int(embedding_model.dimension or 0)
+    queries: tuple[str, ...] = (query,)
+    expansion_task: asyncio.Task[ExpandedQueries] | None = None
+    expansion_deadline: float | None = None
+    if multi_query_enabled:
+        if utility_model is None:
+            query_expansion_outcomes_total.labels(outcome="no_utility_model").inc()
+            structlog.get_logger().warning(
+                "multi_query_no_utility_model",
+                workspace_id=str(workspace_id),
             )
         else:
-            cached_vectors = [None] * len(queries)
-    if len(cached_vectors) != len(queries):
-        raise UpstreamError("query embedding cache returned the wrong vector count")
-    expected_dimension = int(embedding_model.dimension or 0)
-    if any(
-        vector is not None and len(vector) != expected_dimension
-        for vector in cached_vectors
-    ):
-        raise UpstreamError("query embedding cache returned the wrong vector width")
-    miss_indices = [index for index, vector in enumerate(cached_vectors) if vector is None]
-    miss_texts = [queries[index] for index in miss_indices]
-    embed_tokens = 0
-    miss_vectors: list[list[float]] = []
-    with _capture_stage(stage_timings_ms, "dense_embedding"), observe_stage(
-        "embed_dense"
-    ):
-        if miss_texts:
-            miss_vectors, embed_tokens = await dense_embedder.embed_with_usage(miss_texts)
-    if len(miss_vectors) != len(miss_indices):
-        raise UpstreamError("dense embedder returned the wrong vector count")
-    for index, vector in zip(miss_indices, miss_vectors, strict=True):
-        cached_vectors[index] = vector
-    with _capture_stage(stage_timings_ms, "embedding_cache_store"):
-        if active_query_embedding_cache is not None and miss_texts:
-            await active_query_embedding_cache.set_many(
-                cache_namespace, miss_texts, miss_vectors
+            expander = query_expander or build_query_expander(
+                settings, max_queries=requested_query_count
             )
-    if any(vector is None for vector in cached_vectors):
-        raise UpstreamError("query embedding cache left an unresolved vector")
-    dense_vecs = [vector for vector in cached_vectors if vector is not None]
-    embedding_cache_hits = len(queries) - len(miss_indices)
-    embedding_cache_misses = len(miss_indices)
+            timeout_ms = (
+                settings.multi_query_expansion_timeout_ms
+                if multi_query_expansion_timeout_ms_override is None
+                else multi_query_expansion_timeout_ms_override
+            )
+            loop = asyncio.get_running_loop()
+            expansion_deadline = loop.time() + timeout_ms / 1000
+            expansion_task = asyncio.create_task(
+                expander.expand(query, model=utility_model.litellm_model_name)
+            )
+    try:
+        original_batch = await _embed_query_batch(
+            queries=(query,),
+            dense_embedder=dense_embedder,
+            query_cache=active_query_embedding_cache,
+            cache_namespace=cache_namespace,
+            expected_dimension=expected_dimension,
+            stage_timings_ms=stage_timings_ms,
+        )
+    except BaseException:
+        if expansion_task is not None and not expansion_task.done():
+            expansion_task.cancel()
+            await asyncio.gather(expansion_task, return_exceptions=True)
+        raise
+    dense_vecs = list(original_batch.vectors)
+    embed_tokens = original_batch.billed_tokens
+    embedding_cache_hits = original_batch.cache_hits
+    embedding_cache_misses = original_batch.cache_misses
+    if expansion_task is not None:
+        assert expansion_deadline is not None and utility_model is not None
+        remaining = max(0.0, expansion_deadline - asyncio.get_running_loop().time())
+        try:
+            with _capture_stage(stage_timings_ms, "query_expansion"):
+                expanded = await asyncio.wait_for(expansion_task, timeout=remaining)
+        except TimeoutError:
+            query_expansion_outcomes_total.labels(outcome="timeout").inc()
+            structlog.get_logger().info(
+                "multi_query_expansion_timeout",
+                workspace_id=str(workspace_id),
+            )
+        except UpstreamError as exc:
+            query_expansion_outcomes_total.labels(outcome="provider_failure").inc()
+            structlog.get_logger().warning(
+                "multi_query_expansion_failed",
+                workspace_id=str(workspace_id),
+                error=type(exc).__name__,
+            )
+        else:
+            query_expansion_outcomes_total.labels(outcome="success").inc()
+            queries = (expanded.queries or (query,))[:requested_query_count]
+            expansion_tokens = expanded.prompt_tokens + expanded.completion_tokens
+            if expansion_tokens > 0:
+                await quota_service.record_usage(
+                    session,
+                    org_id=ctx.org_id,
+                    user_id=ctx.user_id,
+                    workspace_id=workspace_id,
+                    model_id=utility_model.id,
+                    feature="query_expansion",
+                    prompt_tokens=expanded.prompt_tokens,
+                    completion_tokens=expanded.completion_tokens,
+                    commit=False,
+                )
+            if len(queries) > 1:
+                alternative_batch = await _embed_query_batch(
+                    queries=queries[1:],
+                    dense_embedder=dense_embedder,
+                    query_cache=active_query_embedding_cache,
+                    cache_namespace=cache_namespace,
+                    expected_dimension=expected_dimension,
+                    stage_timings_ms=stage_timings_ms,
+                )
+                dense_vecs.extend(alternative_batch.vectors)
+                embed_tokens += alternative_batch.billed_tokens
+                embedding_cache_hits += alternative_batch.cache_hits
+                embedding_cache_misses += alternative_batch.cache_misses
+            structlog.get_logger().info(
+                "multi_query_expanded",
+                workspace_id=str(workspace_id),
+                query_count=len(queries),
+            )
     # Cost reporting (design 2026-08-15 §2): the query embedding's billed tokens
     # (hosted providers only; self-hosted TEI / the hash test backend report 0).
     # commit=False stages the row so it rides this turn's end-of-turn commit

@@ -103,6 +103,10 @@ class Settings(BaseSettings):
     query_embedding_cache_enabled: bool = False
     query_embedding_cache_max_entries: int = Field(default=10_000, ge=1, le=100_000)
     query_embedding_cache_ttl_seconds: int = Field(default=3_600, ge=1, le=86_400)
+    query_expansion_cache_enabled: bool = False
+    query_expansion_cache_max_entries: int = Field(default=5_000, ge=1, le=50_000)
+    query_expansion_cache_ttl_seconds: int = Field(default=3_600, ge=1, le=86_400)
+    multi_query_expansion_timeout_ms: int = Field(default=3_000, ge=100, le=30_000)
     # Plan E: cross-encoder reranker (CHAT-2 pull-forward)
     rerank_url: str = "http://localhost:58081"
     rerank_backend: str = "tei"  # "tei" | "lexical" (lexical = deterministic, test/dev only)

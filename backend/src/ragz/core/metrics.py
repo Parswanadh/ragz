@@ -67,6 +67,18 @@ query_embedding_cache_operations_total = Counter(
     ("outcome",),
 )
 
+query_expansion_cache_operations_total = Counter(
+    "ragz_query_expansion_cache_operations_total",
+    "Query-expansion cache operations by bounded outcome.",
+    ("outcome",),
+)
+
+query_expansion_outcomes_total = Counter(
+    "ragz_query_expansion_outcomes_total",
+    "Multi-query expansion outcomes by bounded result.",
+    ("outcome",),
+)
+
 @contextmanager
 def observe_stage(stage: str) -> Iterator[None]:
     """Time a retrieval stage, recording it even when the stage raises.

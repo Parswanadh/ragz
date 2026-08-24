@@ -7,15 +7,21 @@ Callers own graceful degradation when the gateway itself is unavailable.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+from collections import OrderedDict
+from collections.abc import Callable
 from dataclasses import dataclass
+from functools import lru_cache
+from time import monotonic
 from typing import Protocol
 
 import httpx
 
 from ragz.core.config import Settings
 from ragz.core.errors import UpstreamError
+from ragz.core.metrics import query_expansion_cache_operations_total
 
 _DEFAULT_TOTAL_QUERIES = 3
 _SUPPORTED_TOTAL_QUERIES = frozenset({3, 5})
@@ -23,6 +29,7 @@ _MAX_QUERY_CHARS = 2_000
 _MAX_USAGE_TOKENS = 1_000_000_000
 _SPACE_RE = re.compile(r"\s+")
 _PROVIDER_DEFAULT_TEMPERATURE_MODELS = {"gpt-5.6-luna"}
+_PROMPT_VERSION = "mqr-perspectives-v2-low-reasoning"
 
 _PERSPECTIVES = (
     "exact entities, numbers, protocol names, negation, scope, and constraints",
@@ -70,6 +77,108 @@ class ExpandedQueries:
 
 class QueryExpander(Protocol):
     async def expand(self, query: str, *, model: str) -> ExpandedQueries: ...
+
+
+@dataclass(frozen=True, slots=True)
+class _ExpansionCacheEntry:
+    expires_at: float
+    queries: tuple[str, ...]
+
+
+class InMemoryQueryExpansionCache:
+    """Bounded replica-local TTL/LRU; keys never contain raw query text."""
+
+    def __init__(
+        self,
+        max_entries: int = 5_000,
+        ttl_seconds: float = 3_600,
+        clock: Callable[[], float] = monotonic,
+    ) -> None:
+        if max_entries < 1:
+            raise ValueError("max_entries must be positive")
+        if ttl_seconds <= 0:
+            raise ValueError("ttl_seconds must be positive")
+        import asyncio
+
+        self._max_entries = max_entries
+        self._ttl_seconds = float(ttl_seconds)
+        self._clock = clock
+        self._entries: OrderedDict[str, _ExpansionCacheEntry] = OrderedDict()
+        self._lock = asyncio.Lock()
+
+    @staticmethod
+    def _key(*, model: str, max_queries: int, query: str) -> str:
+        material = f"{_PROMPT_VERSION}\0{model}\0{max_queries}\0{query}"
+        return hashlib.sha256(material.encode()).hexdigest()
+
+    async def get(
+        self, *, model: str, max_queries: int, query: str
+    ) -> tuple[str, ...] | None:
+        key = self._key(model=model, max_queries=max_queries, query=query)
+        async with self._lock:
+            entry = self._entries.get(key)
+            if entry is None:
+                outcome = "miss"
+                result = None
+            elif entry.expires_at <= self._clock():
+                self._entries.pop(key, None)
+                query_expansion_cache_operations_total.labels(outcome="expired").inc()
+                outcome = "miss"
+                result = None
+            else:
+                self._entries.move_to_end(key)
+                outcome = "hit"
+                result = entry.queries
+        query_expansion_cache_operations_total.labels(outcome=outcome).inc()
+        return result
+
+    async def set(
+        self,
+        *,
+        model: str,
+        max_queries: int,
+        query: str,
+        expanded: tuple[str, ...],
+    ) -> None:
+        key = self._key(model=model, max_queries=max_queries, query=query)
+        evicted = 0
+        async with self._lock:
+            self._entries[key] = _ExpansionCacheEntry(
+                expires_at=self._clock() + self._ttl_seconds,
+                queries=tuple(expanded),
+            )
+            self._entries.move_to_end(key)
+            while len(self._entries) > self._max_entries:
+                self._entries.popitem(last=False)
+                evicted += 1
+        query_expansion_cache_operations_total.labels(outcome="store").inc()
+        if evicted:
+            query_expansion_cache_operations_total.labels(outcome="evicted").inc(
+                evicted
+            )
+
+
+@lru_cache(maxsize=16)
+def _bounded_query_expansion_cache(
+    max_entries: int, ttl_seconds: int
+) -> InMemoryQueryExpansionCache:
+    return InMemoryQueryExpansionCache(
+        max_entries=max_entries,
+        ttl_seconds=ttl_seconds,
+    )
+
+
+def get_query_expansion_cache(settings: Settings) -> InMemoryQueryExpansionCache | None:
+    if not settings.query_expansion_cache_enabled:
+        return None
+    return _bounded_query_expansion_cache(
+        settings.query_expansion_cache_max_entries,
+        settings.query_expansion_cache_ttl_seconds,
+    )
+
+
+def clear_query_expansion_cache() -> None:
+    _bounded_query_expansion_cache.cache_clear()
 
 
 def _query_message(query: str) -> str:
@@ -157,6 +266,7 @@ class LiteLLMQueryExpander:
         transport: httpx.AsyncBaseTransport | None = None,
         limits: httpx.Limits | None = None,
         max_queries: int = _DEFAULT_TOTAL_QUERIES,
+        expansion_cache: InMemoryQueryExpansionCache | None = None,
     ) -> None:
         if max_queries not in _SUPPORTED_TOTAL_QUERIES:
             raise ValueError("max_queries must be 3 or 5")
@@ -165,8 +275,17 @@ class LiteLLMQueryExpander:
         self._transport = transport
         self._limits = limits if limits is not None else httpx.Limits()
         self._max_queries = max_queries
+        self._expansion_cache = expansion_cache
 
     async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+        if self._expansion_cache is not None:
+            cached = await self._expansion_cache.get(
+                model=model,
+                max_queries=self._max_queries,
+                query=query,
+            )
+            if cached is not None:
+                return ExpandedQueries(queries=cached)
         perspective_keys = _PERSPECTIVE_KEYS[: self._max_queries - 1]
         payload: dict[str, object] = {
             "model": model,
@@ -239,7 +358,7 @@ class LiteLLMQueryExpander:
                 content = message["content"]
         usage = body.get("usage")
         usage_dict = usage if isinstance(usage, dict) else {}
-        return ExpandedQueries(
+        expanded = ExpandedQueries(
             queries=_expanded_queries(
                 query,
                 content,
@@ -248,6 +367,14 @@ class LiteLLMQueryExpander:
             prompt_tokens=_usage_tokens(usage_dict.get("prompt_tokens")),
             completion_tokens=_usage_tokens(usage_dict.get("completion_tokens")),
         )
+        if self._expansion_cache is not None and len(expanded.queries) > 1:
+            await self._expansion_cache.set(
+                model=model,
+                max_queries=self._max_queries,
+                query=query,
+                expanded=expanded.queries,
+            )
+        return expanded
 
 
 def build_query_expander(
@@ -261,6 +388,7 @@ def build_query_expander(
         master_key=settings.litellm_master_key,
         transport=transport,
         max_queries=max_queries,
+        expansion_cache=get_query_expansion_cache(settings),
         limits=httpx.Limits(
             max_connections=settings.httpx_max_connections,
             max_keepalive_connections=settings.httpx_max_keepalive,

@@ -107,30 +107,30 @@ commands.
   `ExpandedQueries` under SHA-256 of prompt version, model, total lanes and query.
 - `get_query_expander(settings, max_queries) -> QueryExpander` returns a shared
   cached expander.
-- Settings: `multi_query_expansion_timeout_ms=750`,
+- Settings: `multi_query_expansion_timeout_ms=3000`,
   `query_expansion_cache_max_entries=5000`,
   `query_expansion_cache_ttl_seconds=3600`.
 - `retrieve()` starts expansion and original dense embedding together. It uses
   alternatives only when expansion finishes before the absolute deadline;
   otherwise it cancels/abandons expansion and returns the Q1 path.
 
-- [ ] Add failing cache tests for model/prompt/count isolation, TTL and no raw
+- [x] Add failing cache tests for model/prompt/count isolation, TTL and no raw
   public keys.
-- [ ] Add failing service tests using events/fake clocks proving original
+- [x] Add failing service tests using events/fake clocks proving original
   embedding begins before expansion finishes.
-- [ ] Add timeout tests proving slow expansion produces exactly Q1, no leaked
+- [x] Add timeout tests proving slow expansion produces exactly Q1, no leaked
   task, no expansion usage row and no delayed second provider call.
-- [ ] Add success tests proving timely expansion batches only the alternative
+- [x] Add success tests proving timely expansion batches only the alternative
   embedding misses and preserves original-first order.
-- [ ] Implement the cache and shared expander resolver.
-- [ ] Refactor dense embedding into a private helper that can embed/cache the
+- [x] Implement the cache and shared expander resolver.
+- [x] Refactor dense embedding into a private helper that can embed/cache the
   original lane before alternatives are resolved without duplicating usage.
-- [ ] Use an absolute monotonic deadline so embedding time consumes the expansion
+- [x] Use an absolute monotonic deadline so embedding time consumes the expansion
   budget instead of granting another full timeout afterward.
-- [ ] Record `query_expansion_wait`, cache outcome and timeout metrics without
+- [x] Record critical-path `query_expansion`, cache outcome and timeout metrics without
   query/model-cardinality labels.
-- [ ] Run focused tests, Ruff and strict mypy.
-- [ ] Commit and push `perf: make multi-query expansion cached and deadline bounded`.
+- [x] Run focused tests, Ruff and strict mypy.
+- [x] Commit and push `perf: make multi-query expansion cached and deadline bounded`.
 
 ### Task 4: Cohere provider resilience and latency truthfulness
 

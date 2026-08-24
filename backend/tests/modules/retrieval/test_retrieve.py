@@ -372,6 +372,95 @@ async def test_multi_query_releases_db_transaction_before_provider_call(
     assert result.chunks
 
 
+async def test_multi_query_starts_original_embedding_before_expansion_finishes(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ctx, ws = await seed_workspace(
+        session, "mq-speculative", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+    delegate = get_dense_embedder(**_LOCAL_MODEL_KW)
+    embedding_started = asyncio.Event()
+    expansion_started = asyncio.Event()
+
+    class ObservedEmbedder:
+        async def embed_with_usage(self, texts: list[str]):  # type: ignore[no-untyped-def]
+            embedding_started.set()
+            return await delegate.embed_with_usage(texts)
+
+    class ObservedExpander(_FakeQueryExpander):
+        async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+            expansion_started.set()
+            await asyncio.wait_for(embedding_started.wait(), timeout=1)
+            return await super().expand(query, model=model)
+
+    monkeypatch.setattr(
+        retrieval_service, "get_dense_embedder", lambda *args, **kwargs: ObservedEmbedder()
+    )
+    result = await asyncio.wait_for(
+        retrieve(
+            session,
+            ctx,
+            ws.id,
+            "alpha",
+            query_expander=ObservedExpander(("alpha report",)),
+        ),
+        timeout=2,
+    )
+
+    assert expansion_started.is_set()
+    assert embedding_started.is_set()
+    assert result.query_count == 2
+
+
+async def test_multi_query_timeout_cancels_expansion_and_returns_q1(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+) -> None:
+    from sqlalchemy import select
+
+    from ragz.modules.quotas.models import UsageRecord
+
+    ctx, ws = await seed_workspace(
+        session, "mq-timeout", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+    cancelled = asyncio.Event()
+
+    class NeverExpander(_FakeQueryExpander):
+        async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cancelled.set()
+                raise
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "alpha",
+        query_expander=NeverExpander(),
+        multi_query_expansion_timeout_ms_override=25,
+    )
+
+    assert result.query_count == 1
+    assert cancelled.is_set()
+    usage = (
+        await session.execute(
+            select(UsageRecord).where(
+                UsageRecord.org_id == ctx.org_id,
+                UsageRecord.feature == "query_expansion",
+            )
+        )
+    ).scalar_one_or_none()
+    assert usage is None
+
+
 async def test_multi_query_no_answer_uses_best_variant_dense_score(
     session: AsyncSession, qdrant_collection: None, utility_model: object
 ) -> None:
