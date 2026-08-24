@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from scripts.run_ragz_matrix_triad import (
+    _combined_provider_calls,
     build_context,
     citation_metrics,
     condition_id,
@@ -24,6 +25,18 @@ def test_frozen_ranking_matrix_has_twelve_unique_conditions() -> None:
     assert len(set(values)) == 12
     assert values[0] == "q1_rerank-off_cache-off"
     assert values[-1] == "q5_rerank-50_cache-off"
+
+
+def test_resumed_and_new_provider_calls_are_renumbered() -> None:
+    class Call:
+        def as_dict(self) -> dict[str, object]:
+            return {"sequence": 99, "endpoint_type": "judge"}
+
+    result = _combined_provider_calls(
+        [{"sequence": 8, "endpoint_type": "generation"}], [Call()]
+    )
+
+    assert [item["sequence"] for item in result] == [1, 2]
 
 
 def test_ranking_match_accepts_only_reordering_inside_equal_score_ties() -> None:

@@ -113,6 +113,34 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _json_file(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise TriadContractError(f"{path.name} must contain an object")
+    return value
+
+
+def _jsonl_file(path: Path) -> list[dict[str, Any]]:
+    rows = [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    if any(not isinstance(row, dict) for row in rows):
+        raise TriadContractError(f"{path.name} contains a non-object row")
+    return rows
+
+
+def _combined_provider_calls(
+    prefix: Sequence[Mapping[str, Any]], calls: Sequence[Any]
+) -> list[dict[str, Any]]:
+    combined = [dict(call) for call in prefix]
+    combined.extend(call.as_dict() for call in calls)
+    for sequence, call in enumerate(combined, 1):
+        call["sequence"] = sequence
+    return combined
+
+
 def canonical_hash(value: object) -> str:
     encoded = json.dumps(
         value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
@@ -521,6 +549,22 @@ async def run(args: argparse.Namespace) -> None:
             raise TriadContractError(f"required private input is missing: {path.name}")
     cases = load_private_cases(args.private_queries.resolve())
     expected_query_ids = {str(case["query_id"]) for case in cases}
+    resumed_rows: dict[tuple[str, str], dict[str, Any]] = {}
+    resumed_calls: list[dict[str, Any]] = []
+    resume_manifest: dict[str, Any] | None = None
+    if args.resume_from is not None:
+        resume = args.resume_from.resolve()
+        resume_manifest = _json_file(resume / "manifest.json")
+        for row in _jsonl_file(resume / "per_query.jsonl"):
+            resume_key = (
+                str(row.get("condition_id", "")),
+                str(row.get("query_id", "")),
+            )
+            if resume_key in resumed_rows:
+                raise TriadContractError("resume source contains duplicate rows")
+            if not row.get("error_codes"):
+                resumed_rows[resume_key] = row
+        resumed_calls = _jsonl_file(resume / "provider_calls.jsonl")
     screen = args.screen.resolve()
     screen_rankings = load_screen_rankings(screen, expected_query_ids)
     source_map = load_source_map(args.sources.resolve())
@@ -565,7 +609,24 @@ async def run(args: argparse.Namespace) -> None:
             "answers_persisted": False,
             "provider_bodies_persisted": False,
         },
+        "resume": (
+            {
+                "source_manifest_sha256": sha256_file(
+                    args.resume_from.resolve() / "manifest.json"
+                ),
+                "zero_error_rows_reused": len(resumed_rows),
+                "provider_calls_carried_forward": len(resumed_calls),
+            }
+            if args.resume_from is not None
+            else None
+        ),
     }
+    if resume_manifest is not None:
+        if resume_manifest.get("models") != manifest["models"]:
+            raise TriadContractError("resume source model contract differs")
+        source_state = resume_manifest.get("state_sha256")
+        if source_state != manifest["state_sha256"]:
+            raise TriadContractError("resume source state contract differs")
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -647,6 +708,15 @@ async def run(args: argparse.Namespace) -> None:
                     await session.commit()
                     for case in cases:
                         query_id = str(case["query_id"])
+                        resumed = resumed_rows.get((key, query_id))
+                        if resumed is not None:
+                            condition_rows.append(resumed)
+                            all_rows.append(resumed)
+                            with (output / "per_query.jsonl").open(
+                                "a", encoding="utf-8"
+                            ) as handle:
+                                handle.write(json.dumps(resumed, sort_keys=True) + "\n")
+                            continue
                         errors: list[str] = []
                         timings: dict[str, float] = {}
                         total_started = time.perf_counter()
@@ -857,7 +927,9 @@ async def run(args: argparse.Namespace) -> None:
                         all_rows.append(row)
                         with (output / "per_query.jsonl").open("a", encoding="utf-8") as handle:
                             handle.write(json.dumps(row, sort_keys=True) + "\n")
-                        provider_calls = [call.as_dict() for call in client.calls]
+                        provider_calls = _combined_provider_calls(
+                            resumed_calls, client.calls
+                        )
                         (output / "provider_calls.jsonl").write_text(
                             "".join(
                                 json.dumps(call, sort_keys=True) + "\n"
@@ -874,7 +946,7 @@ async def run(args: argparse.Namespace) -> None:
                     raise TriadContractError(f"{key}: incomplete Triad denominator")
         finally:
             await engine.dispose()
-    provider_calls = [call.as_dict() for call in client.calls]
+    provider_calls = _combined_provider_calls(resumed_calls, client.calls)
     summaries = {
         condition_id(*value): summarize(
             [row for row in all_rows if row["condition_id"] == condition_id(*value)]
@@ -908,6 +980,7 @@ def parser() -> argparse.ArgumentParser:
     value.add_argument("--private-queries", required=True, type=Path)
     value.add_argument("--sources", required=True, type=Path)
     value.add_argument("--screen", required=True, type=Path)
+    value.add_argument("--resume-from", type=Path)
     value.add_argument("--output", required=True, type=Path)
     value.add_argument("--provider-runner", type=Path, default=DEFAULT_PROVIDER_RUNNER)
     value.add_argument("--litellm-url", default="http://127.0.0.1:54000")
