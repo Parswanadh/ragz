@@ -218,6 +218,32 @@ def test_missing_alias_is_created_with_fixed_width_and_no_client_dimension(
     assert provider_key not in json.dumps(build_manifest([cell]))
 
 
+def test_preflight_falls_back_to_v2_model_info_after_legacy_server_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RAGZ_LITELLM_MASTER_KEY", "test-master-key")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    cell = cells()[0]
+    paths: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        paths.append(request.url.path)
+        if request.url.path == "/model/info":
+            return httpx.Response(500)
+        if request.url.path == "/v2/model/info":
+            return httpx.Response(200, json={"data": []})
+        return httpx.Response(200, json={"status": "success"})
+
+    [result] = preflight_aliases(
+        [cell],
+        base_url="http://litellm.test",
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert result.status == "created"
+    assert paths == ["/model/info", "/v2/model/info", "/model/new"]
+
+
 def test_alias_create_failure_body_is_typed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

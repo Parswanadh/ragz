@@ -75,11 +75,12 @@ async def test_prepare_expansions_keeps_text_private_and_metrics_public() -> Non
     assert public[0]["error_code"] is None
 
 
-async def test_prepare_expansions_marks_short_provider_output_incomplete() -> None:
+async def test_prepare_expansions_completes_short_output_with_safe_perspectives() -> None:
     private, public = await prepare_expansions(
         [_source()], expander=_Expander(count=3), model="gpt-5.6-luna", retries=0
     )
 
-    assert private == []
-    assert public[0]["error_code"] == "ExpansionPreparationError"
-    assert public[0]["expansion_count"] == 0
+    assert len(private[0]["alternatives"]) == 4
+    assert public[0]["error_code"] is None
+    assert public[0]["expansion_count"] == 5
+    assert public[0]["fallback_count"] == 2

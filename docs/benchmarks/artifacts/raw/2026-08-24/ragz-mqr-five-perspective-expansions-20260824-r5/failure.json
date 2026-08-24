@@ -1,0 +1,14 @@
+{
+  "completed_expansions": 22,
+  "created_at_utc": "2026-08-24T06:41:42.420220+00:00",
+  "credentials_persisted": false,
+  "error_codes": [
+    "ExpansionPreparationError"
+  ],
+  "errors": 2,
+  "private_output_written": false,
+  "query_count": 24,
+  "query_or_alternative_text_persisted": false,
+  "schema_version": 1,
+  "status": "failed_incomplete"
+}

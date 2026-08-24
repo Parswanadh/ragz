@@ -21,6 +21,12 @@ from ragz.modules.retrieval.query_expansion import ExpandedQueries, LiteLLMQuery
 EXPECTED_TOTAL_QUERIES = 5
 LUNA_INPUT_USD_PER_MILLION = Decimal("0.20")
 LUNA_OUTPUT_USD_PER_MILLION = Decimal("1.20")
+_FALLBACK_PREFIXES = (
+    "Exact entities, numbers, scope, negation, and constraints",
+    "Synonyms, acronyms, and formal documentation terminology",
+    "Mechanisms, prerequisites, component relationships, and failure modes",
+    "Definitions, headings, standards, configuration, and troubleshooting evidence",
+)
 
 
 class ExpansionPreparationError(RuntimeError):
@@ -146,6 +152,32 @@ def _token_total(rows: Sequence[Mapping[str, object]], field: str) -> int:
     return total
 
 
+def _complete_missing_perspectives(
+    original: str, expanded: ExpandedQueries
+) -> tuple[ExpandedQueries, int]:
+    queries = list(expanded.queries)
+    seen = {" ".join(value.split()).casefold() for value in queries}
+    added = 0
+    for prefix in _FALLBACK_PREFIXES:
+        if len(queries) == EXPECTED_TOTAL_QUERIES:
+            break
+        candidate = f"{prefix}: {original}"
+        key = " ".join(candidate.split()).casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        queries.append(candidate)
+        added += 1
+    return (
+        ExpandedQueries(
+            tuple(queries[:EXPECTED_TOTAL_QUERIES]),
+            prompt_tokens=expanded.prompt_tokens,
+            completion_tokens=expanded.completion_tokens,
+        ),
+        added,
+    )
+
+
 async def prepare_expansions(
     queries: Sequence[SourceQuery],
     *,
@@ -160,6 +192,7 @@ async def prepare_expansions(
         expanded: ExpandedQueries | None = None
         latency_ms = 0.0
         attempts = 0
+        fallback_count = 0
         for attempt in range(retries + 1):
             attempts = attempt + 1
             started = time.perf_counter()
@@ -167,7 +200,17 @@ async def prepare_expansions(
                 candidate = await expander.expand(source.query, model=model)
                 latency_ms += (time.perf_counter() - started) * 1000
                 if len(candidate.queries) != EXPECTED_TOTAL_QUERIES:
-                    raise ExpansionPreparationError("provider returned fewer than five queries")
+                    if attempt < retries:
+                        raise ExpansionPreparationError(
+                            "provider returned fewer than five queries"
+                        )
+                    candidate, fallback_count = _complete_missing_perspectives(
+                        source.query, candidate
+                    )
+                    if len(candidate.queries) != EXPECTED_TOTAL_QUERIES:
+                        raise ExpansionPreparationError(
+                            "perspective completion returned fewer than five queries"
+                        )
                 expanded = candidate
                 error_code = None
                 break
@@ -185,6 +228,7 @@ async def prepare_expansions(
                     "latency_ms": round(latency_ms, 4),
                     "prompt_tokens": 0,
                     "completion_tokens": 0,
+                    "fallback_count": 0,
                     "error_code": error_code or "ExpansionPreparationError",
                 }
             )
@@ -208,6 +252,7 @@ async def prepare_expansions(
                 "latency_ms": round(latency_ms, 4),
                 "prompt_tokens": expanded.prompt_tokens,
                 "completion_tokens": expanded.completion_tokens,
+                "fallback_count": fallback_count,
                 "error_code": None,
             }
         )
@@ -271,6 +316,29 @@ def main() -> int:
     )
     errors = sum(row["error_code"] is not None for row in public_rows)
     if len(private_rows) != len(queries) or errors:
+        args.public_output.mkdir(parents=True)
+        _write_new(args.public_output / "per_query.json", public_rows)
+        _write_new(
+            args.public_output / "failure.json",
+            {
+                "schema_version": 1,
+                "status": "failed_incomplete",
+                "created_at_utc": datetime.now(UTC).isoformat(),
+                "query_count": len(queries),
+                "completed_expansions": len(private_rows),
+                "errors": errors,
+                "error_codes": sorted(
+                    {
+                        str(row["error_code"])
+                        for row in public_rows
+                        if row["error_code"] is not None
+                    }
+                ),
+                "private_output_written": False,
+                "credentials_persisted": False,
+                "query_or_alternative_text_persisted": False,
+            },
+        )
         raise ExpansionPreparationError("expansion denominator is incomplete")
     _write_new(args.private_output, private_rows)
     args.private_output.chmod(0o600)
@@ -292,6 +360,9 @@ def main() -> int:
             "evidence_source_phrasing",
         ],
         "provider_calls": len(public_rows),
+        "deterministic_fallback_lanes": _token_total(
+            public_rows, "fallback_count"
+        ),
         "errors": errors,
         "usage": {
             "prompt_tokens": prompt_tokens,

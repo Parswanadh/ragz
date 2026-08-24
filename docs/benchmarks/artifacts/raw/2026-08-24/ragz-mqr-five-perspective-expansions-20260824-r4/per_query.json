@@ -1,0 +1,218 @@
+[
+  {
+    "attempts": 4,
+    "completion_tokens": 175,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 16652.4641,
+    "prompt_tokens": 263,
+    "query_id": "freedmen-001"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 217,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 3583.5757,
+    "prompt_tokens": 271,
+    "query_id": "freedmen-002"
+  },
+  {
+    "attempts": 2,
+    "completion_tokens": 217,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 11571.7583,
+    "prompt_tokens": 268,
+    "query_id": "freedmen-003"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 210,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 3086.3784,
+    "prompt_tokens": 266,
+    "query_id": "freedmen-004"
+  },
+  {
+    "attempts": 4,
+    "completion_tokens": 185,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 18086.5807,
+    "prompt_tokens": 259,
+    "query_id": "freedmen-005"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 167,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 2662.7355,
+    "prompt_tokens": 263,
+    "query_id": "census-001"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 178,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 3073.1994,
+    "prompt_tokens": 274,
+    "query_id": "census-002"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 90,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 1943.8876,
+    "prompt_tokens": 265,
+    "query_id": "census-003"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 230,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 3173.4479,
+    "prompt_tokens": 262,
+    "query_id": "census-004"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 93,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 2050.8364,
+    "prompt_tokens": 270,
+    "query_id": "census-005"
+  },
+  {
+    "attempts": 6,
+    "completion_tokens": 0,
+    "error_code": "ExpansionPreparationError",
+    "expansion_count": 0,
+    "latency_ms": 29523.5286,
+    "prompt_tokens": 0,
+    "query_id": "census-006"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 133,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 2479.4869,
+    "prompt_tokens": 266,
+    "query_id": "postgres-001"
+  },
+  {
+    "attempts": 2,
+    "completion_tokens": 99,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 5965.6482,
+    "prompt_tokens": 261,
+    "query_id": "postgres-002"
+  },
+  {
+    "attempts": 6,
+    "completion_tokens": 0,
+    "error_code": "ExpansionPreparationError",
+    "expansion_count": 0,
+    "latency_ms": 33658.5595,
+    "prompt_tokens": 0,
+    "query_id": "postgres-003"
+  },
+  {
+    "attempts": 2,
+    "completion_tokens": 261,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 11782.9756,
+    "prompt_tokens": 261,
+    "query_id": "postgres-004"
+  },
+  {
+    "attempts": 4,
+    "completion_tokens": 195,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 23613.6124,
+    "prompt_tokens": 261,
+    "query_id": "postgres-005"
+  },
+  {
+    "attempts": 3,
+    "completion_tokens": 166,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 14028.2454,
+    "prompt_tokens": 261,
+    "query_id": "postgres-006"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 194,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 2958.4481,
+    "prompt_tokens": 260,
+    "query_id": "postgres-007"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 203,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 2971.9336,
+    "prompt_tokens": 264,
+    "query_id": "postgres-008"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 91,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 1944.0239,
+    "prompt_tokens": 261,
+    "query_id": "postgres-009"
+  },
+  {
+    "attempts": 3,
+    "completion_tokens": 115,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 14232.5929,
+    "prompt_tokens": 259,
+    "query_id": "none-001"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 280,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 3780.6453,
+    "prompt_tokens": 267,
+    "query_id": "none-002"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 169,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 2256.6127,
+    "prompt_tokens": 258,
+    "query_id": "none-003"
+  },
+  {
+    "attempts": 1,
+    "completion_tokens": 226,
+    "error_code": null,
+    "expansion_count": 5,
+    "latency_ms": 3272.1215,
+    "prompt_tokens": 261,
+    "query_id": "none-004"
+  }
+]

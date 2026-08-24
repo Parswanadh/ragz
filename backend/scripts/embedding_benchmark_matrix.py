@@ -278,7 +278,10 @@ def preflight_aliases(
     key = _master_key(env)
     provider_key = _provider_key(env)
     with _client(base_url, key, transport) as client:
-        existing = _model_info(client.get("/model/info"))
+        model_info_response = client.get("/model/info")
+        if model_info_response.status_code >= 500:
+            model_info_response = client.get("/v2/model/info")
+        existing = _model_info(model_info_response)
         actions: list[AliasAction] = []
         for cell in unique:
             current = existing.get(cell.alias)

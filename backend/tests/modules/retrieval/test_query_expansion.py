@@ -84,9 +84,10 @@ async def test_five_query_expansion_uses_four_perspectives_and_caps_output() -> 
         return httpx.Response(
             200,
             json=_completion(
-                '{"queries":["exact constraints","formal terminology",'
-                '"mechanism relationships","manual evidence phrasing",'
-                '"must be dropped"]}'
+                '{"exact_constraints":"exact constraints",'
+                '"terminology":"formal terminology",'
+                '"mechanism_relationships":"mechanism relationships",'
+                '"evidence_source_phrasing":"manual evidence phrasing"}'
             ),
         )
 
@@ -108,6 +109,14 @@ async def test_five_query_expansion_uses_four_perspectives_and_caps_output() -> 
     )
     assert "temperature" not in captured
     assert captured["max_tokens"] == 300
+    schema = captured["response_format"]["json_schema"]["schema"]
+    assert schema["required"] == [
+        "exact_constraints",
+        "terminology",
+        "mechanism_relationships",
+        "evidence_source_phrasing",
+    ]
+    assert schema["additionalProperties"] is False
     system = captured["messages"][0]["content"]
     assert "exact entities" in system
     assert "terminology" in system
