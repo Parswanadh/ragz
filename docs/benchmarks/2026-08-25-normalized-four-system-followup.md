@@ -42,7 +42,8 @@ Interpretation:
   control.
 
 AnythingLLM indexed 21,505 vectors in `236.92 s`, peaked at `691,535,872`
-bytes, and completed 120 scored rows with zero errors. RAGZ's confirmation
+bytes, and completed 120 zero-error retrieval/latency observations, including
+100 answerable quality observations. RAGZ's confirmation
 indexed 18,734 chunks; its sequential index atomic total was about `1,297.78 s`,
 dominated by hosted embedding. This ingestion comparison is native-path
 descriptive, not a chunk-count-normalized throughput result.
@@ -77,8 +78,8 @@ Onyx v4.6.0 Standard passes the native Docker resource preflight (22 CPUs,
 16.25 GB RAM and sufficient disk) but has no frozen large-books hosted-model
 adapter or matching evidence export. Starting its official stack without those
 contracts would consume its 10-GB resource envelope without producing a valid
-row. Its status is `eligible_protocol_gated/not_executed`; no numeric score is
-emitted.
+row. Its canonical machine status is `eligible_not_executed`; the reason is a
+protocol gate, and no numeric score is emitted.
 
 ## Evidence
 

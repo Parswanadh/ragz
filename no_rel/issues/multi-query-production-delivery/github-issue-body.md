@@ -18,7 +18,8 @@ benefit is workload-dependent and its provider latency is material. On the
 frozen three-book exact-page set, Q3 did not improve Recall over Q1, so this
 proposal deliberately does **not** change the default.
 
-The post-change, zero-error confirmation covered 960 scored rows:
+The post-change confirmation covered 960 zero-error retrieval observations,
+including 800 answerable quality observations:
 
 | Mode | Recall@5 | MRR@5 | nDCG@5 | Mean | p95 |
 |---|---:|---:|---:|---:|---:|

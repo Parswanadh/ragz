@@ -58,5 +58,7 @@ pnpm exec playwright test e2e/mqr-settings.spec.ts
 - [ ] secrets/common credential formats are absent
 - [ ] public artifacts contain no private book text, user query text, generated
       alternatives, prompts, answers, auth headers or provider bodies
-- [ ] incomplete systems say `not_executed`/`protocol_gated`, never numeric zero
+- [ ] incomplete systems use an explicit non-numeric status such as
+      `not_executed` or `eligible_not_executed`; protocol gating is stated as
+      the reason, never encoded as a numeric zero
 - [ ] no benchmark-owned containers remain running

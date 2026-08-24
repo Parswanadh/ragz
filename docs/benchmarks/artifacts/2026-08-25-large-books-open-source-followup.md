@@ -6,4 +6,4 @@
 | RAGZ Q3 | 0.8000 | 0.6792 | 0.7096 | 1440.66 | 1639.51 |
 | AnythingLLM | 0.8000 | 0.6517 | 0.6890 | 306.93 | 354.01 |
 
-RAGFlow remains source-bound to Open Manuals; Onyx remains eligible-not-executed. Neither receives a common-corpus numeric row.
+RAGFlow remains source-bound to Open Manuals; Onyx remains `eligible_not_executed` because its exact-corpus adapter is protocol-gated. Neither receives a common-corpus numeric row.

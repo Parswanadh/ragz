@@ -32,7 +32,8 @@ on this corpus.
 | Index embedding | 587 calls, 6,541,213 tokens |
 | Conditions | Q1/Q3 × cache-off/warm × forward/reverse |
 | Per condition/order | two warmups plus five scored repetitions |
-| Scored rows | 960 |
+| Retrieval observations | 960 |
+| Answerable quality observations | 800 |
 | Total logical retrieval calls | 1,344 |
 | Reranker | disabled |
 | Expansion | fixed private alternatives; live LLM variance excluded |

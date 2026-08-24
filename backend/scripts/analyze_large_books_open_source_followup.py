@@ -226,7 +226,8 @@ def markdown(result: Mapping[str, Any]) -> str:
         [
             "",
             "RAGFlow remains source-bound to Open Manuals; Onyx remains "
-            "eligible-not-executed. Neither receives a common-corpus numeric row.",
+            "`eligible_not_executed` because its exact-corpus adapter is "
+            "protocol-gated. Neither receives a common-corpus numeric row.",
         ]
     )
     return "\n".join(lines) + "\n"

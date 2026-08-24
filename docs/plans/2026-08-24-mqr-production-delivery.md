@@ -249,7 +249,8 @@ system that exposes a valid path.
   requires a pre-seeded exact 22-document corpus; do not perform an unaudited
   manual database setup.
 - [x] Onyx: retain the eligible native-daemon preflight and mark large-books
-  `eligible_protocol_gated/not_executed` because no frozen hosted-model/evidence
+  `eligible_not_executed`, with protocol gating stated as the reason, because no
+  frozen hosted-model/evidence
   adapter exists; do not spend the 10-GB envelope without a scoreable protocol.
 - [x] Record `not_executed`, `credential_gated` or `resource_stopped` rather than
   zero for any incomplete system.

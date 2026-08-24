@@ -44,7 +44,8 @@ Complete interpretation, competitor boundaries and improvement order:
 ### Production-change confirmation
 
 The post-implementation counterbalanced confirmation used one frozen index,
-two warmups and five repetitions in both orders (960 scored rows, zero errors):
+two warmups and five repetitions in both orders (960 zero-error retrieval
+observations, including 800 answerable quality observations):
 
 | Cell | Recall@5 | MRR@5 | nDCG@5 | Mean | p95 |
 |---|---:|---:|---:|---:|---:|
@@ -74,7 +75,8 @@ qrels produced:
 AnythingLLM indexes the intervals directly while RAGZ maps native chunks to
 intervals after retrieval, so the evidence unit is common but chunking is not.
 RAGFlow remains source-bound to Open Manuals and Onyx remains
-eligible-protocol-gated; neither receives a fabricated common-corpus score.
+`eligible_not_executed` because its exact-corpus adapter is protocol-gated;
+neither receives a fabricated common-corpus score.
 Details: `docs/benchmarks/2026-08-25-normalized-four-system-followup.md`.
 
 ## Frozen published retrieval configuration
