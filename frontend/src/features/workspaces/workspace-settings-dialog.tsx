@@ -39,6 +39,10 @@ export function WorkspaceSettingsDialog({
   const canManageEvals =
     isSuperadmin || authorization?.permissions.has('evals.manage') === true;
   const canRunEvals = isSuperadmin || authorization?.permissions.has('evals.run') === true;
+  const canListDocuments =
+    isSuperadmin || authorization?.permissions.has('documents.list') === true;
+  const canReadModels =
+    isSuperadmin || authorization?.permissions.has('models.read') === true;
   const canAccessEvals = canReadEvals || canManageEvals || canRunEvals;
   const [topK, setTopK] = useState(String(workspace.top_k));
   const [minScore, setMinScore] = useState(String(workspace.min_score));
@@ -307,6 +311,8 @@ export function WorkspaceSettingsDialog({
               canRead={canReadEvals}
               canManage={canManageEvals}
               canRun={canRunEvals}
+              canListDocuments={canListDocuments}
+              canReadModels={canReadModels}
             />
           </Suspense>
         )}

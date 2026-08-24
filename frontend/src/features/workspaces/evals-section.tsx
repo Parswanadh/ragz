@@ -45,15 +45,19 @@ export function EvalsSection({
   canRead = true,
   canManage = true,
   canRun = true,
+  canListDocuments = true,
+  canReadModels = true,
 }: {
   workspaceId: string;
   defaultModelId?: string | null;
   canRead?: boolean;
   canManage?: boolean;
   canRun?: boolean;
+  canListDocuments?: boolean;
+  canReadModels?: boolean;
 }) {
-  const documents = useDocuments(canManage ? workspaceId : null, null);
-  const models = useModels(canRun);
+  const documents = useDocuments(canManage && canListDocuments ? workspaceId : null, null);
+  const models = useModels(canRun && canReadModels);
   const queries = useGoldenQueries(canRead ? workspaceId : null);
   const createQuery = useCreateGoldenQuery(workspaceId);
   const deleteQuery = useDeleteGoldenQuery(workspaceId);
@@ -124,21 +128,30 @@ export function EvalsSection({
               className="w-full resize-y rounded-md border border-line bg-bg px-3 py-2 text-[13px] text-ink placeholder:text-muted focus:border-line-strong"
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="comparison-model">Answer model</Label>
-            <NativeSelect
-              id="comparison-model"
-              value={effectiveModelId ?? ''}
-              onChange={(event) => setModelId(event.target.value)}
-              disabled={(models.data?.length ?? 0) === 0}
-            >
-              {(models.data ?? []).map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.display_name}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
+          {canReadModels ? (
+            <div className="space-y-1">
+              <Label htmlFor="comparison-model">Answer model</Label>
+              <NativeSelect
+                id="comparison-model"
+                value={effectiveModelId ?? ''}
+                onChange={(event) => setModelId(event.target.value)}
+                disabled={(models.data?.length ?? 0) === 0}
+              >
+                {(models.data ?? []).map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.display_name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              <span className="text-[12px] font-medium text-secondary">Answer model</span>
+              <p className="rounded-md border border-line bg-bg px-3 py-2 text-[13px] text-muted">
+                Workspace default
+              </p>
+            </div>
+          )}
           <Button
             variant="primary"
             className="h-8"
@@ -311,6 +324,11 @@ export function EvalsSection({
               </label>
             ))}
           </div>
+          {!canListDocuments ? (
+            <p className="text-[12px] text-muted">
+              Document selection is hidden because this role cannot list workspace documents.
+            </p>
+          ) : null}
           <Button type="submit" size="sm" disabled={createQuery.isPending}>
             Add golden query
           </Button>

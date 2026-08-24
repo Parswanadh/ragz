@@ -956,6 +956,13 @@ async def stream_reply(
                     no_answer=not gathered.grounded,
                 )
 
+        # Every retrieval/agent search for this turn is now complete. Commit
+        # its staged expansion/embedding/rerank usage before backfill,
+        # attachment hydration, and source assembly: those downstream reads can
+        # fail or be cancelled, but already-incurred provider work must remain
+        # in the ledger.
+        await session.commit()
+
         backfilled: list[RetrievedChunk] = []
         if len(result.chunks) < workspace.top_k:
             prev_refs = await _previous_citation_refs(session, all_messages, user_message)

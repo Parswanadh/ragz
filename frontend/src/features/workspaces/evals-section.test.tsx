@@ -47,7 +47,14 @@ function jsonResponse(body: unknown, status = 200) {
 
 function renderSection(
   fetchMock: ReturnType<typeof vi.fn>,
-  capabilities: { canRead?: boolean; canManage?: boolean; canRun?: boolean } = {},
+  capabilities: {
+    defaultModelId?: string | null;
+    canRead?: boolean;
+    canManage?: boolean;
+    canRun?: boolean;
+    canListDocuments?: boolean;
+    canReadModels?: boolean;
+  } = {},
 ) {
   vi.stubGlobal('fetch', fetchMock);
   render(
@@ -270,5 +277,37 @@ test('run-only capability mounts comparison without forbidden golden-query reads
     vi.mocked(fetch).mock.calls.some(([req]) =>
       (req as Request).url.includes('/golden-queries'),
     ),
+  ).toBe(false);
+});
+
+test('manage-only capability avoids document reads when documents.list is absent', async () => {
+  const fetchMock = vi.fn(async () => jsonResponse([]));
+  renderSection(fetchMock, {
+    canRead: false,
+    canManage: true,
+    canRun: false,
+    canListDocuments: false,
+  });
+
+  expect(await screen.findByRole('button', { name: 'Add golden query' })).toBeInTheDocument();
+  expect(screen.getByText(/cannot list workspace documents/i)).toBeInTheDocument();
+  expect(
+    vi.mocked(fetch).mock.calls.some(([req]) => (req as Request).url.includes('/documents')),
+  ).toBe(false);
+});
+
+test('run-only capability uses workspace default without models.read', async () => {
+  const fetchMock = vi.fn(async () => jsonResponse([]));
+  renderSection(fetchMock, {
+    defaultModelId: MODEL.id,
+    canRead: false,
+    canManage: false,
+    canRun: true,
+    canReadModels: false,
+  });
+
+  expect(await screen.findByText('Workspace default')).toBeInTheDocument();
+  expect(
+    vi.mocked(fetch).mock.calls.some(([req]) => (req as Request).url.endsWith('/api/v1/models')),
   ).toBe(false);
 });

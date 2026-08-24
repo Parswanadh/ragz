@@ -386,10 +386,12 @@ async def test_upstream_error_yields_generic_message(
 
 
 async def test_disconnect_at_sources_keeps_incurred_retrieval_usage(
+    engine: AsyncEngine,
     session: AsyncSession,
     test_settings: Settings,
     chat_env: dict[str, Any],
     seeded_user: User,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     workspace = chat_env["workspace"]
     assert isinstance(workspace, Workspace)
@@ -440,6 +442,26 @@ async def test_disconnect_at_sources_keeps_incurred_retrieval_usage(
             return await super().__call__(session, ctx, workspace_id, query, **kwargs)
 
     retriever = MeteredRetriever(document.id)  # type: ignore[union-attr]
+    real_prepare_sources = chat_service._prepare_sources
+
+    async def checking_prepare_sources(*args, **kwargs):  # type: ignore[no-untyped-def]
+        # Source assembly is downstream of retrieval and may itself fail. The
+        # usage row must already be visible from a different transaction here.
+        factory = build_session_factory(engine)
+        async with factory() as verifier:
+            durable = (
+                await verifier.execute(
+                    select(UsageRecord).where(
+                        UsageRecord.org_id == seeded_user.org_id,
+                        UsageRecord.feature == "embedding",
+                        UsageRecord.prompt_tokens == 23,
+                    )
+                )
+            ).scalar_one_or_none()
+        assert durable is not None
+        return await real_prepare_sources(*args, **kwargs)
+
+    monkeypatch.setattr(chat_service, "_prepare_sources", checking_prepare_sources)
     events = chat_service.stream_reply(
         session,
         ctx,
