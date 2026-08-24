@@ -219,3 +219,28 @@ async def test_reranker_down_degrades_to_fusion_order(
         assert result.chunks[0].score != 1.0  # fusion/RRF score, not a lexical 1.0
     finally:
         get_settings.cache_clear()
+
+
+async def test_strict_rerank_surfaces_unavailable_provider(
+    session: AsyncSession,
+    qdrant_collection: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ragz.modules.retrieval.rerank import RerankUnavailable
+
+    ctx, ws = await seed_workspace(
+        session, "rerankStrict", rerank_enabled=True, top_k=1
+    )
+    await upsert_texts(ctx, ws, ["alpha benchmark"])
+
+    class _Unavailable:
+        async def rerank(self, query: str, texts: list[str]) -> list[float]:
+            raise RerankUnavailable("typed outage")
+
+    async def _fake_get_reranker(_session, _settings):  # type: ignore[no-untyped-def]
+        return _Unavailable()
+
+    monkeypatch.setattr("ragz.modules.retrieval.service.get_reranker", _fake_get_reranker)
+
+    with pytest.raises(RerankUnavailable, match="typed outage"):
+        await retrieve(session, ctx, ws.id, "alpha", strict_rerank=True)

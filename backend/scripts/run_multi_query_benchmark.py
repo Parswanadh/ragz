@@ -368,6 +368,32 @@ class StaticQueryExpander:
         return ExpandedQueries((query, *self._alternatives))
 
 
+class RateLimitedReranker:
+    """Serialize cloud reranks at a declared account-safe request rate."""
+
+    def __init__(self, delegate: Any, requests_per_minute: int) -> None:
+        if requests_per_minute < 1:
+            raise ValueError("reranker requests_per_minute must be positive")
+        self._delegate = delegate
+        self._interval = 60.0 / requests_per_minute
+        self._lock = asyncio.Lock()
+        self._last_started = 0.0
+        self.last_search_units = 0
+
+    async def rerank(self, query: str, texts: list[str]) -> list[float]:
+        async with self._lock:
+            now = time.monotonic()
+            wait = self._interval - (now - self._last_started)
+            if wait > 0:
+                await asyncio.sleep(wait)
+            self._last_started = time.monotonic()
+            scores = await self._delegate.rerank(query, texts)
+            self.last_search_units = int(
+                getattr(self._delegate, "last_search_units", 0) or 0
+            )
+            return [float(score) for score in scores]
+
+
 def _install_settings(settings: Any) -> None:
     import ragz.core.config as config
     import ragz.modules.documents.pipeline as pipeline
@@ -388,7 +414,7 @@ def _install_settings(settings: Any) -> None:
 
 
 def _install_benchmark_reranker(
-    *, provider: str, api_key: str, model: str
+    *, provider: str, api_key: str, model: str, requests_per_minute: int
 ) -> None:
     import ragz.modules.retrieval.service as retrieval
     from ragz.modules.retrieval.rerank import CohereReranker, LexicalReranker
@@ -399,6 +425,7 @@ def _install_benchmark_reranker(
         reranker: Any = CohereReranker(
             base_url="https://api.cohere.com", api_key=api_key, model=model
         )
+        reranker = RateLimitedReranker(reranker, requests_per_minute)
     elif provider == "lexical":
         reranker = LexicalReranker()
     else:
@@ -717,6 +744,7 @@ async def _run_mode(
                     multi_query_count_override=condition_query_count,
                     rerank_candidate_pool_override=rerank_candidate_pool,
                     query_embedding_cache=embedding_cache,
+                    strict_rerank=rerank_candidate_pool is not None,
                     stage_timings_ms=warmup_timings_ms,
                 )
                 warmup_elapsed_ms = (time.perf_counter() - warmup_started) * 1000
@@ -766,6 +794,7 @@ async def _run_mode(
                         multi_query_count_override=condition_query_count,
                         rerank_candidate_pool_override=rerank_candidate_pool,
                         query_embedding_cache=embedding_cache,
+                        strict_rerank=rerank_candidate_pool is not None,
                         stage_timings_ms=stage_timings_ms,
                     )
                 except Exception as exc:  # noqa: BLE001 - typed failure only
@@ -1059,6 +1088,9 @@ async def run(args: argparse.Namespace) -> None:
                 if args.reranker_provider == "cohere"
                 else "lexical-overlap"
             ),
+            "reranker_rate_limit_rpm": (
+                args.reranker_rpm if args.reranker_provider == "cohere" else None
+            ),
             "query_variants": "fixed-two-alternatives",
             "expansion_provider_calls": 0,
             "embedding_provider_calls": embedding_track.provider_calls,
@@ -1115,6 +1147,7 @@ async def run(args: argparse.Namespace) -> None:
                 provider=args.reranker_provider,
                 api_key=cohere_api_key,
                 model=args.cohere_rerank_model,
+                requests_per_minute=args.reranker_rpm,
             )
             summaries: dict[str, dict[str, Any]] = {}
             if args.matrix:
@@ -1275,6 +1308,12 @@ def main() -> None:
         default="rerank-v4.0-fast",
     )
     parser.add_argument(
+        "--reranker-rpm",
+        type=int,
+        default=9,
+        help="account-safe cloud rerank request rate; ignored for lexical",
+    )
+    parser.add_argument(
         "--embedding-engine",
         choices=("hash", "openai"),
         default="hash",
@@ -1326,12 +1365,14 @@ def main() -> None:
         raise ValueError("top-k must be between 1 and 50")
     if args.warmups < 0 or args.repetitions < 1:
         raise ValueError("warmups must be non-negative and repetitions positive")
+    if args.reranker_rpm < 1:
+        raise ValueError("reranker-rpm must be positive")
     if not 0.0 <= args.min_score <= 1.0:
         raise ValueError("min-score must be between 0 and 1")
     output_preexisted = args.output.resolve().exists()
     try:
         asyncio.run(run(args))
-    except Exception as exc:
+    except (Exception, KeyboardInterrupt) as exc:
         output = args.output.resolve()
         if output.is_dir() and not output_preexisted:
             progress_path = output / "progress.json"

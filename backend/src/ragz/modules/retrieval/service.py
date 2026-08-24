@@ -502,6 +502,7 @@ async def retrieve(
     multi_query_count_override: int | None = None,
     rerank_candidate_pool_override: int | None = None,
     query_embedding_cache: QueryEmbeddingCache | None = None,
+    strict_rerank: bool = False,
     stage_timings_ms: dict[str, float] | None = None,
 ) -> RetrievalResult:
     """Hybrid retrieval — the one code path (spec §3.3), Plan E additions:
@@ -766,6 +767,8 @@ async def retrieve(
             with _capture_stage(stage_timings_ms, "rerank"), observe_stage("rerank"):
                 scores = await reranker.rerank(query, [c.text for c in candidates])
         except RerankUnavailable as exc:
+            if strict_rerank:
+                raise
             structlog.get_logger().warning(
                 "reranker_unavailable_falling_back",
                 workspace_id=str(workspace_id), error=str(exc),

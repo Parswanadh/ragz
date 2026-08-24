@@ -90,7 +90,7 @@ async def test_cohere_reranker_maps_http_error_to_rerank_unavailable() -> None:
         base_url="https://api.cohere.com", api_key="bad", model="rerank-v4.0-fast",
         transport=httpx.MockTransport(handler),
     )
-    with pytest.raises(RerankUnavailable):
+    with pytest.raises(RerankUnavailable, match="HTTP 401"):
         await r.rerank("q", ["a", "b"])
 
 

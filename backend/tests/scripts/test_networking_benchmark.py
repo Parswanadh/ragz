@@ -11,6 +11,7 @@ if str(SCRIPTS) not in sys.path:
 from build_networking_anythingllm_dataset import query_rows, segment_id  # noqa: E402
 from build_networking_benchmark import load_query_set  # noqa: E402
 from run_multi_query_benchmark import (  # noqa: E402
+    RateLimitedReranker,
     bootstrap_ci,
     campaign_code_provenance,
     create_output_directory,
@@ -85,6 +86,25 @@ def test_frozen_retrieval_matrix_has_15_unique_conditions() -> None:
         20,
         50,
     }
+
+
+async def test_rate_limited_reranker_preserves_scores_and_billed_units() -> None:
+    class Delegate:
+        last_search_units = 3
+
+        async def rerank(self, query: str, texts: list[str]) -> list[float]:
+            return [float(index) for index, _text in enumerate(texts)]
+
+    reranker = RateLimitedReranker(Delegate(), requests_per_minute=60_000)
+    scores = await reranker.rerank("query", ["a", "b"])
+
+    assert scores == [0.0, 1.0]
+    assert reranker.last_search_units == 3
+
+
+def test_rate_limited_reranker_rejects_nonpositive_rate() -> None:
+    with pytest.raises(ValueError, match="must be positive"):
+        RateLimitedReranker(object(), requests_per_minute=0)
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "status": "failed_interrupted_rate_limit",
+  "stage": "retrieval:q1_rerank-10_cache-off:scored",
+  "reason": "Cohere rerank calls hit the account burst limit and the pre-hardening benchmark path degraded to fusion order; the operator interrupted the run to prevent mislabeled results.",
+  "follow_up": "The reranker now exposes safe HTTP status, benchmark reranking is strict/fail-closed, and cloud calls are serialized at the declared RPM.",
+  "completed_conditions": [
+    "q1_rerank-off_cache-off",
+    "q1_rerank-off_cache-warm"
+  ],
+  "provider_progress": {
+    "index_embedding_calls_completed": 587,
+    "index_embedding_tokens": 6541213,
+    "query_embedding_attempts": 201
+  },
+  "quality_aggregate_eligible": false,
+  "credentials_persisted": false,
+  "provider_response_bodies_persisted": false
+}

@@ -1,0 +1,86 @@
+{
+  "benchmark_status": "production_embedding_fixed_fusion",
+  "campaign_code_provenance": {
+    "aggregate_sha256": "82592fa62da1afa75e1c10889d9476cf55f53b251870c91de6f0e84b42b859c9",
+    "files_sha256": {
+      "scripts/build_networking_benchmark.py": "ebc3e47ebc0a2a546cb602a2bfbe76da00dabbae7413731ac60a105d9007e7c8",
+      "scripts/embedding_benchmark_matrix.py": "8568c0a2b57bf1d9def6662ea42933d0fec83602d7460d8aefe5fd532b8c1f15",
+      "scripts/run_multi_query_benchmark.py": "c9e0324f5a86b4b289082a81346ec4a64873682f420e74edbcede3488d7c6210",
+      "src/ragz/modules/documents/pipeline.py": "b769c31c31afe05ecebff41398b1bbf09df4b48ed8a3db7710ac1eb1a8ba83f5",
+      "src/ragz/modules/retrieval/embeddings.py": "d4c3c21c3cfe7a44346a6129917eec6ffcb514d4a08b88665e28e62cb4def547",
+      "src/ragz/modules/retrieval/query_expansion.py": "10f2c09b5e0f2407e41870a41302f3891fe6010f98c87f4e71aff413ca8bd2c0",
+      "src/ragz/modules/retrieval/service.py": "c3f1199431236d11542b5af2b008e81a9e5acd35a5d2aa12a91e15cde2976776"
+    }
+  },
+  "copyright_safe": true,
+  "dataset_id": "networking-pdfs-v1",
+  "dense": "openai-text-embedding-3-large-1024",
+  "document_text_persisted": false,
+  "embedding_alias": "ragz-openai-text-embedding-3-large-d1024",
+  "embedding_dimension": 1024,
+  "embedding_engine": "openai",
+  "embedding_litellm_model_name": "ragz-openai-text-embedding-3-large-d1024",
+  "embedding_model": "text-embedding-3-large",
+  "embedding_provider": "openai",
+  "embedding_provider_calls": "not_exposed_nonzero",
+  "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "embedding_requested_dimension": 1024,
+  "embedding_transport": "litellm",
+  "expansion_provider_calls": 0,
+  "fusion": "qdrant-rrf",
+  "git_commit": "44d5db93c2ab2a23499f55fc06eb044536304bcb",
+  "git_dirty": true,
+  "pdfs": [
+    {
+      "book_id": "freedmens-book-1865",
+      "filename": "freedmens-book-1865.pdf",
+      "pages": 294,
+      "sha256": "f0ed33349753df5d7a251c2abfbb86415074e46173c167778c0880d7aea820b4",
+      "size_bytes": 67604368
+    },
+    {
+      "book_id": "county-city-data-book-2000",
+      "filename": "county-city-data-book-2000.pdf",
+      "pages": 1061,
+      "sha256": "ae81d28cd1cb68b7f6d502bc32ab2f8695deb54d66eca00906e5f51b04eef5bc",
+      "size_bytes": 15238499
+    },
+    {
+      "book_id": "postgresql-16-a4",
+      "filename": "postgresql-16-A4.pdf",
+      "pages": 3057,
+      "sha256": "7505936ef06904e69247effbc532306adff5e29be4e1fdf0da619fcd1f4b8683",
+      "size_bytes": 15282121
+    }
+  ],
+  "provider_cost_usd": null,
+  "python_version": "3.14.6",
+  "query_set": {
+    "count": 24,
+    "filename": "ragz-mqr-five-perspective-expansions-20260824-r6.json",
+    "sha256": "81900489ee0218cec7ee1713ebc41d47b4623901391cc687f769e62e8f572f32"
+  },
+  "query_variants": "fixed-two-alternatives",
+  "reranker": "disabled",
+  "reranker_model": "rerank-v4.0-fast",
+  "reranker_provider": "cohere",
+  "runner_version": "3.0",
+  "schema_version": "1.0",
+  "seed": 20260824,
+  "sparse": "fastembed-bm25",
+  "stage_timing_schema": {
+    "clock": "time.perf_counter wall clock",
+    "elapsed_ms_authoritative_total": true,
+    "unit": "milliseconds",
+    "version": "retrieval-atomic-v1",
+    "warmups_persisted": false
+  },
+  "status": "failed_interrupted_rate_limit",
+  "tool_versions": {
+    "fastembed": "0.8.0",
+    "liteparse": "2.12.0",
+    "qdrant_client": "1.18.0"
+  },
+  "top_k": 5,
+  "tracked_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

@@ -158,6 +158,10 @@ class CohereReranker:
             # billed at least one unit, never zero.
             self.last_search_units = _search_units(body)
             return scores
+        except httpx.HTTPStatusError as exc:
+            raise RerankUnavailable(
+                f"cohere reranker returned HTTP {exc.response.status_code}"
+            ) from exc
         except (httpx.HTTPError, ValueError, KeyError, IndexError) as exc:
             raise RerankUnavailable("cohere reranker returned an unusable response") from exc
 
