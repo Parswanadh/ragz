@@ -85,6 +85,20 @@ def retrieval_matrix_conditions() -> tuple[MatrixCondition, ...]:
     )
 
 
+def production_confirmation_conditions() -> tuple[tuple[str, MatrixCondition], ...]:
+    base = (
+        MatrixCondition(1, None, "off"),
+        MatrixCondition(1, None, "warm"),
+        MatrixCondition(3, None, "off"),
+        MatrixCondition(3, None, "warm"),
+    )
+    return tuple(
+        (f"{order}_{condition.condition_id}", condition)
+        for order, ordered in (("forward", base), ("reverse", tuple(reversed(base))))
+        for condition in ordered
+    )
+
+
 def campaign_code_provenance() -> dict[str, object]:
     """Hash every campaign implementation file, including files untracked at HEAD."""
     backend = Path(__file__).resolve().parents[1]
@@ -1216,6 +1230,30 @@ async def run(args: argparse.Namespace) -> None:
                         rerank_candidate_pool=condition.rerank_candidate_pool,
                         cache_mode=condition.cache_mode,
                     )
+            elif args.production_confirmation:
+                if any(len(record["alternatives"]) < 2 for record in queries):
+                    raise ValueError(
+                        "production confirmation requires two alternatives per query"
+                    )
+                for output_id, condition in production_confirmation_conditions():
+                    summaries[output_id] = await _run_mode(
+                        mode=output_id,
+                        queries=queries,
+                        factory=factory,
+                        ctx=ctx,
+                        workspace_id=workspace_id,
+                        document_map=document_map,
+                        output=output / output_id,
+                        top_k=args.top_k,
+                        warmups=args.warmups,
+                        repetitions=args.repetitions,
+                        provider_backed_embeddings=embedding_track.engine == "openai",
+                        progress=progress,
+                        progress_output=output,
+                        query_count=condition.query_count,
+                        rerank_candidate_pool=None,
+                        cache_mode=condition.cache_mode,
+                    )
             else:
                 modes = (
                     ("single", "multi")
@@ -1243,7 +1281,11 @@ async def run(args: argparse.Namespace) -> None:
             seed_resources.clear()
     manifest["corpus_stats"] = corpus_stats
     manifest["condition_order"] = (
-        args.matrix_order if args.matrix else args.order
+        args.matrix_order
+        if args.matrix
+        else "forward_then_reverse"
+        if args.production_confirmation
+        else args.order
     )
     manifest["warmups"] = args.warmups
     manifest["repetitions"] = args.repetitions
@@ -1254,6 +1296,7 @@ async def run(args: argparse.Namespace) -> None:
     }
     manifest["conditions"] = summaries
     manifest["condition_matrix"] = args.matrix
+    manifest["production_confirmation"] = args.production_confirmation
     if args.matrix:
         manifest["reranker"] = f"{args.reranker_provider}-screen"
         manifest["query_variants"] = "fixed-four-perspective-alternatives"
@@ -1292,6 +1335,28 @@ async def run(args: argparse.Namespace) -> None:
             f"- Reranker provider/model: `{args.reranker_provider}` / "
             f"`{reranker_model_label}`\n"
             "- LLM top_p: `provider default; not varied`\n",
+            encoding="utf-8",
+        )
+    elif args.production_confirmation:
+        manifest["reranker"] = "disabled"
+        manifest["query_variants"] = "fixed-two-alternatives"
+        manifest["confirmation_protocol"] = {
+            "query_counts": [1, 3],
+            "cache_modes": ["off", "warm"],
+            "orders": ["forward", "reverse"],
+            "conditions": list(summaries),
+        }
+        (output / "confirmation-summary.json").write_text(
+            json.dumps(summaries, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        (output / "summary.md").write_text(
+            "# RAGZ production MQR/cache confirmation\n\n"
+            f"- Commit: `{git_commit}`\n"
+            f"- Conditions: `{len(summaries)}`\n"
+            f"- Warmups/repetitions: `{args.warmups}` / `{args.repetitions}`\n"
+            "- Orders: `forward`, then `reverse`\n"
+            "- Reranker: `disabled`\n",
             encoding="utf-8",
         )
     else:
@@ -1340,6 +1405,11 @@ def main() -> None:
         "--matrix",
         action="store_true",
         help="run the frozen 15-condition MQR/rerank/cache retrieval screen",
+    )
+    parser.add_argument(
+        "--production-confirmation",
+        action="store_true",
+        help="run Q1/Q3 cache-off/warm in forward and reverse order",
     )
     parser.add_argument(
         "--matrix-order",
@@ -1409,6 +1479,8 @@ def main() -> None:
         default="single-first",
     )
     args = parser.parse_args()
+    if args.matrix and args.production_confirmation:
+        raise ValueError("matrix and production-confirmation are mutually exclusive")
     if not args.dataset_id.strip() or len(args.dataset_id) > 200:
         raise ValueError("dataset-id must be 1-200 characters")
     if len(args.pdf) != 3 or len({book_id for book_id, _ in args.pdf}) != 3:

@@ -17,6 +17,7 @@ from run_multi_query_benchmark import (  # noqa: E402
     create_output_directory,
     paired_summary,
     percentile,
+    production_confirmation_conditions,
     ranking_metrics,
     resolve_embedding_track,
     retrieval_matrix_conditions,
@@ -87,6 +88,25 @@ def test_frozen_retrieval_matrix_has_15_unique_conditions() -> None:
         20,
         50,
     }
+
+
+def test_production_confirmation_counterbalances_q1_q3_cache_conditions() -> None:
+    conditions = production_confirmation_conditions()
+
+    assert len(conditions) == 8
+    assert len({output_id for output_id, _condition in conditions}) == 8
+    assert [condition.query_count for _output, condition in conditions[:4]] == [
+        1,
+        1,
+        3,
+        3,
+    ]
+    assert [condition.query_count for _output, condition in conditions[4:]] == [
+        3,
+        3,
+        1,
+        1,
+    ]
 
 
 async def test_rate_limited_reranker_preserves_scores_and_billed_units() -> None:
