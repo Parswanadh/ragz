@@ -1,10 +1,22 @@
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
 import pytest
 
 from ragz.core.errors import UpstreamError
-from ragz.modules.retrieval.query_expansion import LiteLLMQueryExpander
+from ragz.modules.retrieval.query_expansion import (
+    InMemoryQueryExpansionCache,
+    LiteLLMQueryExpander,
+)
+
+
+@dataclass
+class _Clock:
+    value: float = 0.0
+
+    def __call__(self) -> float:
+        return self.value
 
 
 def _completion(
@@ -49,6 +61,148 @@ async def test_expander_includes_original_and_two_distinct_variants() -> None:
     )
     assert result.prompt_tokens == 11
     assert result.completion_tokens == 7
+
+
+@pytest.mark.asyncio
+async def test_luna_expansion_uses_supported_provider_default_temperature() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(__import__("json").loads(request.content))
+        return httpx.Response(
+            200,
+            json=_completion('{"queries":["one alternative","second alternative"]}'),
+        )
+
+    expander = LiteLLMQueryExpander(
+        base_url="http://litellm.test",
+        master_key="sk-test",
+        transport=httpx.MockTransport(handler),
+    )
+
+    result = await expander.expand("original", model="openai/gpt-5.6-luna")
+
+    assert "temperature" not in captured
+    assert captured["reasoning_effort"] == "low"
+    assert captured["max_tokens"] == 200
+    assert result.queries == ("original", "one alternative", "second alternative")
+
+
+@pytest.mark.asyncio
+async def test_five_query_expansion_uses_four_perspectives_and_caps_output() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(__import__("json").loads(request.content))
+        return httpx.Response(
+            200,
+            json=_completion(
+                '{"exact_constraints":"exact constraints",'
+                '"terminology":"formal terminology",'
+                '"mechanism_relationships":"mechanism relationships",'
+                '"evidence_source_phrasing":"manual evidence phrasing"}'
+            ),
+        )
+
+    expander = LiteLLMQueryExpander(
+        base_url="http://litellm.test",
+        master_key="sk-test",
+        max_queries=5,
+        transport=httpx.MockTransport(handler),
+    )
+
+    result = await expander.expand("original", model="openai/gpt-5.6-luna")
+
+    assert result.queries == (
+        "original",
+        "exact constraints",
+        "formal terminology",
+        "mechanism relationships",
+        "manual evidence phrasing",
+    )
+    assert "temperature" not in captured
+    assert captured["reasoning_effort"] == "low"
+    assert captured["max_tokens"] == 300
+    schema = captured["response_format"]["json_schema"]["schema"]
+    assert schema["required"] == [
+        "exact_constraints",
+        "terminology",
+        "mechanism_relationships",
+        "evidence_source_phrasing",
+    ]
+    assert schema["additionalProperties"] is False
+    system = captured["messages"][0]["content"]
+    assert "exact entities" in system
+    assert "terminology" in system
+    assert "mechanism" in system
+    assert "evidence" in system
+    assert "Do not answer" in system
+
+
+@pytest.mark.asyncio
+async def test_expansion_cache_avoids_second_provider_call_and_zeroes_cached_usage() -> None:
+    calls = 0
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            200,
+            json=_completion('{"queries":["alternative one","alternative two"]}'),
+        )
+
+    cache = InMemoryQueryExpansionCache(max_entries=2, ttl_seconds=10)
+    expander = LiteLLMQueryExpander(
+        base_url="http://litellm.test",
+        master_key="sk-test",
+        transport=httpx.MockTransport(handler),
+        expansion_cache=cache,
+    )
+
+    first = await expander.expand("original", model="gpt-5.6-luna")
+    second = await expander.expand("original", model="gpt-5.6-luna")
+
+    assert calls == 1
+    assert second.queries == first.queries
+    assert (second.prompt_tokens, second.completion_tokens) == (0, 0)
+
+
+@pytest.mark.asyncio
+async def test_expansion_cache_ttl_and_model_namespace() -> None:
+    clock = _Clock()
+    cache = InMemoryQueryExpansionCache(
+        max_entries=2, ttl_seconds=10, clock=clock
+    )
+    await cache.set(
+        model="model-a",
+        max_queries=3,
+        query="original",
+        expanded=("original", "a", "b"),
+    )
+
+    assert await cache.get(
+        model="model-a", max_queries=3, query="original"
+    ) == ("original", "a", "b")
+    assert await cache.get(
+        model="model-b", max_queries=3, query="original"
+    ) is None
+    assert await cache.get(
+        model="model-a", max_queries=5, query="original"
+    ) is None
+    clock.value = 10
+    assert await cache.get(
+        model="model-a", max_queries=3, query="original"
+    ) is None
+
+
+@pytest.mark.parametrize("max_queries", [0, 2, 4, 6])
+def test_expander_rejects_unsupported_total_query_count(max_queries: int) -> None:
+    with pytest.raises(ValueError, match="max_queries must be 3 or 5"):
+        LiteLLMQueryExpander(
+            base_url="http://litellm.test",
+            master_key="sk-test",
+            max_queries=max_queries,
+        )
 
 
 @pytest.mark.asyncio

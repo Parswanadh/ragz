@@ -1,17 +1,32 @@
 import hashlib
 import math
 import re
+from collections import OrderedDict
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from functools import lru_cache
+from time import monotonic
 from typing import Any, Protocol
 from uuid import UUID
 
 import httpx
 from qdrant_client import models
 
-from ragz.core.config import get_settings
+from ragz.core.config import Settings, get_settings
 from ragz.core.errors import UpstreamError
+from ragz.core.metrics import query_embedding_cache_operations_total
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
+_OPENAI_DIMENSION_MODELS = {"text-embedding-3-small", "text-embedding-3-large"}
+
+
+def _supports_openai_dimensions(model: str, provider_kind: str | None) -> bool:
+    """Return whether the upstream API accepts OpenAI's ``dimensions`` option."""
+    if provider_kind is not None and provider_kind != "openai":
+        return False
+    # LiteLLM accepts both ``text-embedding-3-small`` and provider-prefixed
+    # names such as ``openai/text-embedding-3-small``.
+    return model.rsplit("/", 1)[-1] in _OPENAI_DIMENSION_MODELS
 
 
 class DenseEmbedder(Protocol):
@@ -27,6 +42,155 @@ class DenseEmbedder(Protocol):
         concurrent requests, so per-call usage must not live in instance
         state (it would race)."""
         ...
+
+
+class QueryEmbeddingCache(Protocol):
+    """Request-independent cache seam for query vectors.
+
+    Implementations receive only an opaque model namespace and hash exact query
+    text internally. Raw query strings are never used as public cache keys.
+    """
+
+    async def get_many(
+        self, namespace: str, texts: Sequence[str]
+    ) -> list[list[float] | None]: ...
+
+    async def set_many(
+        self,
+        namespace: str,
+        texts: Sequence[str],
+        vectors: Sequence[Sequence[float]],
+    ) -> None: ...
+
+
+def query_embedding_cache_namespace(
+    *, model_id: UUID, provider_kind: str, model: str, dimension: int | None
+) -> str:
+    material = f"{model_id}\0{provider_kind}\0{model}\0{dimension or 0}"
+    return hashlib.sha256(material.encode()).hexdigest()
+
+
+@dataclass(frozen=True, slots=True)
+class _CacheEntry:
+    expires_at: float
+    vector: tuple[float, ...]
+
+
+class InMemoryQueryEmbeddingCache:
+    """Bounded, replica-local TTL/LRU cache with opaque SHA-256 keys."""
+
+    def __init__(
+        self,
+        max_entries: int = 10_000,
+        ttl_seconds: float = 3_600,
+        clock: Callable[[], float] = monotonic,
+    ) -> None:
+        if max_entries < 1:
+            raise ValueError("max_entries must be positive")
+        if ttl_seconds <= 0:
+            raise ValueError("ttl_seconds must be positive")
+        import asyncio
+
+        self._max_entries = max_entries
+        self._ttl_seconds = float(ttl_seconds)
+        self._clock = clock
+        self._entries: OrderedDict[str, _CacheEntry] = OrderedDict()
+        self._lock = asyncio.Lock()
+
+    @staticmethod
+    def _key(namespace: str, text: str) -> str:
+        return hashlib.sha256(f"{namespace}\0{text}".encode()).hexdigest()
+
+    async def get_many(
+        self, namespace: str, texts: Sequence[str]
+    ) -> list[list[float] | None]:
+        result: list[list[float] | None] = []
+        hits = misses = expired = 0
+        async with self._lock:
+            now = self._clock()
+            for text in texts:
+                key = self._key(namespace, text)
+                entry = self._entries.get(key)
+                if entry is None:
+                    misses += 1
+                    result.append(None)
+                    continue
+                if entry.expires_at <= now:
+                    self._entries.pop(key, None)
+                    expired += 1
+                    misses += 1
+                    result.append(None)
+                    continue
+                self._entries.move_to_end(key)
+                hits += 1
+                result.append(list(entry.vector))
+        if hits:
+            query_embedding_cache_operations_total.labels(outcome="hit").inc(hits)
+        if misses:
+            query_embedding_cache_operations_total.labels(outcome="miss").inc(misses)
+        if expired:
+            query_embedding_cache_operations_total.labels(outcome="expired").inc(expired)
+        return result
+
+    async def set_many(
+        self,
+        namespace: str,
+        texts: Sequence[str],
+        vectors: Sequence[Sequence[float]],
+    ) -> None:
+        if len(texts) != len(vectors):
+            raise ValueError("cache texts and vectors must have the same length")
+        evicted = 0
+        async with self._lock:
+            expires_at = self._clock() + self._ttl_seconds
+            for text, vector in zip(texts, vectors, strict=True):
+                key = self._key(namespace, text)
+                self._entries[key] = _CacheEntry(
+                    expires_at=expires_at,
+                    vector=tuple(float(value) for value in vector),
+                )
+                self._entries.move_to_end(key)
+            while len(self._entries) > self._max_entries:
+                self._entries.popitem(last=False)
+                evicted += 1
+        if texts:
+            query_embedding_cache_operations_total.labels(outcome="store").inc(len(texts))
+        if evicted:
+            query_embedding_cache_operations_total.labels(outcome="evicted").inc(evicted)
+
+
+@lru_cache(maxsize=16)
+def _bounded_query_embedding_cache(
+    max_entries: int, ttl_seconds: int
+) -> InMemoryQueryEmbeddingCache:
+    return InMemoryQueryEmbeddingCache(
+        max_entries=max_entries,
+        ttl_seconds=ttl_seconds,
+    )
+
+
+def get_query_embedding_cache(
+    settings: Settings,
+    *,
+    enabled_override: bool | None = None,
+) -> QueryEmbeddingCache | None:
+    """Configured replica-local cache; no raw query leaves this process."""
+    enabled = (
+        settings.query_embedding_cache_enabled
+        if enabled_override is None
+        else enabled_override
+    )
+    if not enabled:
+        return None
+    return _bounded_query_embedding_cache(
+        settings.query_embedding_cache_max_entries,
+        settings.query_embedding_cache_ttl_seconds,
+    )
+
+
+def clear_query_embedding_cache() -> None:
+    """Drop replica-local entries after settings/test lifecycle changes."""
+    _bounded_query_embedding_cache.cache_clear()
 
 
 class TeiDenseEmbedder:
@@ -90,12 +254,16 @@ class LiteLLMEmbedder:
         base_url: str,
         master_key: str,
         model: str,
+        provider_kind: str | None = None,
+        dimension: int | None = None,
         transport: httpx.AsyncBaseTransport | None = None,
         batch_size: int = 32,
     ) -> None:
         self._base_url = base_url
         self._master_key = master_key
         self._model = model
+        self._provider_kind = provider_kind
+        self._dimension = dimension
         self._transport = transport
         self._batch_size = batch_size
 
@@ -114,9 +282,14 @@ class LiteLLMEmbedder:
             ) as client:
                 for i in range(0, len(texts), self._batch_size):
                     batch = texts[i : i + self._batch_size]
+                    payload: dict[str, object] = {"model": self._model, "input": batch}
+                    if self._dimension is not None and _supports_openai_dimensions(
+                        self._model, self._provider_kind
+                    ):
+                        payload["dimensions"] = self._dimension
                     response = await client.post(
                         "/v1/embeddings",
-                        json={"model": self._model, "input": batch},
+                        json=payload,
                         headers=headers,
                     )
                     if response.status_code != 200:
@@ -129,7 +302,14 @@ class LiteLLMEmbedder:
                     except ValueError as exc:
                         raise UpstreamError("malformed embedding response from gateway") from exc
                     ordered = sorted(body.get("data", []), key=lambda d: d["index"])
-                    out.extend([d["embedding"] for d in ordered])
+                    for item in ordered:
+                        embedding = item["embedding"]
+                        if self._dimension is not None and len(embedding) != self._dimension:
+                            raise UpstreamError(
+                                "embedding gateway returned vector width "
+                                f"{len(embedding)}; expected {self._dimension} dimensions"
+                            )
+                        out.append(embedding)
                     # Hosted providers return billed usage; missing/malformed
                     # usage degrades to 0 (a cost undercount is never a failure).
                     usage = body.get("usage") or {}
@@ -169,13 +349,16 @@ class HashDenseEmbedder:
 
 @lru_cache
 def get_dense_embedder(
-    model_id: UUID, *, provider_kind: str, litellm_model_name: str
+    model_id: UUID, *, provider_kind: str, litellm_model_name: str,
+    dimension: int | None = None,
 ) -> DenseEmbedder:
     """DOC-10: model-parameterized (was a no-arg global singleton). Cached by
-    the primitive (model_id, provider_kind, litellm_model_name) tuple, not by
-    an ORM Model object -- two Model instances loaded in different sessions
-    for the SAME row don't share Python identity/hash, which would defeat
-    lru_cache's whole purpose across separate Celery task invocations.
+    the primitive (model_id, provider_kind, litellm_model_name, dimension) tuple,
+    not by an ORM Model object -- two Model instances loaded in different
+    sessions for the SAME row don't share Python identity/hash, which would
+    defeat lru_cache's whole purpose across separate Celery task invocations.
+    The requested width is part of the key so changing dimensions cannot reuse
+    an embedder configured for another vector space.
 
     settings.embedding_backend == "hash" is a TEST-ONLY override (unchanged
     from before DOC-10): it forces every model_id to the deterministic hash
@@ -188,7 +371,7 @@ def get_dense_embedder(
         return TeiDenseEmbedder(settings.tei_url)
     return LiteLLMEmbedder(
         base_url=settings.litellm_url, master_key=settings.litellm_master_key,
-        model=litellm_model_name,
+        model=litellm_model_name, provider_kind=provider_kind, dimension=dimension,
     )
 
 

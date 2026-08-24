@@ -25,9 +25,12 @@ EITHER filter function — `test_tenant_isolation.py`-style tests for
 """
 
 import asyncio
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import date, datetime
+from time import perf_counter
+from typing import Any
 from uuid import UUID, uuid5
 
 import structlog
@@ -36,12 +39,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import get_settings
 from ragz.core.errors import NotFoundError, UpstreamError, WorkspaceAccessDenied
-from ragz.core.metrics import observe_stage
+from ragz.core.metrics import observe_stage, query_expansion_outcomes_total
 from ragz.modules.documents.pipeline import Chunk
 from ragz.modules.quotas import service as quota_service
 from ragz.modules.retrieval.client import EPHEMERAL_COLLECTION, get_qdrant
-from ragz.modules.retrieval.embeddings import embed_sparse, get_dense_embedder
-from ragz.modules.retrieval.query_expansion import QueryExpander, build_query_expander
+from ragz.modules.retrieval.embeddings import (
+    DenseEmbedder,
+    QueryEmbeddingCache,
+    embed_sparse,
+    get_dense_embedder,
+    get_query_embedding_cache,
+    query_embedding_cache_namespace,
+)
+from ragz.modules.retrieval.query_expansion import (
+    ExpandedQueries,
+    QueryExpander,
+    build_query_expander,
+)
 from ragz.modules.retrieval.rerank import RerankUnavailable, get_reranker
 from ragz.modules.tenancy.context import TenantContext
 from ragz.modules.tenancy.service import get_workspace_checked
@@ -63,6 +77,91 @@ class RetrievalResult:
     chunks: list[RetrievedChunk]
     no_answer: bool
     query_count: int = 1
+    embedding_cache_hits: int = 0
+    embedding_cache_misses: int = 0
+
+
+@dataclass(frozen=True)
+class _EmbeddedQueryBatch:
+    vectors: list[list[float]]
+    billed_tokens: int
+    cache_hits: int
+    cache_misses: int
+
+
+@contextmanager
+def _capture_stage(
+    timings_ms: dict[str, float] | None, stage: str
+) -> Iterator[None]:
+    """Optionally capture one non-overlapping retrieval stage for diagnostics.
+
+    The production path passes no sink and pays only this context-manager call.
+    Benchmark callers supply a request-local dictionary. Values contain timing
+    only—never query, document, tenant, model response, or credential data—and
+    the failure path is recorded just like the Prometheus stage histograms.
+    """
+    if timings_ms is None:
+        yield
+        return
+    started = perf_counter()
+    try:
+        yield
+    finally:
+        elapsed_ms = (perf_counter() - started) * 1000
+        timings_ms[stage] = round(timings_ms.get(stage, 0.0) + elapsed_ms, 4)
+
+
+async def _embed_query_batch(
+    *,
+    queries: Sequence[str],
+    dense_embedder: DenseEmbedder,
+    query_cache: QueryEmbeddingCache | None,
+    cache_namespace: str,
+    expected_dimension: int,
+    stage_timings_ms: dict[str, float] | None,
+) -> _EmbeddedQueryBatch:
+    with _capture_stage(stage_timings_ms, "embedding_cache_lookup"):
+        cached_vectors: list[list[float] | None]
+        cached_vectors = (
+            await query_cache.get_many(cache_namespace, queries)
+            if query_cache is not None
+            else [None] * len(queries)
+        )
+    if len(cached_vectors) != len(queries):
+        raise UpstreamError("query embedding cache returned the wrong vector count")
+    if any(
+        vector is not None and len(vector) != expected_dimension
+        for vector in cached_vectors
+    ):
+        raise UpstreamError("query embedding cache returned the wrong vector width")
+    miss_indices = [index for index, vector in enumerate(cached_vectors) if vector is None]
+    miss_texts = [queries[index] for index in miss_indices]
+    miss_vectors: list[list[float]] = []
+    billed_tokens = 0
+    with _capture_stage(stage_timings_ms, "dense_embedding"), observe_stage(
+        "embed_dense"
+    ):
+        if miss_texts:
+            miss_vectors, billed_tokens = await dense_embedder.embed_with_usage(
+                miss_texts
+            )
+    if len(miss_vectors) != len(miss_indices):
+        raise UpstreamError("dense embedder returned the wrong vector count")
+    if any(len(vector) != expected_dimension for vector in miss_vectors):
+        raise UpstreamError("dense embedder returned the wrong vector width")
+    for index, vector in zip(miss_indices, miss_vectors, strict=True):
+        cached_vectors[index] = vector
+    with _capture_stage(stage_timings_ms, "embedding_cache_store"):
+        if query_cache is not None and miss_texts:
+            await query_cache.set_many(cache_namespace, miss_texts, miss_vectors)
+    if any(vector is None for vector in cached_vectors):
+        raise UpstreamError("query embedding cache left an unresolved vector")
+    return _EmbeddedQueryBatch(
+        vectors=[vector for vector in cached_vectors if vector is not None],
+        billed_tokens=billed_tokens,
+        cache_hits=len(queries) - len(miss_indices),
+        cache_misses=len(miss_indices),
+    )
 
 
 @dataclass(frozen=True)
@@ -445,6 +544,26 @@ def _dedupe_hq(candidates: list[RetrievedChunk]) -> list[RetrievedChunk]:
     return [best[key] for key in order]
 
 
+def _stable_identity(chunk: RetrievedChunk) -> tuple[str, int, int, int]:
+    return (str(chunk.document_id), chunk.page, chunk.chunk_index, chunk.version)
+
+
+def _stable_chunk_order(candidates: Sequence[RetrievedChunk]) -> list[RetrievedChunk]:
+    """Make equal-score RRF output deterministic across Qdrant executions."""
+    return sorted(candidates, key=lambda chunk: (-chunk.score, *_stable_identity(chunk)))
+
+
+def _stable_rerank_order(
+    scores: Sequence[float], candidates: Sequence[RetrievedChunk]
+) -> list[int]:
+    if len(scores) != len(candidates):
+        raise ValueError("rerank scores and candidates must have the same length")
+    return sorted(
+        range(len(candidates)),
+        key=lambda index: (-scores[index], *_stable_identity(candidates[index])),
+    )
+
+
 def _chunk_from_point(point: models.ScoredPoint) -> RetrievedChunk:
     payload = point.payload or {}
     return RetrievedChunk(
@@ -468,6 +587,13 @@ async def retrieve(
     *,
     query_expander: QueryExpander | None = None,
     multi_query_enabled_override: bool | None = None,
+    multi_query_count_override: int | None = None,
+    rerank_candidate_pool_override: int | None = None,
+    query_embedding_cache: QueryEmbeddingCache | None = None,
+    query_embedding_cache_enabled_override: bool | None = None,
+    multi_query_expansion_timeout_ms_override: int | None = None,
+    strict_rerank: bool = False,
+    stage_timings_ms: dict[str, float] | None = None,
 ) -> RetrievalResult:
     """Hybrid retrieval — the one code path (spec §3.3), Plan E additions:
 
@@ -504,86 +630,172 @@ async def retrieve(
     """
     from ragz.modules.models import service as models_service
 
-    ws = await get_workspace_checked(session, ctx, workspace_id)
-    k = top_k if top_k is not None else ws.top_k
-    multi_query_enabled = (
-        ws.multi_query_enabled
-        if multi_query_enabled_override is None
-        else multi_query_enabled_override
-    )
-    embedding_model = await models_service.get_model(session, ws.embedding_model_id)
-    utility_model = (
-        await models_service.resolve_utility_model(session)
-        if multi_query_enabled
-        else None
-    )
+    if multi_query_count_override not in (None, 1, 3, 5):
+        raise ValueError("multi_query_count_override must be 1, 3, or 5")
+    if rerank_candidate_pool_override not in (None, 10, 20, 50):
+        raise ValueError("rerank_candidate_pool_override must be 10, 20, or 50")
+    if (
+        multi_query_expansion_timeout_ms_override is not None
+        and multi_query_expansion_timeout_ms_override < 1
+    ):
+        raise ValueError("multi_query_expansion_timeout_ms_override must be positive")
+    requested_query_count = multi_query_count_override or 3
+    settings = get_settings()
+
+    with _capture_stage(stage_timings_ms, "workspace_model_resolution"):
+        ws = await get_workspace_checked(session, ctx, workspace_id)
+        k = top_k if top_k is not None else ws.top_k
+        multi_query_enabled = (
+            ws.multi_query_enabled
+            if multi_query_enabled_override is None
+            else multi_query_enabled_override
+        )
+        embedding_model = await models_service.get_model(session, ws.embedding_model_id)
+        utility_model = (
+            await models_service.resolve_utility_model(session)
+            if multi_query_enabled
+            else None
+        )
     # Workspace/model resolution above is read-only. End that transaction before
     # waiting on Qdrant setup, the expansion LLM, and embedding providers so a
     # slow external service never pins an otherwise-idle pooled DB connection.
     # All production callers enter retrieve() with prior writes already committed;
     # retrieve owns the usage rows it stages after this boundary.
-    await session.commit()
+    with _capture_stage(stage_timings_ms, "database_release"):
+        await session.commit()
     collection_name = embedding_model.collection_name
     assert collection_name is not None  # embedding-modality models always set this
-    await ensure_collection(collection_name, embedding_model.dimension)  # type: ignore[arg-type]
-    dense_embedder = get_dense_embedder(
-        embedding_model.id, provider_kind=embedding_model.provider_kind,
-        litellm_model_name=embedding_model.litellm_model_name,
+    with _capture_stage(stage_timings_ms, "collection_ready"):
+        await ensure_collection(collection_name, embedding_model.dimension)  # type: ignore[arg-type]
+    with _capture_stage(stage_timings_ms, "embedder_resolution"):
+        dense_embedder = get_dense_embedder(
+            embedding_model.id, provider_kind=embedding_model.provider_kind,
+            litellm_model_name=embedding_model.litellm_model_name,
+            dimension=embedding_model.dimension,
+        )
+    active_query_embedding_cache = query_embedding_cache
+    if active_query_embedding_cache is None:
+        active_query_embedding_cache = get_query_embedding_cache(
+            settings, enabled_override=query_embedding_cache_enabled_override
+        )
+    cache_namespace = query_embedding_cache_namespace(
+        model_id=embedding_model.id,
+        provider_kind=embedding_model.provider_kind,
+        model=embedding_model.litellm_model_name,
+        dimension=embedding_model.dimension,
     )
+    expected_dimension = int(embedding_model.dimension or 0)
     queries: tuple[str, ...] = (query,)
+    expansion_task: asyncio.Task[ExpandedQueries] | None = None
+    expansion_deadline: float | None = None
     if multi_query_enabled:
         if utility_model is None:
+            query_expansion_outcomes_total.labels(outcome="no_utility_model").inc()
             structlog.get_logger().warning(
                 "multi_query_no_utility_model",
                 workspace_id=str(workspace_id),
             )
         else:
-            expander = query_expander or build_query_expander(get_settings())
-            try:
-                expanded = await expander.expand(
-                    query, model=utility_model.litellm_model_name
+            expander = query_expander or build_query_expander(
+                settings, max_queries=requested_query_count
+            )
+            timeout_ms = (
+                settings.multi_query_expansion_timeout_ms
+                if multi_query_expansion_timeout_ms_override is None
+                else multi_query_expansion_timeout_ms_override
+            )
+            loop = asyncio.get_running_loop()
+            expansion_deadline = loop.time() + timeout_ms / 1000
+            expansion_task = asyncio.create_task(
+                expander.expand(query, model=utility_model.litellm_model_name)
+            )
+    try:
+        original_batch = await _embed_query_batch(
+            queries=(query,),
+            dense_embedder=dense_embedder,
+            query_cache=active_query_embedding_cache,
+            cache_namespace=cache_namespace,
+            expected_dimension=expected_dimension,
+            stage_timings_ms=stage_timings_ms,
+        )
+    except BaseException:
+        if expansion_task is not None and not expansion_task.done():
+            expansion_task.cancel()
+            await asyncio.gather(expansion_task, return_exceptions=True)
+        raise
+    dense_vecs = list(original_batch.vectors)
+    embed_tokens = original_batch.billed_tokens
+    embedding_cache_hits = original_batch.cache_hits
+    embedding_cache_misses = original_batch.cache_misses
+    if expansion_task is not None:
+        assert expansion_deadline is not None and utility_model is not None
+        remaining = max(0.0, expansion_deadline - asyncio.get_running_loop().time())
+        try:
+            with _capture_stage(stage_timings_ms, "query_expansion"):
+                expanded = await asyncio.wait_for(expansion_task, timeout=remaining)
+        except TimeoutError:
+            query_expansion_outcomes_total.labels(outcome="timeout").inc()
+            structlog.get_logger().info(
+                "multi_query_expansion_timeout",
+                workspace_id=str(workspace_id),
+            )
+        except UpstreamError as exc:
+            query_expansion_outcomes_total.labels(outcome="provider_failure").inc()
+            structlog.get_logger().warning(
+                "multi_query_expansion_failed",
+                workspace_id=str(workspace_id),
+                error=type(exc).__name__,
+            )
+        else:
+            query_expansion_outcomes_total.labels(outcome="success").inc()
+            queries = (expanded.queries or (query,))[:requested_query_count]
+            expansion_tokens = expanded.prompt_tokens + expanded.completion_tokens
+            if expansion_tokens > 0:
+                await quota_service.record_usage(
+                    session,
+                    org_id=ctx.org_id,
+                    user_id=ctx.user_id,
+                    workspace_id=workspace_id,
+                    model_id=utility_model.id,
+                    feature="query_expansion",
+                    prompt_tokens=expanded.prompt_tokens,
+                    completion_tokens=expanded.completion_tokens,
+                    commit=False,
                 )
-            except UpstreamError as exc:
-                structlog.get_logger().warning(
-                    "multi_query_expansion_failed",
-                    workspace_id=str(workspace_id),
-                    error=type(exc).__name__,
+            if len(queries) > 1:
+                alternative_batch = await _embed_query_batch(
+                    queries=queries[1:],
+                    dense_embedder=dense_embedder,
+                    query_cache=active_query_embedding_cache,
+                    cache_namespace=cache_namespace,
+                    expected_dimension=expected_dimension,
+                    stage_timings_ms=stage_timings_ms,
                 )
-            else:
-                queries = expanded.queries or (query,)
-                expansion_tokens = expanded.prompt_tokens + expanded.completion_tokens
-                if expansion_tokens > 0:
-                    await quota_service.record_usage(
-                        session,
-                        org_id=ctx.org_id,
-                        user_id=ctx.user_id,
-                        workspace_id=workspace_id,
-                        model_id=utility_model.id,
-                        feature="query_expansion",
-                        prompt_tokens=expanded.prompt_tokens,
-                        completion_tokens=expanded.completion_tokens,
-                        commit=False,
-                    )
-                structlog.get_logger().info(
-                    "multi_query_expanded",
-                    workspace_id=str(workspace_id),
-                    query_count=len(queries),
-                )
-    with observe_stage("embed_dense"):
-        dense_vecs, embed_tokens = await dense_embedder.embed_with_usage(list(queries))
+                dense_vecs.extend(alternative_batch.vectors)
+                embed_tokens += alternative_batch.billed_tokens
+                embedding_cache_hits += alternative_batch.cache_hits
+                embedding_cache_misses += alternative_batch.cache_misses
+            structlog.get_logger().info(
+                "multi_query_expanded",
+                workspace_id=str(workspace_id),
+                query_count=len(queries),
+            )
     # Cost reporting (design 2026-08-15 §2): the query embedding's billed tokens
     # (hosted providers only; self-hosted TEI / the hash test backend report 0).
     # commit=False stages the row so it rides this turn's end-of-turn commit
     # (the chat/no-answer/general-knowledge record_usage) rather than adding a
     # blocking round-trip before the LLM even starts streaming. Zero tokens ->
     # nothing to bill, skip the row entirely.
-    if embed_tokens > 0:
-        await quota_service.record_usage(
-            session, org_id=ctx.org_id, user_id=ctx.user_id, workspace_id=workspace_id,
-            model_id=embedding_model.id, feature="embedding",
-            prompt_tokens=embed_tokens, completion_tokens=0, commit=False,
-        )
-    with observe_stage("embed_sparse"):
+    with _capture_stage(stage_timings_ms, "embedding_usage_record"):
+        if embed_tokens > 0:
+            await quota_service.record_usage(
+                session, org_id=ctx.org_id, user_id=ctx.user_id, workspace_id=workspace_id,
+                model_id=embedding_model.id, feature="embedding",
+                prompt_tokens=embed_tokens, completion_tokens=0, commit=False,
+            )
+    with _capture_stage(stage_timings_ms, "sparse_embedding"), observe_stage(
+        "embed_sparse"
+    ):
         sparse_vecs = await asyncio.to_thread(embed_sparse, list(queries))
     # Fail-closed ACL projection (review P0): documents whose committed security
     # state has not reached this collection are excluded from the query. Local
@@ -592,17 +804,19 @@ async def retrieve(
     # service call, never that module's ORM.
     from ragz.modules.documents import service as documents_service
 
-    unprojected = await documents_service.unprojected_document_ids(
-        session, ctx.org_id, workspace_id
-    )
-    flt = _tenant_filter(
-        org_id=ctx.org_id, workspace_id=workspace_id, acl_group_ids=_ctx_acl(ctx),
-        current_only=True, metadata_clauses=metadata_clauses,
-        unprojected_document_ids=unprojected,
-    )
+    with _capture_stage(stage_timings_ms, "authorization_prefilter"):
+        unprojected = await documents_service.unprojected_document_ids(
+            session, ctx.org_id, workspace_id
+        )
+        flt = _tenant_filter(
+            org_id=ctx.org_id, workspace_id=workspace_id, acl_group_ids=_ctx_acl(ctx),
+            current_only=True, metadata_clauses=metadata_clauses,
+            unprojected_document_ids=unprojected,
+        )
     client = get_qdrant()
-    fetch_k = _RERANK_PREFETCH if ws.rerank_enabled else k
-    prefetch_limit = max(fetch_k, k * 4)
+    rerank_pool = rerank_candidate_pool_override or _RERANK_PREFETCH
+    fetch_k = rerank_pool if ws.rerank_enabled else k
+    prefetch_limit = rerank_pool if ws.rerank_enabled else k * 4
     prefetch = [
         lane
         for dense_vec, sparse_vec in zip(dense_vecs, sparse_vecs, strict=True)
@@ -621,16 +835,50 @@ async def retrieve(
             ),
         )
     ]
-    with observe_stage("vector_search"):
-        fused = await client.query_points(
-            collection_name,
-            prefetch=prefetch,
-            query=models.FusionQuery(fusion=models.Fusion.RRF),
-            query_filter=flt,  # belt and braces on top of the filtered prefetches
-            limit=fetch_k,
-            with_payload=True,
-        )
-    candidates = [_chunk_from_point(p) for p in fused.points]
+    top_dense_results: list[Any] | None = None
+
+    async def run_no_answer_probes() -> list[Any]:
+        with _capture_stage(stage_timings_ms, "no_answer_probe"):
+            return await asyncio.gather(
+                *(
+                    client.query_points(
+                        collection_name,
+                        query=dense_vec,
+                        using="dense",
+                        query_filter=flt,
+                        limit=1,
+                        with_payload=False,
+                    )
+                    for dense_vec in dense_vecs
+                )
+            )
+
+    no_answer_task = (
+        asyncio.create_task(run_no_answer_probes())
+        if not ws.rerank_enabled
+        else None
+    )
+    try:
+        with _capture_stage(stage_timings_ms, "vector_search"), observe_stage(
+            "vector_search"
+        ):
+            fused = await client.query_points(
+                collection_name,
+                prefetch=prefetch,
+                query=models.FusionQuery(fusion=models.Fusion.RRF),
+                query_filter=flt,  # belt and braces on top of filtered prefetches
+                limit=fetch_k,
+                with_payload=True,
+            )
+        if no_answer_task is not None:
+            top_dense_results = await no_answer_task
+    except BaseException:
+        if no_answer_task is not None and not no_answer_task.done():
+            no_answer_task.cancel()
+            await asyncio.gather(no_answer_task, return_exceptions=True)
+        raise
+    with _capture_stage(stage_timings_ms, "candidate_decode"):
+        candidates = _stable_chunk_order([_chunk_from_point(p) for p in fused.points])
     # Close the read-then-query window (Cubic P0). The pre-query exclusion above
     # is a SNAPSHOT: an ACL can commit between that read and query_points, and
     # Qdrant would still be serving the pre-change payload for a document the
@@ -643,30 +891,72 @@ async def retrieve(
     # served. This pass can only ever REMOVE candidates, never admit one the
     # vector filter excluded, so its failure mode is a needless denial rather
     # than a leak. The allow-decision still lives entirely in the Qdrant filter.
-    recheck = await documents_service.unprojected_document_ids(
-        session, ctx.org_id, workspace_id
-    )
-    newly_unprojected = recheck - unprojected
-    if newly_unprojected:
-        candidates = [c for c in candidates if c.document_id not in newly_unprojected]
-        structlog.get_logger().info(
-            "retrieval_dropped_newly_unprojected",
-            workspace_id=str(workspace_id), count=len(newly_unprojected),
+    with _capture_stage(stage_timings_ms, "authorization_recheck"):
+        recheck = await documents_service.unprojected_document_ids(
+            session, ctx.org_id, workspace_id
         )
-    candidates = _dedupe_hq(candidates)
+        newly_unprojected = recheck - unprojected
+        if newly_unprojected:
+            candidates = [c for c in candidates if c.document_id not in newly_unprojected]
+            structlog.get_logger().info(
+                "retrieval_dropped_newly_unprojected",
+                workspace_id=str(workspace_id), count=len(newly_unprojected),
+            )
+    with _capture_stage(stage_timings_ms, "candidate_dedupe"):
+        candidates = _dedupe_hq(candidates)
     if not candidates:
-        return RetrievalResult(chunks=[], no_answer=True, query_count=len(queries))
+        return RetrievalResult(
+            chunks=[],
+            no_answer=True,
+            query_count=len(queries),
+            embedding_cache_hits=embedding_cache_hits,
+            embedding_cache_misses=embedding_cache_misses,
+        )
 
     if ws.rerank_enabled:
         try:
-            reranker = await get_reranker(session, get_settings())
-            with observe_stage("rerank"):
+            with _capture_stage(stage_timings_ms, "reranker_resolution"):
+                reranker = await get_reranker(session, get_settings())
+            with _capture_stage(stage_timings_ms, "rerank"), observe_stage("rerank"):
                 scores = await reranker.rerank(query, [c.text for c in candidates])
+            if (
+                stage_timings_ms is not None
+                and hasattr(reranker, "last_provider_latency_ms")
+                and hasattr(reranker, "last_retry_wait_ms")
+                and hasattr(reranker, "last_local_latency_ms")
+            ):
+                total = float(stage_timings_ms.pop("rerank"))
+                retry_wait = min(
+                    total,
+                    max(0.0, float(getattr(reranker, "last_retry_wait_ms", 0.0))),
+                )
+                provider = min(
+                    total - retry_wait,
+                    max(
+                        0.0,
+                        float(getattr(reranker, "last_provider_latency_ms", 0.0)),
+                    ),
+                )
+                local = min(
+                    total - retry_wait - provider,
+                    max(0.0, float(getattr(reranker, "last_local_latency_ms", 0.0))),
+                )
+                stage_timings_ms["rerank.retry_wait"] = round(retry_wait, 4)
+                stage_timings_ms["rerank.provider"] = round(provider, 4)
+                stage_timings_ms["rerank.local"] = round(
+                    max(local, total - retry_wait - provider), 4
+                )
         except RerankUnavailable as exc:
+            if strict_rerank:
+                raise
             structlog.get_logger().warning(
                 "reranker_unavailable_falling_back",
                 workspace_id=str(workspace_id), error=str(exc),
             )
+            # The optimistic path did not start dense probes because a healthy
+            # reranker supplies the threshold score. On graceful degradation,
+            # recover the original dense-cosine no-answer semantics now.
+            top_dense_results = await run_no_answer_probes()
         else:
             # Cost reporting (design 2026-08-15 §2): a billable reranker (Cohere)
             # exposes its billed search-units; local TEI/lexical rerankers don't
@@ -682,29 +972,19 @@ async def retrieve(
                     prompt_tokens=0, completion_tokens=0,
                     units=rerank_units, commit=False,
                 )
-            order = sorted(range(len(candidates)), key=lambda i: scores[i], reverse=True)
+            order = _stable_rerank_order(scores, candidates)
             top = order[:k]
             reranked = [replace(candidates[i], score=scores[i]) for i in top]
             return RetrievalResult(
                 chunks=reranked,
                 no_answer=scores[top[0]] < ws.min_score,
                 query_count=len(queries),
+                embedding_cache_hits=embedding_cache_hits,
+                embedding_cache_misses=embedding_cache_misses,
             )
 
     chunks = candidates[:k]
-    top_dense_results = await asyncio.gather(
-        *(
-            client.query_points(
-                collection_name,
-                query=dense_vec,
-                using="dense",
-                query_filter=flt,
-                limit=1,
-                with_payload=False,
-            )
-            for dense_vec in dense_vecs
-        )
-    )
+    assert top_dense_results is not None
     best_cosine = max(
         (
             float(result.points[0].score)
@@ -717,6 +997,8 @@ async def retrieve(
         chunks=chunks,
         no_answer=best_cosine < ws.min_score,
         query_count=len(queries),
+        embedding_cache_hits=embedding_cache_hits,
+        embedding_cache_misses=embedding_cache_misses,
     )
 
 

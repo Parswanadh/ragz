@@ -17,3 +17,12 @@ def test_ingestion_settings_defaults(pristine_env, monkeypatch) -> None:  # type
     assert s.embedding_backend == "tei"
     assert s.embedding_dim == 1024
     assert s.interactive_upload_mb == 50
+    assert s.query_embedding_cache_enabled is False
+    assert s.query_embedding_cache_max_entries == 10_000
+    assert s.query_embedding_cache_ttl_seconds == 3_600
+    assert s.query_expansion_cache_enabled is False
+    assert s.query_expansion_cache_max_entries == 5_000
+    assert s.query_expansion_cache_ttl_seconds == 3_600
+    assert s.multi_query_expansion_timeout_ms == 3_000
+    assert s.cohere_rerank_max_retries == 2
+    assert s.cohere_rerank_base_backoff_seconds == 0.5

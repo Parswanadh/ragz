@@ -1,18 +1,32 @@
 import json
 import math
+from dataclasses import dataclass
 from uuid import uuid4
 
 import httpx
 import pytest
+from prometheus_client import REGISTRY
 
+from ragz.core.config import Settings
 from ragz.core.errors import UpstreamError
 from ragz.modules.retrieval.embeddings import (
     HashDenseEmbedder,
+    InMemoryQueryEmbeddingCache,
     LiteLLMEmbedder,
     TeiDenseEmbedder,
     embed_sparse,
     get_dense_embedder,
+    get_query_embedding_cache,
+    query_embedding_cache_namespace,
 )
+
+
+@dataclass
+class _Clock:
+    value: float = 0.0
+
+    def __call__(self) -> float:
+        return self.value
 
 
 def _cos(a: list[float], b: list[float]) -> float:
@@ -37,6 +51,96 @@ async def test_hash_embedder_overlap_beats_disjoint() -> None:
         ]
     )
     assert _cos(q, hit) > _cos(q, miss)
+
+
+async def test_query_embedding_cache_is_exact_bounded_and_copy_safe() -> None:
+    cache = InMemoryQueryEmbeddingCache(max_entries=2)
+    namespace = "model-space"
+
+    assert await cache.get_many(namespace, ["alpha", "beta"]) == [None, None]
+    await cache.set_many(namespace, ["alpha", "beta"], [[1.0, 2.0], [3.0, 4.0]])
+    first = await cache.get_many(namespace, ["alpha", "beta"])
+    assert first == [[1.0, 2.0], [3.0, 4.0]]
+    assert first[0] is not None
+    first[0][0] = 99.0
+    assert await cache.get_many(namespace, ["alpha"]) == [[1.0, 2.0]]
+
+    await cache.set_many(namespace, ["gamma"], [[5.0, 6.0]])
+    assert await cache.get_many(namespace, ["beta", "alpha", "gamma"]) == [
+        None,
+        [1.0, 2.0],
+        [5.0, 6.0],
+    ]
+
+
+async def test_query_embedding_cache_rejects_misaligned_batch() -> None:
+    cache = InMemoryQueryEmbeddingCache()
+    with pytest.raises(ValueError, match="same length"):
+        await cache.set_many("space", ["one"], [])
+
+
+async def test_query_embedding_cache_expires_entries_after_ttl() -> None:
+    clock = _Clock()
+    cache = InMemoryQueryEmbeddingCache(
+        max_entries=2, ttl_seconds=10.0, clock=clock
+    )
+    await cache.set_many("space", ["one"], [[1.0, 2.0]])
+
+    clock.value = 9.999
+    assert await cache.get_many("space", ["one"]) == [[1.0, 2.0]]
+    clock.value = 10.0
+    assert await cache.get_many("space", ["one"]) == [None]
+
+
+def test_query_embedding_cache_resolver_is_bounded_shared_and_disableable() -> None:
+    disabled = Settings(_env_file=None, query_embedding_cache_enabled=False)
+    enabled = Settings(
+        _env_file=None,
+        query_embedding_cache_enabled=True,
+        query_embedding_cache_max_entries=7,
+        query_embedding_cache_ttl_seconds=11,
+    )
+
+    assert get_query_embedding_cache(disabled) is None
+    first = get_query_embedding_cache(enabled)
+    second = get_query_embedding_cache(enabled)
+    assert first is second
+
+
+async def test_query_embedding_cache_metrics_use_only_bounded_outcomes() -> None:
+    def count(outcome: str) -> float:
+        return REGISTRY.get_sample_value(
+            "ragz_query_embedding_cache_operations_total", {"outcome": outcome}
+        ) or 0.0
+
+    before = {outcome: count(outcome) for outcome in ("hit", "miss", "store")}
+    cache = InMemoryQueryEmbeddingCache(max_entries=2, ttl_seconds=10)
+
+    assert await cache.get_many("space", ["alpha"]) == [None]
+    await cache.set_many("space", ["alpha"], [[1.0]])
+    assert await cache.get_many("space", ["alpha"]) == [[1.0]]
+
+    assert count("miss") == before["miss"] + 1
+    assert count("store") == before["store"] + 1
+    assert count("hit") == before["hit"] + 1
+
+
+def test_query_embedding_cache_namespace_binds_model_and_dimension() -> None:
+    model_id = uuid4()
+    base = query_embedding_cache_namespace(
+        model_id=model_id,
+        provider_kind="openai",
+        model="text-embedding-3-large",
+        dimension=1024,
+    )
+    changed = query_embedding_cache_namespace(
+        model_id=model_id,
+        provider_kind="openai",
+        model="text-embedding-3-large",
+        dimension=1536,
+    )
+    assert len(base) == 64
+    assert base != changed
 
 
 async def test_tei_embedder_batches_and_parses() -> None:
@@ -83,6 +187,75 @@ async def test_litellm_embedder_posts_and_parses_embeddings() -> None:
     result = await embedder.embed(["hello", "world"])
     assert result == [[0.1, 0.2], [0.2, 0.3]]  # re-ordered by index, not response order
     assert str(captured["url"]).endswith("/v1/embeddings")
+
+
+async def test_litellm_openai_embedder_requests_dimensions() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["json"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={
+                "data": [{"index": 0, "embedding": [0.1, 0.2, 0.3]}],
+            },
+        )
+
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master",
+        model="text-embedding-3-small", provider_kind="openai", dimension=3,
+        transport=httpx.MockTransport(handler),
+    )
+    vectors = await embedder.embed(["hello"])
+
+    assert vectors == [[0.1, 0.2, 0.3]]
+    assert captured["json"] == {
+        "model": "text-embedding-3-small", "input": ["hello"], "dimensions": 3
+    }
+
+
+async def test_litellm_embedder_rejects_requested_width_mismatch() -> None:
+    transport = httpx.MockTransport(
+        lambda _request: httpx.Response(
+            200, json={"data": [{"index": 0, "embedding": [0.1, 0.2]}]}
+        )
+    )
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master",
+        model="text-embedding-3-small", provider_kind="openai", dimension=3,
+        transport=transport,
+    )
+
+    with pytest.raises(UpstreamError, match="expected 3 dimensions"):
+        await embedder.embed(["hello"])
+
+
+@pytest.mark.parametrize(
+    ("provider_kind", "model"),
+    [
+        ("cohere", "embed-english-v3.0"),
+        ("cohere", "text-embedding-3-small"),
+        ("openai", "text-embedding-ada-002"),
+    ],
+)
+async def test_litellm_embedder_omits_dimensions_for_unsupported_models(
+    provider_kind: str, model: str,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["json"] = json.loads(request.content)
+        return httpx.Response(
+            200, json={"data": [{"index": 0, "embedding": [0.1, 0.2]}]}
+        )
+
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master", model=model,
+        provider_kind=provider_kind, dimension=2, transport=httpx.MockTransport(handler),
+    )
+    await embedder.embed(["hello"])
+
+    assert "dimensions" not in captured["json"]
 
 
 async def test_litellm_embedder_reports_billed_tokens() -> None:
@@ -159,6 +332,17 @@ def test_get_dense_embedder_caches_by_model_id() -> None:
     a = get_dense_embedder(model_id, provider_kind="tei", litellm_model_name="local-embeddings")
     b = get_dense_embedder(model_id, provider_kind="tei", litellm_model_name="local-embeddings")
     assert a is b
+
+
+def test_get_dense_embedder_cache_separates_dimensions() -> None:
+    model_id = uuid4()
+    a = get_dense_embedder(
+        model_id, provider_kind="tei", litellm_model_name="local-embeddings", dimension=1024
+    )
+    b = get_dense_embedder(
+        model_id, provider_kind="tei", litellm_model_name="local-embeddings", dimension=1536
+    )
+    assert a is not b
 
 
 async def test_an_unreachable_tei_names_the_service_and_the_fix() -> None:

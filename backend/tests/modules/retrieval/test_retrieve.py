@@ -11,11 +11,19 @@ from ragz.modules.auth.models import User
 from ragz.modules.models.models import LOCAL_EMBEDDING_MODEL_ID
 from ragz.modules.retrieval import service as retrieval_service
 from ragz.modules.retrieval.client import COLLECTION, get_qdrant
-from ragz.modules.retrieval.embeddings import embed_sparse, get_dense_embedder
+from ragz.modules.retrieval.embeddings import (
+    InMemoryQueryEmbeddingCache,
+    clear_query_embedding_cache,
+    embed_sparse,
+    get_dense_embedder,
+)
 from ragz.modules.retrieval.query_expansion import ExpandedQueries
 from ragz.modules.retrieval.service import (
     RetrievedChunk,
+    _capture_stage,
     _dedupe_hq,
+    _stable_chunk_order,
+    _stable_rerank_order,
     delete_document_points,
     ensure_collection,
     retrieve,
@@ -33,6 +41,33 @@ _LOCAL_MODEL_KW = {
     "provider_kind": "tei",
     "litellm_model_name": "local-embeddings",
 }
+
+
+def test_atomic_stage_timing_records_failure_without_sensitive_context() -> None:
+    timings: dict[str, float] = {}
+
+    with pytest.raises(RuntimeError, match="synthetic failure"):
+        with _capture_stage(timings, "failed_stage"):
+            raise RuntimeError("synthetic failure")
+
+    assert timings.keys() == {"failed_stage"}
+    assert timings["failed_stage"] >= 0
+
+
+def test_equal_score_chunks_and_reranks_have_deterministic_secondary_order() -> None:
+    first_id = uuid4()
+    second_id = uuid4()
+    low, high = sorted((first_id, second_id), key=str)
+    chunks = [
+        RetrievedChunk(second_id, 2, 0, "second", 0.5),
+        RetrievedChunk(first_id, 1, 0, "first", 0.5),
+    ]
+
+    ordered = _stable_chunk_order(chunks)
+    assert [chunk.document_id for chunk in ordered] == [low, high]
+    assert _stable_rerank_order([0.7, 0.7], chunks) == (
+        [0, 1] if second_id == low else [1, 0]
+    )
 
 
 async def seed_workspace(
@@ -135,6 +170,111 @@ async def test_min_score_triggers_no_answer_with_nearest(
     assert result.chunks  # nearest sources still surfaced (CHAT-9)
 
 
+async def test_no_answer_probe_overlaps_fused_vector_search(
+    session: AsyncSession,
+    qdrant_collection: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ctx, ws = await seed_workspace(session, "probe-overlap")
+    await upsert_texts(ctx, ws, ["alpha report"])
+    client = get_qdrant()
+    original = client.query_points
+    fused_started = asyncio.Event()
+    probe_started = asyncio.Event()
+
+    async def observed_query_points(*args, **kwargs):  # type: ignore[no-untyped-def]
+        if kwargs.get("prefetch") is not None:
+            fused_started.set()
+            await asyncio.wait_for(probe_started.wait(), timeout=1)
+        elif kwargs.get("using") == "dense" and kwargs.get("limit") == 1:
+            probe_started.set()
+            await asyncio.wait_for(fused_started.wait(), timeout=1)
+        return await original(*args, **kwargs)
+
+    monkeypatch.setattr(client, "query_points", observed_query_points)
+    result = await asyncio.wait_for(
+        retrieve(session, ctx, ws.id, "alpha"), timeout=2
+    )
+
+    assert result.chunks
+    assert fused_started.is_set() and probe_started.is_set()
+
+
+async def test_query_embedding_cache_reports_cold_miss_then_warm_hit(
+    session: AsyncSession, qdrant_collection: None
+) -> None:
+    ctx, ws = await seed_workspace(session, "query-cache")
+    await upsert_texts(ctx, ws, ["alpha report", "unrelated notes"])
+    cache = InMemoryQueryEmbeddingCache()
+
+    cold = await retrieve(
+        session, ctx, ws.id, "alpha", query_embedding_cache=cache
+    )
+    warm = await retrieve(
+        session, ctx, ws.id, "alpha", query_embedding_cache=cache
+    )
+
+    assert (cold.embedding_cache_hits, cold.embedding_cache_misses) == (0, 1)
+    assert (warm.embedding_cache_hits, warm.embedding_cache_misses) == (1, 0)
+    assert [chunk.document_id for chunk in warm.chunks] == [
+        chunk.document_id for chunk in cold.chunks
+    ]
+
+
+async def test_configured_query_embedding_cache_is_used_and_can_be_overridden_off(
+    session: AsyncSession, qdrant_collection: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx, ws = await seed_workspace(session, "configured-query-cache")
+    await upsert_texts(ctx, ws, ["alpha report", "unrelated notes"])
+    settings = get_settings().model_copy(
+        update={
+            "query_embedding_cache_enabled": True,
+            "query_embedding_cache_max_entries": 10,
+            "query_embedding_cache_ttl_seconds": 60,
+        }
+    )
+    clear_query_embedding_cache()
+    monkeypatch.setattr(retrieval_service, "get_settings", lambda: settings)
+
+    cold = await retrieve(session, ctx, ws.id, "alpha")
+    warm = await retrieve(session, ctx, ws.id, "alpha")
+    bypassed = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "alpha",
+        query_embedding_cache_enabled_override=False,
+    )
+
+    assert (cold.embedding_cache_hits, cold.embedding_cache_misses) == (0, 1)
+    assert (warm.embedding_cache_hits, warm.embedding_cache_misses) == (1, 0)
+    assert (bypassed.embedding_cache_hits, bypassed.embedding_cache_misses) == (0, 1)
+    clear_query_embedding_cache()
+
+
+async def test_query_embedding_cache_wrong_width_fails_before_vector_search(
+    session: AsyncSession, qdrant_collection: None
+) -> None:
+    class WrongWidthCache:
+        async def get_many(self, _namespace, texts):  # type: ignore[no-untyped-def]
+            return [[1.0, 2.0] for _text in texts]
+
+        async def set_many(self, _namespace, _texts, _vectors):  # type: ignore[no-untyped-def]
+            raise AssertionError("a cache hit must not be stored again")
+
+    ctx, ws = await seed_workspace(session, "wrong-width-query-cache")
+    await upsert_texts(ctx, ws, ["alpha report"])
+
+    with pytest.raises(UpstreamError, match="wrong vector width"):
+        await retrieve(
+            session,
+            ctx,
+            ws.id,
+            "alpha",
+            query_embedding_cache=WrongWidthCache(),
+        )
+
+
 async def test_empty_workspace_is_no_answer(
     session: AsyncSession, qdrant_collection: None
 ) -> None:
@@ -200,15 +340,34 @@ async def test_enabled_multi_query_builds_six_filtered_prefetches_and_records_us
         return await original_query_points(*args, **kwargs)
 
     monkeypatch.setattr(client, "query_points", spy_query_points)
+    stage_timings_ms: dict[str, float] = {}
 
     result = await retrieve(
-        session, ctx, ws.id, "alpha beta", query_expander=expander
+        session,
+        ctx,
+        ws.id,
+        "alpha beta",
+        query_expander=expander,
+        stage_timings_ms=stage_timings_ms,
     )
 
     assert result.chunks
     assert expander.calls == [("alpha beta", "utility-model")]
     assert len(captured_prefetches) == 6
     assert all(prefetch.filter is not None for prefetch in captured_prefetches)
+    assert {
+        "workspace_model_resolution",
+        "database_release",
+        "collection_ready",
+        "query_expansion",
+        "dense_embedding",
+        "sparse_embedding",
+        "authorization_prefilter",
+        "vector_search",
+        "authorization_recheck",
+        "no_answer_probe",
+    } <= stage_timings_ms.keys()
+    assert all(value >= 0 for value in stage_timings_ms.values())
     usage = (
         await session.execute(
             select(UsageRecord).where(
@@ -259,6 +418,95 @@ async def test_multi_query_releases_db_transaction_before_provider_call(
     )
 
     assert result.chunks
+
+
+async def test_multi_query_starts_original_embedding_before_expansion_finishes(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ctx, ws = await seed_workspace(
+        session, "mq-speculative", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+    delegate = get_dense_embedder(**_LOCAL_MODEL_KW)
+    embedding_started = asyncio.Event()
+    expansion_started = asyncio.Event()
+
+    class ObservedEmbedder:
+        async def embed_with_usage(self, texts: list[str]):  # type: ignore[no-untyped-def]
+            embedding_started.set()
+            return await delegate.embed_with_usage(texts)
+
+    class ObservedExpander(_FakeQueryExpander):
+        async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+            expansion_started.set()
+            await asyncio.wait_for(embedding_started.wait(), timeout=1)
+            return await super().expand(query, model=model)
+
+    monkeypatch.setattr(
+        retrieval_service, "get_dense_embedder", lambda *args, **kwargs: ObservedEmbedder()
+    )
+    result = await asyncio.wait_for(
+        retrieve(
+            session,
+            ctx,
+            ws.id,
+            "alpha",
+            query_expander=ObservedExpander(("alpha report",)),
+        ),
+        timeout=2,
+    )
+
+    assert expansion_started.is_set()
+    assert embedding_started.is_set()
+    assert result.query_count == 2
+
+
+async def test_multi_query_timeout_cancels_expansion_and_returns_q1(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+) -> None:
+    from sqlalchemy import select
+
+    from ragz.modules.quotas.models import UsageRecord
+
+    ctx, ws = await seed_workspace(
+        session, "mq-timeout", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+    cancelled = asyncio.Event()
+
+    class NeverExpander(_FakeQueryExpander):
+        async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cancelled.set()
+                raise
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "alpha",
+        query_expander=NeverExpander(),
+        multi_query_expansion_timeout_ms_override=25,
+    )
+
+    assert result.query_count == 1
+    assert cancelled.is_set()
+    usage = (
+        await session.execute(
+            select(UsageRecord).where(
+                UsageRecord.org_id == ctx.org_id,
+                UsageRecord.feature == "query_expansion",
+            )
+        )
+    ).scalar_one_or_none()
+    assert usage is None
 
 
 async def test_multi_query_no_answer_uses_best_variant_dense_score(
@@ -344,6 +592,43 @@ async def test_multi_query_override_compares_without_mutating_workspace_setting(
     assert ws.multi_query_enabled is False
     assert expander.calls == [("original", "utility-model")]
     assert result.query_count == 3
+
+
+async def test_five_query_override_uses_original_plus_four_alternatives(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+) -> None:
+    ctx, ws = await seed_workspace(session, "mq-five", multi_query_enabled=False)
+    expander = _FakeQueryExpander(("one", "two", "three", "four", "drop"))
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "original",
+        query_expander=expander,
+        multi_query_enabled_override=True,
+        multi_query_count_override=5,
+    )
+
+    assert expander.calls == [("original", "utility-model")]
+    assert result.query_count == 5
+
+
+async def test_multi_query_count_override_rejects_unsupported_value(
+    session: AsyncSession,
+    qdrant_collection: None,
+) -> None:
+    ctx, ws = await seed_workspace(session, "mq-count-invalid")
+    with pytest.raises(ValueError, match="must be 1, 3, or 5"):
+        await retrieve(
+            session,
+            ctx,
+            ws.id,
+            "original",
+            multi_query_count_override=4,
+        )
 
 
 async def test_single_query_override_skips_expansion_on_enabled_workspace(
