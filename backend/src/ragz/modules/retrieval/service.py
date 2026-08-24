@@ -46,6 +46,7 @@ from ragz.modules.retrieval.embeddings import (
     QueryEmbeddingCache,
     embed_sparse,
     get_dense_embedder,
+    get_query_embedding_cache,
     query_embedding_cache_namespace,
 )
 from ragz.modules.retrieval.query_expansion import QueryExpander, build_query_expander
@@ -502,6 +503,7 @@ async def retrieve(
     multi_query_count_override: int | None = None,
     rerank_candidate_pool_override: int | None = None,
     query_embedding_cache: QueryEmbeddingCache | None = None,
+    query_embedding_cache_enabled_override: bool | None = None,
     strict_rerank: bool = False,
     stage_timings_ms: dict[str, float] | None = None,
 ) -> RetrievalResult:
@@ -619,6 +621,11 @@ async def retrieve(
                         workspace_id=str(workspace_id),
                         query_count=len(queries),
                     )
+    active_query_embedding_cache = query_embedding_cache
+    if active_query_embedding_cache is None:
+        active_query_embedding_cache = get_query_embedding_cache(
+            get_settings(), enabled_override=query_embedding_cache_enabled_override
+        )
     cache_namespace = query_embedding_cache_namespace(
         model_id=embedding_model.id,
         provider_kind=embedding_model.provider_kind,
@@ -627,14 +634,20 @@ async def retrieve(
     )
     with _capture_stage(stage_timings_ms, "embedding_cache_lookup"):
         cached_vectors: list[list[float] | None]
-        if query_embedding_cache is not None:
-            cached_vectors = await query_embedding_cache.get_many(
+        if active_query_embedding_cache is not None:
+            cached_vectors = await active_query_embedding_cache.get_many(
                 cache_namespace, queries
             )
         else:
             cached_vectors = [None] * len(queries)
     if len(cached_vectors) != len(queries):
         raise UpstreamError("query embedding cache returned the wrong vector count")
+    expected_dimension = int(embedding_model.dimension or 0)
+    if any(
+        vector is not None and len(vector) != expected_dimension
+        for vector in cached_vectors
+    ):
+        raise UpstreamError("query embedding cache returned the wrong vector width")
     miss_indices = [index for index, vector in enumerate(cached_vectors) if vector is None]
     miss_texts = [queries[index] for index in miss_indices]
     embed_tokens = 0
@@ -649,8 +662,8 @@ async def retrieve(
     for index, vector in zip(miss_indices, miss_vectors, strict=True):
         cached_vectors[index] = vector
     with _capture_stage(stage_timings_ms, "embedding_cache_store"):
-        if query_embedding_cache is not None and miss_texts:
-            await query_embedding_cache.set_many(
+        if active_query_embedding_cache is not None and miss_texts:
+            await active_query_embedding_cache.set_many(
                 cache_namespace, miss_texts, miss_vectors
             )
     if any(vector is None for vector in cached_vectors):

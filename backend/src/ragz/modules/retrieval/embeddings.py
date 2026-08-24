@@ -2,16 +2,19 @@ import hashlib
 import math
 import re
 from collections import OrderedDict
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from functools import lru_cache
+from time import monotonic
 from typing import Any, Protocol
 from uuid import UUID
 
 import httpx
 from qdrant_client import models
 
-from ragz.core.config import get_settings
+from ragz.core.config import Settings, get_settings
 from ragz.core.errors import UpstreamError
+from ragz.core.metrics import query_embedding_cache_operations_total
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _OPENAI_DIMENSION_MODELS = {"text-embedding-3-small", "text-embedding-3-large"}
@@ -67,16 +70,31 @@ def query_embedding_cache_namespace(
     return hashlib.sha256(material.encode()).hexdigest()
 
 
-class InMemoryQueryEmbeddingCache:
-    """Bounded process-local LRU used by the benchmark and safe warm-path pilots."""
+@dataclass(frozen=True, slots=True)
+class _CacheEntry:
+    expires_at: float
+    vector: tuple[float, ...]
 
-    def __init__(self, max_entries: int = 10_000) -> None:
+
+class InMemoryQueryEmbeddingCache:
+    """Bounded, replica-local TTL/LRU cache with opaque SHA-256 keys."""
+
+    def __init__(
+        self,
+        max_entries: int = 10_000,
+        ttl_seconds: float = 3_600,
+        clock: Callable[[], float] = monotonic,
+    ) -> None:
         if max_entries < 1:
             raise ValueError("max_entries must be positive")
+        if ttl_seconds <= 0:
+            raise ValueError("ttl_seconds must be positive")
         import asyncio
 
         self._max_entries = max_entries
-        self._entries: OrderedDict[str, tuple[float, ...]] = OrderedDict()
+        self._ttl_seconds = float(ttl_seconds)
+        self._clock = clock
+        self._entries: OrderedDict[str, _CacheEntry] = OrderedDict()
         self._lock = asyncio.Lock()
 
     @staticmethod
@@ -87,15 +105,31 @@ class InMemoryQueryEmbeddingCache:
         self, namespace: str, texts: Sequence[str]
     ) -> list[list[float] | None]:
         result: list[list[float] | None] = []
+        hits = misses = expired = 0
         async with self._lock:
+            now = self._clock()
             for text in texts:
                 key = self._key(namespace, text)
-                vector = self._entries.get(key)
-                if vector is None:
+                entry = self._entries.get(key)
+                if entry is None:
+                    misses += 1
+                    result.append(None)
+                    continue
+                if entry.expires_at <= now:
+                    self._entries.pop(key, None)
+                    expired += 1
+                    misses += 1
                     result.append(None)
                     continue
                 self._entries.move_to_end(key)
-                result.append(list(vector))
+                hits += 1
+                result.append(list(entry.vector))
+        if hits:
+            query_embedding_cache_operations_total.labels(outcome="hit").inc(hits)
+        if misses:
+            query_embedding_cache_operations_total.labels(outcome="miss").inc(misses)
+        if expired:
+            query_embedding_cache_operations_total.labels(outcome="expired").inc(expired)
         return result
 
     async def set_many(
@@ -106,13 +140,57 @@ class InMemoryQueryEmbeddingCache:
     ) -> None:
         if len(texts) != len(vectors):
             raise ValueError("cache texts and vectors must have the same length")
+        evicted = 0
         async with self._lock:
+            expires_at = self._clock() + self._ttl_seconds
             for text, vector in zip(texts, vectors, strict=True):
                 key = self._key(namespace, text)
-                self._entries[key] = tuple(float(value) for value in vector)
+                self._entries[key] = _CacheEntry(
+                    expires_at=expires_at,
+                    vector=tuple(float(value) for value in vector),
+                )
                 self._entries.move_to_end(key)
             while len(self._entries) > self._max_entries:
                 self._entries.popitem(last=False)
+                evicted += 1
+        if texts:
+            query_embedding_cache_operations_total.labels(outcome="store").inc(len(texts))
+        if evicted:
+            query_embedding_cache_operations_total.labels(outcome="evicted").inc(evicted)
+
+
+@lru_cache(maxsize=16)
+def _bounded_query_embedding_cache(
+    max_entries: int, ttl_seconds: int
+) -> InMemoryQueryEmbeddingCache:
+    return InMemoryQueryEmbeddingCache(
+        max_entries=max_entries,
+        ttl_seconds=ttl_seconds,
+    )
+
+
+def get_query_embedding_cache(
+    settings: Settings,
+    *,
+    enabled_override: bool | None = None,
+) -> QueryEmbeddingCache | None:
+    """Configured replica-local cache; no raw query leaves this process."""
+    enabled = (
+        settings.query_embedding_cache_enabled
+        if enabled_override is None
+        else enabled_override
+    )
+    if not enabled:
+        return None
+    return _bounded_query_embedding_cache(
+        settings.query_embedding_cache_max_entries,
+        settings.query_embedding_cache_ttl_seconds,
+    )
+
+
+def clear_query_embedding_cache() -> None:
+    """Drop replica-local entries after settings/test lifecycle changes."""
+    _bounded_query_embedding_cache.cache_clear()
 
 
 class TeiDenseEmbedder:

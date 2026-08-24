@@ -78,20 +78,20 @@ commands.
 - Settings: `query_embedding_cache_enabled`,
   `query_embedding_cache_max_entries`, `query_embedding_cache_ttl_seconds`.
 
-- [ ] Add failing tests for TTL expiry, LRU eviction, model/dimension namespace
+- [x] Add failing tests for TTL expiry, LRU eviction, model/dimension namespace
   misses, vector copying, malformed widths and concurrent correctness.
-- [ ] Run the cache tests and confirm they fail for missing TTL/config behavior.
-- [ ] Store `(expires_at, tuple[float, ...])`, remove expired entries under the
+- [x] Run the cache tests and confirm they fail for missing TTL/config behavior.
+- [x] Store `(expires_at, tuple[float, ...])`, remove expired entries under the
   lock, and keep raw text only long enough to hash the key.
-- [ ] Add the settings with safe bounds: entries `1..100000`, TTL `1..86400`.
-- [ ] Configure Compose default enabled with `10000` entries and `3600` seconds;
+- [x] Add the settings with safe bounds: entries `1..100000`, TTL `1..86400`.
+- [x] Configure Compose default enabled with `10000` entries and `3600` seconds;
   leave unit tests explicitly disabled unless they inject a cache.
-- [ ] Add hit/miss/store/error Prometheus counters with low-cardinality outcome
+- [x] Add hit/miss/store/expired/evicted Prometheus counters with low-cardinality outcome
   labels only.
-- [ ] Wire the configured singleton into production retrieval while preserving
+- [x] Wire the configured singleton into production retrieval while preserving
   benchmark cache-off overrides.
-- [ ] Run focused tests, Ruff and strict mypy.
-- [ ] Commit and push `perf: cache query embeddings with bounded TTL`.
+- [x] Run focused tests, Ruff and strict mypy.
+- [x] Commit and push `perf: cache query embeddings with bounded TTL`.
 
 ### Task 3: Cached, deadline-bounded speculative MQR
 

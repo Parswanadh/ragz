@@ -17,3 +17,6 @@ def test_ingestion_settings_defaults(pristine_env, monkeypatch) -> None:  # type
     assert s.embedding_backend == "tei"
     assert s.embedding_dim == 1024
     assert s.interactive_upload_mb == 50
+    assert s.query_embedding_cache_enabled is False
+    assert s.query_embedding_cache_max_entries == 10_000
+    assert s.query_embedding_cache_ttl_seconds == 3_600

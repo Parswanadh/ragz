@@ -13,6 +13,7 @@ from ragz.modules.retrieval import service as retrieval_service
 from ragz.modules.retrieval.client import COLLECTION, get_qdrant
 from ragz.modules.retrieval.embeddings import (
     InMemoryQueryEmbeddingCache,
+    clear_query_embedding_cache,
     embed_sparse,
     get_dense_embedder,
 )
@@ -170,6 +171,60 @@ async def test_query_embedding_cache_reports_cold_miss_then_warm_hit(
     assert [chunk.document_id for chunk in warm.chunks] == [
         chunk.document_id for chunk in cold.chunks
     ]
+
+
+async def test_configured_query_embedding_cache_is_used_and_can_be_overridden_off(
+    session: AsyncSession, qdrant_collection: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ctx, ws = await seed_workspace(session, "configured-query-cache")
+    await upsert_texts(ctx, ws, ["alpha report", "unrelated notes"])
+    settings = get_settings().model_copy(
+        update={
+            "query_embedding_cache_enabled": True,
+            "query_embedding_cache_max_entries": 10,
+            "query_embedding_cache_ttl_seconds": 60,
+        }
+    )
+    clear_query_embedding_cache()
+    monkeypatch.setattr(retrieval_service, "get_settings", lambda: settings)
+
+    cold = await retrieve(session, ctx, ws.id, "alpha")
+    warm = await retrieve(session, ctx, ws.id, "alpha")
+    bypassed = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "alpha",
+        query_embedding_cache_enabled_override=False,
+    )
+
+    assert (cold.embedding_cache_hits, cold.embedding_cache_misses) == (0, 1)
+    assert (warm.embedding_cache_hits, warm.embedding_cache_misses) == (1, 0)
+    assert (bypassed.embedding_cache_hits, bypassed.embedding_cache_misses) == (0, 1)
+    clear_query_embedding_cache()
+
+
+async def test_query_embedding_cache_wrong_width_fails_before_vector_search(
+    session: AsyncSession, qdrant_collection: None
+) -> None:
+    class WrongWidthCache:
+        async def get_many(self, _namespace, texts):  # type: ignore[no-untyped-def]
+            return [[1.0, 2.0] for _text in texts]
+
+        async def set_many(self, _namespace, _texts, _vectors):  # type: ignore[no-untyped-def]
+            raise AssertionError("a cache hit must not be stored again")
+
+    ctx, ws = await seed_workspace(session, "wrong-width-query-cache")
+    await upsert_texts(ctx, ws, ["alpha report"])
+
+    with pytest.raises(UpstreamError, match="wrong vector width"):
+        await retrieve(
+            session,
+            ctx,
+            ws.id,
+            "alpha",
+            query_embedding_cache=WrongWidthCache(),
+        )
 
 
 async def test_empty_workspace_is_no_answer(

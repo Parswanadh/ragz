@@ -61,6 +61,12 @@ retrieval_stage_duration_seconds = Histogram(
     buckets=_LATENCY_BUCKETS,
 )
 
+query_embedding_cache_operations_total = Counter(
+    "ragz_query_embedding_cache_operations_total",
+    "Query-embedding cache operations by bounded outcome.",
+    ("outcome",),
+)
+
 @contextmanager
 def observe_stage(stage: str) -> Iterator[None]:
     """Time a retrieval stage, recording it even when the stage raises.

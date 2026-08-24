@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
 
-from pydantic import field_validator, model_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 from ragz.core.crypto import load_kek
@@ -97,6 +97,12 @@ class Settings(BaseSettings):
     tei_url: str = "http://localhost:58080"
     embedding_backend: str = "tei"  # "tei" | "hash" (hash = deterministic, test/dev only)
     embedding_dim: int = 1024  # bge-m3
+    # Query vectors are safe to cache only under their complete model namespace.
+    # Disabled in the class default so tests/direct library users are explicit;
+    # the production Compose deployment opts in below with bounded settings.
+    query_embedding_cache_enabled: bool = False
+    query_embedding_cache_max_entries: int = Field(default=10_000, ge=1, le=100_000)
+    query_embedding_cache_ttl_seconds: int = Field(default=3_600, ge=1, le=86_400)
     # Plan E: cross-encoder reranker (CHAT-2 pull-forward)
     rerank_url: str = "http://localhost:58081"
     rerank_backend: str = "tei"  # "tei" | "lexical" (lexical = deterministic, test/dev only)

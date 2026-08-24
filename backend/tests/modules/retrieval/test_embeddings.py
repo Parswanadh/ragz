@@ -1,10 +1,13 @@
 import json
 import math
+from dataclasses import dataclass
 from uuid import uuid4
 
 import httpx
 import pytest
+from prometheus_client import REGISTRY
 
+from ragz.core.config import Settings
 from ragz.core.errors import UpstreamError
 from ragz.modules.retrieval.embeddings import (
     HashDenseEmbedder,
@@ -13,8 +16,17 @@ from ragz.modules.retrieval.embeddings import (
     TeiDenseEmbedder,
     embed_sparse,
     get_dense_embedder,
+    get_query_embedding_cache,
     query_embedding_cache_namespace,
 )
+
+
+@dataclass
+class _Clock:
+    value: float = 0.0
+
+    def __call__(self) -> float:
+        return self.value
 
 
 def _cos(a: list[float], b: list[float]) -> float:
@@ -65,6 +77,52 @@ async def test_query_embedding_cache_rejects_misaligned_batch() -> None:
     cache = InMemoryQueryEmbeddingCache()
     with pytest.raises(ValueError, match="same length"):
         await cache.set_many("space", ["one"], [])
+
+
+async def test_query_embedding_cache_expires_entries_after_ttl() -> None:
+    clock = _Clock()
+    cache = InMemoryQueryEmbeddingCache(
+        max_entries=2, ttl_seconds=10.0, clock=clock
+    )
+    await cache.set_many("space", ["one"], [[1.0, 2.0]])
+
+    clock.value = 9.999
+    assert await cache.get_many("space", ["one"]) == [[1.0, 2.0]]
+    clock.value = 10.0
+    assert await cache.get_many("space", ["one"]) == [None]
+
+
+def test_query_embedding_cache_resolver_is_bounded_shared_and_disableable() -> None:
+    disabled = Settings(_env_file=None, query_embedding_cache_enabled=False)
+    enabled = Settings(
+        _env_file=None,
+        query_embedding_cache_enabled=True,
+        query_embedding_cache_max_entries=7,
+        query_embedding_cache_ttl_seconds=11,
+    )
+
+    assert get_query_embedding_cache(disabled) is None
+    first = get_query_embedding_cache(enabled)
+    second = get_query_embedding_cache(enabled)
+    assert first is second
+
+
+async def test_query_embedding_cache_metrics_use_only_bounded_outcomes() -> None:
+    def count(outcome: str) -> float:
+        return REGISTRY.get_sample_value(
+            "ragz_query_embedding_cache_operations_total", {"outcome": outcome}
+        ) or 0.0
+
+    before = {outcome: count(outcome) for outcome in ("hit", "miss", "store")}
+    cache = InMemoryQueryEmbeddingCache(max_entries=2, ttl_seconds=10)
+
+    assert await cache.get_many("space", ["alpha"]) == [None]
+    await cache.set_many("space", ["alpha"], [[1.0]])
+    assert await cache.get_many("space", ["alpha"]) == [[1.0]]
+
+    assert count("miss") == before["miss"] + 1
+    assert count("store") == before["store"] + 1
+    assert count("hit") == before["hit"] + 1
 
 
 def test_query_embedding_cache_namespace_binds_model_and_dimension() -> None:
