@@ -116,12 +116,17 @@ def _validate_condition(
         if (hits, misses) != (expected_hits, expected_misses):
             raise MatrixAnalysisError(f"{condition_id} scored cache state differs")
     first_warmup = [row for row in warmups if row.get("warmup") == 1]
-    if len(first_warmup) != source_queries:
+    if cache_mode == "warm" and len(first_warmup) != source_queries:
         raise MatrixAnalysisError(f"{condition_id} first warmup denominator differs")
-    cold_latency = sum(
-        _number(row.get("elapsed_ms"), f"{condition_id}.warmup.elapsed_ms")
-        for row in first_warmup
-    ) / len(first_warmup)
+    cold_latency = (
+        sum(
+            _number(row.get("elapsed_ms"), f"{condition_id}.warmup.elapsed_ms")
+            for row in first_warmup
+        )
+        / len(first_warmup)
+        if first_warmup
+        else None
+    )
     latency = summary.get("latency_ms")
     if not isinstance(latency, Mapping):
         raise MatrixAnalysisError(f"{condition_id} latency summary is missing")

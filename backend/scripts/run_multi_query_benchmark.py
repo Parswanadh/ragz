@@ -713,6 +713,7 @@ async def _run_mode(
     embedding_cache = (
         InMemoryQueryEmbeddingCache() if cache_mode == "warm" else None
     )
+    effective_warmups = max(1, warmups) if cache_mode == "warm" else warmups
     async with factory() as session:
         workspace = await session.get(Workspace, workspace_id)
         assert workspace is not None
@@ -721,7 +722,7 @@ async def _run_mode(
         await session.commit()
         progress.stage = f"retrieval:{mode}:warmup"
         write_progress(progress_output, progress)
-        for warmup_index in range(1, warmups + 1):
+        for warmup_index in range(1, effective_warmups + 1):
             for record in queries:
                 if provider_backed_embeddings:
                     progress.query_embedding_attempts += 1
@@ -922,7 +923,7 @@ async def _run_mode(
         "abstention_observations": len(abstention_records),
         "answerable_queries": sum(bool(item["answerable"]) for item in queries),
         "unanswerable_queries": sum(not bool(item["answerable"]) for item in queries),
-        "warmups": warmups,
+        "warmups": effective_warmups,
         "repetitions": repetitions,
         "errors": sum(item["error"] is not None for item in records),
         "embedding_cache": {
