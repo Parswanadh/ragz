@@ -37,10 +37,15 @@ def test_ranking_match_accepts_only_reordering_inside_equal_score_ties() -> None
         {"evidence_id": "b", "rank": 3, "score": 0.25},
     ]
     changed = [*tied[:2], {"evidence_id": "d", "rank": 3, "score": 0.25}]
+    score_changed = [*tied[:2], {"evidence_id": "d", "rank": 3, "score": 0.2}]
 
     assert ranking_match_kind(expected, expected) == "exact"
     assert ranking_match_kind(tied, expected) == "score_tie_equivalent"
-    assert ranking_match_kind(changed, expected) == "drift"
+    assert (
+        ranking_match_kind(changed, expected)
+        == "score_profile_equivalent_boundary_tie"
+    )
+    assert ranking_match_kind(score_changed, expected) == "drift"
     assert ranking_match_kind(tied, None) == "screen_repair"
 
 

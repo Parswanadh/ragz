@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "failed_interrupted_validation_contract",
+  "completed_rows": 23,
+  "provider_calls_persisted": 38,
+  "trigger": "four restored rows changed the candidate occupying an equal-score RRF boundary slot",
+  "quality_aggregate_eligible": false,
+  "private_content_persisted": false,
+  "resolution": "The replacement run treats comparison with the earlier screen as a stability diagnostic, not as a gate for a fresh no-cache Triad measurement. It never reuses answer or judge output across changed context hashes."
+}

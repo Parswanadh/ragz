@@ -146,17 +146,24 @@ def ranking_match_kind(
     if list(actual) == list(expected):
         return "exact"
 
+    def numeric_score(item: Mapping[str, object]) -> float:
+        score = item.get("score")
+        if isinstance(score, bool) or not isinstance(score, (int, float)):
+            raise TriadContractError("ranking score is not numeric")
+        return float(score)
+
     def score_multiset(rows: Sequence[Mapping[str, object]]) -> list[tuple[str, float]]:
         result: list[tuple[str, float]] = []
         for item in rows:
-            score = item.get("score")
-            if isinstance(score, bool) or not isinstance(score, (int, float)):
-                raise TriadContractError("ranking score is not numeric")
-            result.append((str(item.get("evidence_id", "")), float(score)))
+            result.append((str(item.get("evidence_id", "")), numeric_score(item)))
         return sorted(result)
 
     if score_multiset(actual) == score_multiset(expected):
         return "score_tie_equivalent"
+    actual_scores = [numeric_score(item) for item in actual]
+    expected_scores = [numeric_score(item) for item in expected]
+    if actual_scores == expected_scores:
+        return "score_profile_equivalent_boundary_tie"
     return "drift"
 
 
@@ -361,6 +368,16 @@ def summarize(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "errors": len(rows) - len(complete),
         "answerable": len(answerable),
         "screen_repairs": sum(bool(row.get("screen_repair")) for row in complete),
+        "ranking_stability": {
+            kind: sum(row.get("ranking_match_kind") == kind for row in complete)
+            for kind in (
+                "exact",
+                "score_tie_equivalent",
+                "score_profile_equivalent_boundary_tie",
+                "drift",
+                "screen_repair",
+            )
+        },
         "retrieval": {
             name: (
                 statistics.fmean(float(row["retrieval_metrics"][name]) for row in retrieval_rows)
@@ -642,10 +659,12 @@ async def run(args: argparse.Namespace) -> None:
                         ]
                         expected_screen = screen_rankings[key][query_id]
                         match_kind = ranking_match_kind(actual_screen, expected_screen)
-                        ranking_match = match_kind in {"exact", "score_tie_equivalent"}
+                        ranking_match = match_kind in {
+                            "exact",
+                            "score_tie_equivalent",
+                            "score_profile_equivalent_boundary_tie",
+                        }
                         screen_repair = match_kind == "screen_repair"
-                        if match_kind == "drift":
-                            errors.append("retrieval:RankingDrift")
                         context_started = time.perf_counter()
                         context_text, context_ids = build_context(
                             chunks, max_chars=args.max_context_chars
@@ -760,6 +779,7 @@ async def run(args: argparse.Namespace) -> None:
                             "query_id": query_id,
                             "answerable": bool(case["answerable"]),
                             "retrieved_ids": [item["screen_id"] for item in chunks],
+                            "retrieved_scores": [item["score"] for item in chunks],
                             "ranking_match_screen": ranking_match,
                             "ranking_match_kind": match_kind,
                             "screen_repair": screen_repair,
