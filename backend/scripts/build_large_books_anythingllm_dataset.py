@@ -27,6 +27,16 @@ def page_id(book_id: str, page: int) -> str:
     return f"{book_id}-page-{page:04d}"
 
 
+def evidence_unit_id(book_id: str, page: int, pages_per_document: int) -> str:
+    if pages_per_document < 1 or page < 1:
+        raise ValueError("page and pages_per_document must be positive")
+    if pages_per_document == 1:
+        return page_id(book_id, page)
+    start = ((page - 1) // pages_per_document) * pages_per_document + 1
+    end = start + pages_per_document - 1
+    return f"{book_id}-pages-{start:04d}-{end:04d}"
+
+
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     rows = [
         json.loads(line)
@@ -40,6 +50,8 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
 
 def query_and_qrel_rows(
     source: list[dict[str, Any]],
+    *,
+    pages_per_document: int = 1,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     queries: list[dict[str, Any]] = []
     qrels: list[dict[str, Any]] = []
@@ -77,7 +89,9 @@ def query_and_qrel_rows(
             qrels.extend(
                 {
                     "query_id": query_id,
-                    "doc_id": page_id(str(documents[0]), page),
+                    "doc_id": evidence_unit_id(
+                        str(documents[0]), page, pages_per_document
+                    ),
                     "relevance": 1,
                 }
                 for page in sorted(set(pages))
@@ -113,18 +127,27 @@ async def build(args: argparse.Namespace) -> Path:
             if text:
                 by_page[block.page].append(text)
         max_page = max((block.page for block in blocks), default=0)
-        for page in range(1, max_page + 1):
-            # Preserve the physical-page denominator even when the text layer is
-            # empty. AnythingLLM requires non-empty raw text, so use a neutral
-            # marker that carries no query-specific evidence.
-            text = "\n\n".join(by_page.get(page, ())) or "[empty PDF page]"
-            identifier = page_id(book_id, page)
+        for start in range(1, max_page + 1, args.pages_per_document):
+            end = min(max_page, start + args.pages_per_document - 1)
+            page_texts = [
+                f"[PDF page {page}]\n"
+                + ("\n\n".join(by_page.get(page, ())) or "[empty PDF page]")
+                for page in range(start, end + 1)
+            ]
+            text = "\n\n".join(page_texts)
+            identifier = evidence_unit_id(
+                book_id, start, args.pages_per_document
+            )
             documents.append(
                 {
                     "doc_id": identifier,
                     "title": identifier,
                     "text": text,
-                    "metadata": {"book_id": book_id, "page": page},
+                    "metadata": {
+                        "book_id": book_id,
+                        "page_start": start,
+                        "page_end": end,
+                    },
                 }
             )
         pdf_manifest.append(
@@ -136,7 +159,9 @@ async def build(args: argparse.Namespace) -> Path:
             }
         )
     source_queries = _read_jsonl(args.queries.resolve())
-    queries, qrels = query_and_qrel_rows(source_queries)
+    queries, qrels = query_and_qrel_rows(
+        source_queries, pages_per_document=args.pages_per_document
+    )
     existing_ids = {str(row["doc_id"]) for row in documents}
     missing = {str(row["doc_id"]) for row in qrels} - existing_ids
     if missing:
@@ -150,7 +175,12 @@ async def build(args: argparse.Namespace) -> Path:
         "source_dataset_id": "large-books-v1",
         "temporary_private_adapter_input": True,
         "redistribution_permitted": False,
-        "evaluation_unit": "physical_pdf_page",
+        "evaluation_unit": (
+            "physical_pdf_page"
+            if args.pages_per_document == 1
+            else f"{args.pages_per_document}-page_interval"
+        ),
+        "pages_per_document": args.pages_per_document,
         "document_count": len(documents),
         "query_count": len(queries),
         "answerable_count": sum(bool(row["answerable"]) for row in queries),
@@ -176,9 +206,12 @@ def main() -> None:
     parser.add_argument("--pdf", action="append", required=True, type=parse_pdf_arg)
     parser.add_argument("--queries", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--pages-per-document", type=int, default=1)
     args = parser.parse_args()
     if len(args.pdf) != 3 or len({book_id for book_id, _path in args.pdf}) != 3:
         raise ValueError("exactly three uniquely named PDFs are required")
+    if not 1 <= args.pages_per_document <= 100:
+        raise ValueError("pages-per-document must be between 1 and 100")
     output = asyncio.run(build(args))
     print(json.dumps({"status": "completed", "output": str(output)}, sort_keys=True))
 
