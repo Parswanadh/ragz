@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "failed_interrupted_structured_output",
+  "completed_rows": 11,
+  "provider_calls_persisted": 21,
+  "trigger": "one HTTP-200 generation response failed the strict structured-output parser",
+  "quality_aggregate_eligible": false,
+  "private_content_persisted": false,
+  "resolution": "The replacement runner retries a schema-invalid structured response once. Every provider attempt remains in telemetry and budget accounting."
+}

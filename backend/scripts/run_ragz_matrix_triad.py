@@ -291,6 +291,41 @@ def safe_error(exc: BaseException) -> str:
     return type(exc).__name__
 
 
+async def structured_provider_call(
+    *,
+    client: Any,
+    runner: Any,
+    attempts: int,
+    model: str,
+    system: str,
+    user: str,
+    name: str,
+    schema: Mapping[str, Any],
+    max_output_tokens: int,
+) -> tuple[dict[str, Any], dict[str, int], int]:
+    """Retry HTTP-success/schema-invalid output without retaining provider bodies."""
+    if attempts < 1:
+        raise ValueError("structured provider attempts must be positive")
+    last_error: Exception | None = None
+    for attempt in range(1, attempts + 1):
+        try:
+            response: Any = await asyncio.to_thread(
+                client.response,
+                model=model,
+                system=system,
+                user=user,
+                name=name,
+                schema=schema,
+                max_output_tokens=max_output_tokens,
+            )
+            parsed = dict(runner.structured_response(response.payload))
+            return parsed, response.usage.as_dict(), attempt - 1
+        except Exception as exc:  # noqa: BLE001 - safe type is emitted by caller
+            last_error = exc
+    assert last_error is not None
+    raise last_error
+
+
 def citation_metrics(
     answer: Mapping[str, object], *, valid_ids: set[str], relevant_pages: set[str]
 ) -> dict[str, float | int | None]:
@@ -684,6 +719,7 @@ async def run(args: argparse.Namespace) -> None:
                         }
                         generation_usage = runner.Usage().as_dict()
                         judge_usage = runner.Usage().as_dict()
+                        structured_retries = {"generation": 0, "judge": 0}
                         judge = {name: 0.0 for name in ANSWER_METRICS}
                         if not errors:
                             generation_user = (
@@ -696,8 +732,14 @@ async def run(args: argparse.Namespace) -> None:
                             )
                             generation_started = time.perf_counter()
                             try:
-                                response: Any = await asyncio.to_thread(
-                                    client.response,
+                                (
+                                    answer,
+                                    generation_usage,
+                                    structured_retries["generation"],
+                                ) = await structured_provider_call(
+                                    client=client,
+                                    runner=runner,
+                                    attempts=args.structured_retries + 1,
                                     model=GENERATION_MODEL,
                                     system="You are a precise, citation-preserving RAG answerer.",
                                     user=generation_user,
@@ -705,8 +747,6 @@ async def run(args: argparse.Namespace) -> None:
                                     schema=ANSWER_SCHEMA,
                                     max_output_tokens=args.max_output_tokens,
                                 )
-                                answer = dict(runner.structured_response(response.payload))
-                                generation_usage = response.usage.as_dict()
                             except Exception as exc:  # noqa: BLE001
                                 errors.append(f"generation:{safe_error(exc)}")
                             timings["generation_provider"] = (
@@ -733,8 +773,14 @@ async def run(args: argparse.Namespace) -> None:
                             )
                             judge_started = time.perf_counter()
                             try:
-                                response = await asyncio.to_thread(
-                                    client.response,
+                                (
+                                    raw_judge,
+                                    judge_usage,
+                                    structured_retries["judge"],
+                                ) = await structured_provider_call(
+                                    client=client,
+                                    runner=runner,
+                                    attempts=args.structured_retries + 1,
                                     model=JUDGE_MODEL,
                                     system="You are a strict, reproducible RAG evaluator.",
                                     user=judge_user,
@@ -742,12 +788,10 @@ async def run(args: argparse.Namespace) -> None:
                                     schema=JUDGE_SCHEMA,
                                     max_output_tokens=args.max_output_tokens,
                                 )
-                                raw_judge = runner.structured_response(response.payload)
                                 judge = {
                                     name: safe_score(raw_judge.get(name))
                                     for name in ANSWER_METRICS
                                 }
-                                judge_usage = response.usage.as_dict()
                             except Exception as exc:  # noqa: BLE001
                                 errors.append(f"judge:{safe_error(exc)}")
                             timings["judge_provider"] = (
@@ -795,6 +839,7 @@ async def run(args: argparse.Namespace) -> None:
                                 "generation": generation_usage,
                                 "judge": judge_usage,
                             },
+                            "structured_output_retries": structured_retries,
                             "timings_ms": {
                                 **{
                                     f"retrieval.{name}": round(value, 4)
@@ -864,6 +909,7 @@ def parser() -> argparse.ArgumentParser:
     value.add_argument("--litellm-url", default="http://127.0.0.1:54000")
     value.add_argument("--reranker-rpm", type=int, default=9)
     value.add_argument("--provider-retries", type=int, default=3)
+    value.add_argument("--structured-retries", type=int, default=1)
     value.add_argument("--max-context-chars", type=int, default=30_000)
     value.add_argument("--max-output-tokens", type=int, default=800)
     value.add_argument("--budget-cap-usd", type=Decimal, default=Decimal("5.00"))
@@ -872,7 +918,12 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     args = parser().parse_args()
-    if args.reranker_rpm < 1 or args.max_output_tokens < 100 or args.budget_cap_usd <= 0:
+    if (
+        args.reranker_rpm < 1
+        or args.max_output_tokens < 100
+        or args.budget_cap_usd <= 0
+        or args.structured_retries < 0
+    ):
         raise SystemExit("invalid rate, output-token, or budget setting")
     asyncio.run(run(args))
 

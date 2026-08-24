@@ -12,6 +12,7 @@ from scripts.run_ragz_matrix_triad import (
     load_private_cases,
     ranking_conditions,
     ranking_match_kind,
+    structured_provider_call,
     summarize,
 )
 
@@ -47,6 +48,51 @@ def test_ranking_match_accepts_only_reordering_inside_equal_score_ties() -> None
     )
     assert ranking_match_kind(score_changed, expected) == "drift"
     assert ranking_match_kind(tied, None) == "screen_repair"
+
+
+async def test_structured_provider_call_retries_schema_parse_once() -> None:
+    class Usage:
+        def as_dict(self) -> dict[str, int]:
+            return {"input_tokens": 1, "cached_input_tokens": 0, "output_tokens": 1}
+
+    class Response:
+        payload = {"ok": True}
+        usage = Usage()
+
+    class Client:
+        calls = 0
+
+        def response(self, **_kwargs: object) -> Response:
+            self.calls += 1
+            return Response()
+
+    class Runner:
+        calls = 0
+
+        @classmethod
+        def structured_response(cls, _payload: object) -> dict[str, bool]:
+            cls.calls += 1
+            if cls.calls == 1:
+                raise RuntimeError("malformed")
+            return {"ok": True}
+
+    client = Client()
+    parsed, usage, retries = await structured_provider_call(
+        client=client,
+        runner=Runner,
+        attempts=2,
+        model="m",
+        system="s",
+        user="u",
+        name="rag_answer",
+        schema={},
+        max_output_tokens=100,
+    )
+
+    assert parsed == {"ok": True}
+    assert usage["input_tokens"] == 1
+    assert retries == 1
+    assert client.calls == 2
 
 
 @pytest.mark.parametrize("query_count", [0, 2, 4, 6])
