@@ -11,7 +11,11 @@ from ragz.modules.auth.models import User
 from ragz.modules.models.models import LOCAL_EMBEDDING_MODEL_ID
 from ragz.modules.retrieval import service as retrieval_service
 from ragz.modules.retrieval.client import COLLECTION, get_qdrant
-from ragz.modules.retrieval.embeddings import embed_sparse, get_dense_embedder
+from ragz.modules.retrieval.embeddings import (
+    InMemoryQueryEmbeddingCache,
+    embed_sparse,
+    get_dense_embedder,
+)
 from ragz.modules.retrieval.query_expansion import ExpandedQueries
 from ragz.modules.retrieval.service import (
     RetrievedChunk,
@@ -145,6 +149,27 @@ async def test_min_score_triggers_no_answer_with_nearest(
     result = await retrieve(session, ctx, ws.id, "completely different query terms")
     assert result.no_answer
     assert result.chunks  # nearest sources still surfaced (CHAT-9)
+
+
+async def test_query_embedding_cache_reports_cold_miss_then_warm_hit(
+    session: AsyncSession, qdrant_collection: None
+) -> None:
+    ctx, ws = await seed_workspace(session, "query-cache")
+    await upsert_texts(ctx, ws, ["alpha report", "unrelated notes"])
+    cache = InMemoryQueryEmbeddingCache()
+
+    cold = await retrieve(
+        session, ctx, ws.id, "alpha", query_embedding_cache=cache
+    )
+    warm = await retrieve(
+        session, ctx, ws.id, "alpha", query_embedding_cache=cache
+    )
+
+    assert (cold.embedding_cache_hits, cold.embedding_cache_misses) == (0, 1)
+    assert (warm.embedding_cache_hits, warm.embedding_cache_misses) == (1, 0)
+    assert [chunk.document_id for chunk in warm.chunks] == [
+        chunk.document_id for chunk in cold.chunks
+    ]
 
 
 async def test_empty_workspace_is_no_answer(
@@ -375,6 +400,43 @@ async def test_multi_query_override_compares_without_mutating_workspace_setting(
     assert ws.multi_query_enabled is False
     assert expander.calls == [("original", "utility-model")]
     assert result.query_count == 3
+
+
+async def test_five_query_override_uses_original_plus_four_alternatives(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+) -> None:
+    ctx, ws = await seed_workspace(session, "mq-five", multi_query_enabled=False)
+    expander = _FakeQueryExpander(("one", "two", "three", "four", "drop"))
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "original",
+        query_expander=expander,
+        multi_query_enabled_override=True,
+        multi_query_count_override=5,
+    )
+
+    assert expander.calls == [("original", "utility-model")]
+    assert result.query_count == 5
+
+
+async def test_multi_query_count_override_rejects_unsupported_value(
+    session: AsyncSession,
+    qdrant_collection: None,
+) -> None:
+    ctx, ws = await seed_workspace(session, "mq-count-invalid")
+    with pytest.raises(ValueError, match="must be 1, 3, or 5"):
+        await retrieve(
+            session,
+            ctx,
+            ws.id,
+            "original",
+            multi_query_count_override=4,
+        )
 
 
 async def test_single_query_override_skips_expansion_on_enabled_workspace(

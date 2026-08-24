@@ -76,6 +76,57 @@ async def test_luna_expansion_uses_supported_provider_default_temperature() -> N
 
 
 @pytest.mark.asyncio
+async def test_five_query_expansion_uses_four_perspectives_and_caps_output() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured.update(__import__("json").loads(request.content))
+        return httpx.Response(
+            200,
+            json=_completion(
+                '{"queries":["exact constraints","formal terminology",'
+                '"mechanism relationships","manual evidence phrasing",'
+                '"must be dropped"]}'
+            ),
+        )
+
+    expander = LiteLLMQueryExpander(
+        base_url="http://litellm.test",
+        master_key="sk-test",
+        max_queries=5,
+        transport=httpx.MockTransport(handler),
+    )
+
+    result = await expander.expand("original", model="openai/gpt-5.6-luna")
+
+    assert result.queries == (
+        "original",
+        "exact constraints",
+        "formal terminology",
+        "mechanism relationships",
+        "manual evidence phrasing",
+    )
+    assert "temperature" not in captured
+    assert captured["max_tokens"] == 300
+    system = captured["messages"][0]["content"]
+    assert "exact entities" in system
+    assert "terminology" in system
+    assert "mechanism" in system
+    assert "evidence" in system
+    assert "Do not answer" in system
+
+
+@pytest.mark.parametrize("max_queries", [0, 2, 4, 6])
+def test_expander_rejects_unsupported_total_query_count(max_queries: int) -> None:
+    with pytest.raises(ValueError, match="max_queries must be 3 or 5"):
+        LiteLLMQueryExpander(
+            base_url="http://litellm.test",
+            master_key="sk-test",
+            max_queries=max_queries,
+        )
+
+
+@pytest.mark.asyncio
 async def test_expander_normalizes_deduplicates_and_caps_alternatives() -> None:
     response = """```json
     {"queries": [

@@ -42,7 +42,12 @@ from ragz.core.metrics import observe_stage
 from ragz.modules.documents.pipeline import Chunk
 from ragz.modules.quotas import service as quota_service
 from ragz.modules.retrieval.client import EPHEMERAL_COLLECTION, get_qdrant
-from ragz.modules.retrieval.embeddings import embed_sparse, get_dense_embedder
+from ragz.modules.retrieval.embeddings import (
+    QueryEmbeddingCache,
+    embed_sparse,
+    get_dense_embedder,
+    query_embedding_cache_namespace,
+)
 from ragz.modules.retrieval.query_expansion import QueryExpander, build_query_expander
 from ragz.modules.retrieval.rerank import RerankUnavailable, get_reranker
 from ragz.modules.tenancy.context import TenantContext
@@ -65,6 +70,8 @@ class RetrievalResult:
     chunks: list[RetrievedChunk]
     no_answer: bool
     query_count: int = 1
+    embedding_cache_hits: int = 0
+    embedding_cache_misses: int = 0
 
 
 @contextmanager
@@ -492,6 +499,9 @@ async def retrieve(
     *,
     query_expander: QueryExpander | None = None,
     multi_query_enabled_override: bool | None = None,
+    multi_query_count_override: int | None = None,
+    rerank_candidate_pool_override: int | None = None,
+    query_embedding_cache: QueryEmbeddingCache | None = None,
     stage_timings_ms: dict[str, float] | None = None,
 ) -> RetrievalResult:
     """Hybrid retrieval — the one code path (spec §3.3), Plan E additions:
@@ -528,6 +538,12 @@ async def retrieve(
     both query_points calls below hit the hardcoded constant regardless).
     """
     from ragz.modules.models import service as models_service
+
+    if multi_query_count_override not in (None, 1, 3, 5):
+        raise ValueError("multi_query_count_override must be 1, 3, or 5")
+    if rerank_candidate_pool_override not in (None, 10, 20, 50):
+        raise ValueError("rerank_candidate_pool_override must be 10, 20, or 50")
+    requested_query_count = multi_query_count_override or 3
 
     with _capture_stage(stage_timings_ms, "workspace_model_resolution"):
         ws = await get_workspace_checked(session, ctx, workspace_id)
@@ -569,7 +585,9 @@ async def retrieve(
                     workspace_id=str(workspace_id),
                 )
             else:
-                expander = query_expander or build_query_expander(get_settings())
+                expander = query_expander or build_query_expander(
+                    get_settings(), max_queries=requested_query_count
+                )
                 try:
                     expanded = await expander.expand(
                         query, model=utility_model.litellm_model_name
@@ -581,7 +599,7 @@ async def retrieve(
                         error=type(exc).__name__,
                     )
                 else:
-                    queries = expanded.queries or (query,)
+                    queries = (expanded.queries or (query,))[:requested_query_count]
                     expansion_tokens = expanded.prompt_tokens + expanded.completion_tokens
                     if expansion_tokens > 0:
                         await quota_service.record_usage(
@@ -600,10 +618,45 @@ async def retrieve(
                         workspace_id=str(workspace_id),
                         query_count=len(queries),
                     )
+    cache_namespace = query_embedding_cache_namespace(
+        model_id=embedding_model.id,
+        provider_kind=embedding_model.provider_kind,
+        model=embedding_model.litellm_model_name,
+        dimension=embedding_model.dimension,
+    )
+    with _capture_stage(stage_timings_ms, "embedding_cache_lookup"):
+        cached_vectors: list[list[float] | None]
+        if query_embedding_cache is not None:
+            cached_vectors = await query_embedding_cache.get_many(
+                cache_namespace, queries
+            )
+        else:
+            cached_vectors = [None] * len(queries)
+    if len(cached_vectors) != len(queries):
+        raise UpstreamError("query embedding cache returned the wrong vector count")
+    miss_indices = [index for index, vector in enumerate(cached_vectors) if vector is None]
+    miss_texts = [queries[index] for index in miss_indices]
+    embed_tokens = 0
+    miss_vectors: list[list[float]] = []
     with _capture_stage(stage_timings_ms, "dense_embedding"), observe_stage(
         "embed_dense"
     ):
-        dense_vecs, embed_tokens = await dense_embedder.embed_with_usage(list(queries))
+        if miss_texts:
+            miss_vectors, embed_tokens = await dense_embedder.embed_with_usage(miss_texts)
+    if len(miss_vectors) != len(miss_indices):
+        raise UpstreamError("dense embedder returned the wrong vector count")
+    for index, vector in zip(miss_indices, miss_vectors, strict=True):
+        cached_vectors[index] = vector
+    with _capture_stage(stage_timings_ms, "embedding_cache_store"):
+        if query_embedding_cache is not None and miss_texts:
+            await query_embedding_cache.set_many(
+                cache_namespace, miss_texts, miss_vectors
+            )
+    if any(vector is None for vector in cached_vectors):
+        raise UpstreamError("query embedding cache left an unresolved vector")
+    dense_vecs = [vector for vector in cached_vectors if vector is not None]
+    embedding_cache_hits = len(queries) - len(miss_indices)
+    embedding_cache_misses = len(miss_indices)
     # Cost reporting (design 2026-08-15 §2): the query embedding's billed tokens
     # (hosted providers only; self-hosted TEI / the hash test backend report 0).
     # commit=False stages the row so it rides this turn's end-of-turn commit
@@ -638,8 +691,9 @@ async def retrieve(
             unprojected_document_ids=unprojected,
         )
     client = get_qdrant()
-    fetch_k = _RERANK_PREFETCH if ws.rerank_enabled else k
-    prefetch_limit = max(fetch_k, k * 4)
+    rerank_pool = rerank_candidate_pool_override or _RERANK_PREFETCH
+    fetch_k = rerank_pool if ws.rerank_enabled else k
+    prefetch_limit = rerank_pool if ws.rerank_enabled else k * 4
     prefetch = [
         lane
         for dense_vec, sparse_vec in zip(dense_vecs, sparse_vecs, strict=True)
@@ -697,7 +751,13 @@ async def retrieve(
     with _capture_stage(stage_timings_ms, "candidate_dedupe"):
         candidates = _dedupe_hq(candidates)
     if not candidates:
-        return RetrievalResult(chunks=[], no_answer=True, query_count=len(queries))
+        return RetrievalResult(
+            chunks=[],
+            no_answer=True,
+            query_count=len(queries),
+            embedding_cache_hits=embedding_cache_hits,
+            embedding_cache_misses=embedding_cache_misses,
+        )
 
     if ws.rerank_enabled:
         try:
@@ -732,6 +792,8 @@ async def retrieve(
                 chunks=reranked,
                 no_answer=scores[top[0]] < ws.min_score,
                 query_count=len(queries),
+                embedding_cache_hits=embedding_cache_hits,
+                embedding_cache_misses=embedding_cache_misses,
             )
 
     chunks = candidates[:k]
@@ -761,6 +823,8 @@ async def retrieve(
         chunks=chunks,
         no_answer=best_cosine < ws.min_score,
         query_count=len(queries),
+        embedding_cache_hits=embedding_cache_hits,
+        embedding_cache_misses=embedding_cache_misses,
     )
 
 

@@ -61,6 +61,7 @@ class _BilledReranker:
 
     async def rerank(self, query: str, texts: list[str]) -> list[float]:
         self.query = query
+        self.texts = texts
         return [1.0] * len(texts)
 
 
@@ -126,6 +127,53 @@ async def test_multi_query_reranks_once_against_original_query(
 
     assert result.chunks
     assert reranker.query == "original subject"
+
+
+async def test_rerank_candidate_pool_override_limits_reranker_input(
+    session: AsyncSession,
+    qdrant_collection: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ctx, ws = await seed_workspace(
+        session, "rerankPoolOrg", rerank_enabled=True, top_k=5
+    )
+    await upsert_texts(
+        ctx,
+        ws,
+        [f"alpha benchmark document {index}" for index in range(15)],
+    )
+    reranker = _BilledReranker(units=0)
+
+    async def _fake_get_reranker(_session, _settings):  # type: ignore[no-untyped-def]
+        return reranker
+
+    monkeypatch.setattr("ragz.modules.retrieval.service.get_reranker", _fake_get_reranker)
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "alpha benchmark document",
+        rerank_candidate_pool_override=10,
+    )
+
+    assert len(reranker.texts) == 10
+    assert len(result.chunks) == 5
+
+
+async def test_rerank_candidate_pool_override_rejects_unsupported_value(
+    session: AsyncSession,
+    qdrant_collection: None,
+) -> None:
+    ctx, ws = await seed_workspace(session, "rerankPoolInvalid", rerank_enabled=True)
+    with pytest.raises(ValueError, match="must be 10, 20, or 50"):
+        await retrieve(
+            session,
+            ctx,
+            ws.id,
+            "query",
+            rerank_candidate_pool_override=30,
+        )
 
 
 async def test_local_reranker_records_no_rerank_usage(

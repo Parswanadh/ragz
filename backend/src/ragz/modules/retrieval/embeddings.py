@@ -1,6 +1,8 @@
 import hashlib
 import math
 import re
+from collections import OrderedDict
+from collections.abc import Sequence
 from functools import lru_cache
 from typing import Any, Protocol
 from uuid import UUID
@@ -37,6 +39,80 @@ class DenseEmbedder(Protocol):
         concurrent requests, so per-call usage must not live in instance
         state (it would race)."""
         ...
+
+
+class QueryEmbeddingCache(Protocol):
+    """Request-independent cache seam for query vectors.
+
+    Implementations receive only an opaque model namespace and hash exact query
+    text internally. Raw query strings are never used as public cache keys.
+    """
+
+    async def get_many(
+        self, namespace: str, texts: Sequence[str]
+    ) -> list[list[float] | None]: ...
+
+    async def set_many(
+        self,
+        namespace: str,
+        texts: Sequence[str],
+        vectors: Sequence[Sequence[float]],
+    ) -> None: ...
+
+
+def query_embedding_cache_namespace(
+    *, model_id: UUID, provider_kind: str, model: str, dimension: int | None
+) -> str:
+    material = f"{model_id}\0{provider_kind}\0{model}\0{dimension or 0}"
+    return hashlib.sha256(material.encode()).hexdigest()
+
+
+class InMemoryQueryEmbeddingCache:
+    """Bounded process-local LRU used by the benchmark and safe warm-path pilots."""
+
+    def __init__(self, max_entries: int = 10_000) -> None:
+        if max_entries < 1:
+            raise ValueError("max_entries must be positive")
+        import asyncio
+
+        self._max_entries = max_entries
+        self._entries: OrderedDict[str, tuple[float, ...]] = OrderedDict()
+        self._lock = asyncio.Lock()
+
+    @staticmethod
+    def _key(namespace: str, text: str) -> str:
+        return hashlib.sha256(f"{namespace}\0{text}".encode()).hexdigest()
+
+    async def get_many(
+        self, namespace: str, texts: Sequence[str]
+    ) -> list[list[float] | None]:
+        result: list[list[float] | None] = []
+        async with self._lock:
+            for text in texts:
+                key = self._key(namespace, text)
+                vector = self._entries.get(key)
+                if vector is None:
+                    result.append(None)
+                    continue
+                self._entries.move_to_end(key)
+                result.append(list(vector))
+        return result
+
+    async def set_many(
+        self,
+        namespace: str,
+        texts: Sequence[str],
+        vectors: Sequence[Sequence[float]],
+    ) -> None:
+        if len(texts) != len(vectors):
+            raise ValueError("cache texts and vectors must have the same length")
+        async with self._lock:
+            for text, vector in zip(texts, vectors, strict=True):
+                key = self._key(namespace, text)
+                self._entries[key] = tuple(float(value) for value in vector)
+                self._entries.move_to_end(key)
+            while len(self._entries) > self._max_entries:
+                self._entries.popitem(last=False)
 
 
 class TeiDenseEmbedder:

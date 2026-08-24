@@ -8,10 +8,12 @@ import pytest
 from ragz.core.errors import UpstreamError
 from ragz.modules.retrieval.embeddings import (
     HashDenseEmbedder,
+    InMemoryQueryEmbeddingCache,
     LiteLLMEmbedder,
     TeiDenseEmbedder,
     embed_sparse,
     get_dense_embedder,
+    query_embedding_cache_namespace,
 )
 
 
@@ -37,6 +39,50 @@ async def test_hash_embedder_overlap_beats_disjoint() -> None:
         ]
     )
     assert _cos(q, hit) > _cos(q, miss)
+
+
+async def test_query_embedding_cache_is_exact_bounded_and_copy_safe() -> None:
+    cache = InMemoryQueryEmbeddingCache(max_entries=2)
+    namespace = "model-space"
+
+    assert await cache.get_many(namespace, ["alpha", "beta"]) == [None, None]
+    await cache.set_many(namespace, ["alpha", "beta"], [[1.0, 2.0], [3.0, 4.0]])
+    first = await cache.get_many(namespace, ["alpha", "beta"])
+    assert first == [[1.0, 2.0], [3.0, 4.0]]
+    assert first[0] is not None
+    first[0][0] = 99.0
+    assert await cache.get_many(namespace, ["alpha"]) == [[1.0, 2.0]]
+
+    await cache.set_many(namespace, ["gamma"], [[5.0, 6.0]])
+    assert await cache.get_many(namespace, ["beta", "alpha", "gamma"]) == [
+        None,
+        [1.0, 2.0],
+        [5.0, 6.0],
+    ]
+
+
+async def test_query_embedding_cache_rejects_misaligned_batch() -> None:
+    cache = InMemoryQueryEmbeddingCache()
+    with pytest.raises(ValueError, match="same length"):
+        await cache.set_many("space", ["one"], [])
+
+
+def test_query_embedding_cache_namespace_binds_model_and_dimension() -> None:
+    model_id = uuid4()
+    base = query_embedding_cache_namespace(
+        model_id=model_id,
+        provider_kind="openai",
+        model="text-embedding-3-large",
+        dimension=1024,
+    )
+    changed = query_embedding_cache_namespace(
+        model_id=model_id,
+        provider_kind="openai",
+        model="text-embedding-3-large",
+        dimension=1536,
+    )
+    assert len(base) == 64
+    assert base != changed
 
 
 async def test_tei_embedder_batches_and_parses() -> None:
