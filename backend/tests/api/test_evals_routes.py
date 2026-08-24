@@ -195,6 +195,47 @@ async def test_compare_route_returns_ordered_variants(
     assert captured["model_id"] == model.id
 
 
+async def test_compare_route_rejects_embedding_model_id(
+    evals_client: httpx.AsyncClient,
+    ws_id: str,
+    h_admin: dict[str, str],
+    session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    embedding_model = Model(
+        litellm_model_name="text-embedding-3-large",
+        display_name="Embedding only",
+        provider_kind="openai",
+        enabled=True,
+        modality="embedding",
+        dimension=1024,
+        collection_name="embedding-only-test",
+    )
+    session.add(embedding_model)
+    await session.commit()
+    called = False
+
+    async def fake_compare(*args, **kwargs):  # type: ignore[no-untyped-def]
+        nonlocal called
+        called = True
+        return []
+
+    from ragz.modules.evals import comparison
+
+    monkeypatch.setattr(comparison, "compare_answers", fake_compare)
+    transport = evals_client._transport  # type: ignore[attr-defined]
+    transport.app.state.llm_completer = object()  # type: ignore[attr-defined]
+
+    response = await evals_client.post(
+        f"/api/v1/workspaces/{ws_id}/evals/compare",
+        json={"question": "compare this", "model_id": str(embedding_model.id)},
+        headers=h_admin,
+    )
+
+    assert response.status_code == 404
+    assert called is False
+
+
 async def test_trigger_eval_run_rejects_cross_org_workspace(
     evals_client: httpx.AsyncClient, h_admin: dict[str, str], session: AsyncSession,
     enqueued_evals: list[str],

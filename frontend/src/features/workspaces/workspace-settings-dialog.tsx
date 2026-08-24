@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
 
 import type { WorkspaceOut } from '@/api/types';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toaster';
+import { useAuthorization } from '@/lib/use-authorization';
 import { useClaims } from '@/lib/use-claims';
 
 import { EmbeddingModelSection } from './embedding-model-section';
@@ -32,6 +33,13 @@ export function WorkspaceSettingsDialog({
 }) {
   const patch = usePatchWorkspace();
   const isSuperadmin = useClaims()?.role === 'superadmin';
+  const { data: authorization } = useAuthorization();
+  const canReadEvals =
+    isSuperadmin || authorization?.permissions.has('evals.read') === true;
+  const canManageEvals =
+    isSuperadmin || authorization?.permissions.has('evals.manage') === true;
+  const canRunEvals = isSuperadmin || authorization?.permissions.has('evals.run') === true;
+  const canAccessEvals = canReadEvals || canManageEvals || canRunEvals;
   const [topK, setTopK] = useState(String(workspace.top_k));
   const [minScore, setMinScore] = useState(String(workspace.min_score));
   const [rerank, setRerank] = useState(workspace.rerank_enabled);
@@ -49,6 +57,10 @@ export function WorkspaceSettingsDialog({
   // J-C15: no shared Tabs primitive exists yet — this local button-group
   // strip matches dashboard-page.tsx's RANGES day-picker style.
   const [tab, setTab] = useState<'settings' | 'members' | 'evals'>('settings');
+
+  useEffect(() => {
+    if (tab === 'evals' && !canAccessEvals) setTab('settings');
+  }, [canAccessEvals, tab]);
 
   const submit = (e: FormEvent): void => {
     e.preventDefault();
@@ -112,7 +124,10 @@ export function WorkspaceSettingsDialog({
         className={tab === 'evals' ? 'max-w-[calc(100vw-2rem)] xl:max-w-7xl' : 'max-w-lg'}
       >
         <div className="mb-3 flex gap-1">
-          {(['settings', 'members', 'evals'] as const).map((t) => (
+          {(canAccessEvals
+            ? (['settings', 'members', 'evals'] as const)
+            : (['settings', 'members'] as const)
+          ).map((t) => (
             <button
               key={t}
               type="button"
@@ -289,6 +304,9 @@ export function WorkspaceSettingsDialog({
             <EvalsSection
               workspaceId={workspace.id}
               defaultModelId={workspace.default_model_id ?? null}
+              canRead={canReadEvals}
+              canManage={canManageEvals}
+              canRun={canRunEvals}
             />
           </Suspense>
         )}

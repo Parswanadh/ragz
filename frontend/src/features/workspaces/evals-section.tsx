@@ -42,16 +42,22 @@ function ms(value: number): string {
 export function EvalsSection({
   workspaceId,
   defaultModelId = null,
+  canRead = true,
+  canManage = true,
+  canRun = true,
 }: {
   workspaceId: string;
   defaultModelId?: string | null;
+  canRead?: boolean;
+  canManage?: boolean;
+  canRun?: boolean;
 }) {
-  const documents = useDocuments(workspaceId, null);
-  const models = useModels();
-  const queries = useGoldenQueries(workspaceId);
+  const documents = useDocuments(canManage ? workspaceId : null, null);
+  const models = useModels(canRun);
+  const queries = useGoldenQueries(canRead ? workspaceId : null);
   const createQuery = useCreateGoldenQuery(workspaceId);
   const deleteQuery = useDeleteGoldenQuery(workspaceId);
-  const compare = useCompareAnswers(workspaceId);
+  const compare = useCompareAnswers(canRun ? workspaceId : null);
   const [comparisonQuestion, setComparisonQuestion] = useState('');
   const [modelId, setModelId] = useState<string | null>(defaultModelId);
   const [question, setQuestion] = useState('');
@@ -85,7 +91,8 @@ export function EvalsSection({
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3" aria-labelledby="comparison-heading">
+      {canRun ? (
+        <section className="space-y-3" aria-labelledby="comparison-heading">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="mb-1 flex items-center gap-2">
@@ -268,15 +275,18 @@ export function EvalsSection({
             })}
           </div>
         ) : null}
-      </section>
+        </section>
+      ) : null}
 
-      <section className="space-y-3 border-t border-line pt-5">
+      {canRead || canManage ? (
+        <section className="space-y-3 border-t border-line pt-5">
         <h3 className="text-[13px] font-semibold text-ink">Golden queries</h3>
         <p className="text-[12px] text-secondary">
           Questions with known-good documents. The eval runner checks retrieval hit-rate, citation
           precision, and (with a utility model designated) answer faithfulness against these.
         </p>
-        <form onSubmit={onSubmit} className="space-y-2">
+        {canManage ? (
+          <form onSubmit={onSubmit} className="space-y-2">
           <div className="space-y-1">
             <Label htmlFor="gq-question">Question</Label>
             <textarea
@@ -304,27 +314,33 @@ export function EvalsSection({
           <Button type="submit" size="sm" disabled={createQuery.isPending}>
             Add golden query
           </Button>
-        </form>
-        {queries.isPending ? <Spinner label="Loading golden queries…" /> : null}
-        <ul className="space-y-1">
+          </form>
+        ) : null}
+        {canRead && queries.isPending ? <Spinner label="Loading golden queries…" /> : null}
+        {canRead ? (
+          <ul className="space-y-1">
           {(queries.data ?? []).map((q) => (
             <li key={q.id} className="flex items-center justify-between text-[13px]">
               <span className="truncate">{q.question}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`Delete golden query: ${q.question}`}
-                onClick={() => setRemoving(q)}
-              >
-                <Trash2 className="h-3.5 w-3.5" aria-hidden />
-              </Button>
+              {canManage ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Delete golden query: ${q.question}`}
+                  onClick={() => setRemoving(q)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden />
+                </Button>
+              ) : null}
             </li>
           ))}
           {queries.data?.length === 0 ? (
             <li className="text-[13px] text-muted">No golden queries yet.</li>
           ) : null}
-        </ul>
-        <Dialog open={removing !== null} onOpenChange={(o) => !o && setRemoving(null)}>
+          </ul>
+        ) : null}
+        {canManage ? (
+          <Dialog open={removing !== null} onOpenChange={(o) => !o && setRemoving(null)}>
           <DialogContent
             title="Delete golden query"
             description={`"${removing?.question ?? ''}" will be removed.`}
@@ -345,8 +361,10 @@ export function EvalsSection({
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
-      </section>
+          </Dialog>
+        ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }

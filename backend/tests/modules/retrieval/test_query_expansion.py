@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from typing import Any
 
@@ -6,6 +7,7 @@ import pytest
 
 from ragz.core.errors import UpstreamError
 from ragz.modules.retrieval.query_expansion import (
+    ExpandedQueries,
     InMemoryQueryExpansionCache,
     LiteLLMQueryExpander,
 )
@@ -165,6 +167,113 @@ async def test_expansion_cache_avoids_second_provider_call_and_zeroes_cached_usa
     assert calls == 1
     assert second.queries == first.queries
     assert (second.prompt_tokens, second.completion_tokens) == (0, 0)
+
+
+@pytest.mark.asyncio
+async def test_expansion_cache_coalesces_concurrent_cold_provider_calls() -> None:
+    calls = 0
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def handler(_request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        started.set()
+        await release.wait()
+        return httpx.Response(
+            200,
+            json=_completion('{"queries":["alternative one","alternative two"]}'),
+        )
+
+    expander = LiteLLMQueryExpander(
+        base_url="http://litellm.test",
+        master_key="sk-test",
+        transport=httpx.MockTransport(handler),
+        expansion_cache=InMemoryQueryExpansionCache(max_entries=2),
+    )
+    first = asyncio.create_task(expander.expand("original", model="utility-model"))
+    await started.wait()
+    second = asyncio.create_task(expander.expand("original", model="utility-model"))
+    await asyncio.sleep(0)
+
+    assert calls == 1
+    release.set()
+    owner, waiter = await asyncio.gather(first, second)
+
+    assert owner.queries == waiter.queries
+    assert (owner.prompt_tokens, owner.completion_tokens) == (11, 7)
+    assert (waiter.prompt_tokens, waiter.completion_tokens) == (0, 0)
+
+
+@pytest.mark.asyncio
+async def test_expansion_singleflight_cancellation_clears_reservation() -> None:
+    cache = InMemoryQueryExpansionCache(max_entries=2)
+    started = asyncio.Event()
+
+    async def never() -> ExpandedQueries:
+        started.set()
+        await asyncio.Event().wait()
+
+    first = asyncio.create_task(
+        cache.get_or_compute(
+            model="utility-model",
+            max_queries=3,
+            query="original",
+            compute=never,
+        )
+    )
+    await started.wait()
+    first.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await first
+
+    async def recovered() -> ExpandedQueries:
+        return ExpandedQueries(("original", "one", "two"), 11, 7)
+
+    result = await cache.get_or_compute(
+        model="utility-model",
+        max_queries=3,
+        query="original",
+        compute=recovered,
+    )
+    assert result.queries == ("original", "one", "two")
+    assert (result.prompt_tokens, result.completion_tokens) == (11, 7)
+
+
+@pytest.mark.asyncio
+async def test_expansion_waiter_retries_after_owner_cancellation() -> None:
+    cache = InMemoryQueryExpansionCache(max_entries=2)
+    started = asyncio.Event()
+
+    async def never() -> ExpandedQueries:
+        started.set()
+        await asyncio.Event().wait()
+
+    async def recovered() -> ExpandedQueries:
+        return ExpandedQueries(("original", "one", "two"), 13, 8)
+
+    owner = asyncio.create_task(
+        cache.get_or_compute(
+            model="utility-model", max_queries=3, query="original", compute=never
+        )
+    )
+    await started.wait()
+    waiter = asyncio.create_task(
+        cache.get_or_compute(
+            model="utility-model",
+            max_queries=3,
+            query="original",
+            compute=recovered,
+        )
+    )
+    await asyncio.sleep(0)
+    owner.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await owner
+
+    result = await asyncio.wait_for(waiter, timeout=1)
+    assert result.queries == ("original", "one", "two")
+    assert (result.prompt_tokens, result.completion_tokens) == (13, 8)
 
 
 @pytest.mark.asyncio

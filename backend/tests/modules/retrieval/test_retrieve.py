@@ -262,6 +262,9 @@ async def test_query_embedding_cache_wrong_width_fails_before_vector_search(
         async def set_many(self, _namespace, _texts, _vectors):  # type: ignore[no-untyped-def]
             raise AssertionError("a cache hit must not be stored again")
 
+        async def get_or_compute(self, _namespace, texts, _compute):  # type: ignore[no-untyped-def]
+            return [[1.0, 2.0] for _text in texts], 0, len(texts), 0, 0.0, 0.0, 0.0
+
     ctx, ws = await seed_workspace(session, "wrong-width-query-cache")
     await upsert_texts(ctx, ws, ["alpha report"])
 
@@ -509,6 +512,50 @@ async def test_multi_query_timeout_cancels_expansion_and_returns_q1(
     assert usage is None
 
 
+async def test_multi_query_deadline_cancels_expansion_during_original_embedding(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ctx, ws = await seed_workspace(
+        session, "mq-timeout-during-embedding", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+    delegate = get_dense_embedder(**_LOCAL_MODEL_KW)
+    cancelled = asyncio.Event()
+
+    class SlowEmbedder:
+        async def embed_with_usage(self, texts: list[str]):  # type: ignore[no-untyped-def]
+            # The expansion deadline must fire while this provider call is still
+            # in flight, not only after the original embedding returns.
+            await asyncio.wait_for(cancelled.wait(), timeout=0.2)
+            return await delegate.embed_with_usage(texts)
+
+    class NeverExpander(_FakeQueryExpander):
+        async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                cancelled.set()
+                raise
+
+    monkeypatch.setattr(
+        retrieval_service, "get_dense_embedder", lambda *args, **kwargs: SlowEmbedder()
+    )
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "alpha",
+        query_expander=NeverExpander(),
+        multi_query_expansion_timeout_ms_override=25,
+    )
+
+    assert cancelled.is_set()
+    assert result.query_count == 1
+
+
 async def test_multi_query_no_answer_uses_best_variant_dense_score(
     session: AsyncSession, qdrant_collection: None, utility_model: object
 ) -> None:
@@ -651,6 +698,26 @@ async def test_single_query_override_skips_expansion_on_enabled_workspace(
     await session.refresh(ws)
     assert ws.multi_query_enabled is True
     assert expander.calls == []
+    assert result.query_count == 1
+
+
+async def test_single_query_count_override_skips_real_expander_on_enabled_workspace(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+) -> None:
+    ctx, ws = await seed_workspace(
+        session, "single-count-override", multi_query_enabled=True
+    )
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "original",
+        multi_query_count_override=1,
+    )
+
     assert result.query_count == 1
 
 

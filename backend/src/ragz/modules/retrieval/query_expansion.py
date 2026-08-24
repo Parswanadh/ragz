@@ -7,11 +7,12 @@ Callers own graceful degradation when the gateway itself is unavailable.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import re
 from collections import OrderedDict
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from functools import lru_cache
 from time import monotonic
@@ -85,6 +86,10 @@ class _ExpansionCacheEntry:
     queries: tuple[str, ...]
 
 
+class _SingleFlightOwnerCancelled(Exception):
+    """Internal retry signal; never crosses the expander API boundary."""
+
+
 class InMemoryQueryExpansionCache:
     """Bounded replica-local TTL/LRU; keys never contain raw query text."""
 
@@ -98,12 +103,11 @@ class InMemoryQueryExpansionCache:
             raise ValueError("max_entries must be positive")
         if ttl_seconds <= 0:
             raise ValueError("ttl_seconds must be positive")
-        import asyncio
-
         self._max_entries = max_entries
         self._ttl_seconds = float(ttl_seconds)
         self._clock = clock
         self._entries: OrderedDict[str, _ExpansionCacheEntry] = OrderedDict()
+        self._inflight: dict[str, asyncio.Future[tuple[str, ...]]] = {}
         self._lock = asyncio.Lock()
 
     @staticmethod
@@ -156,6 +160,93 @@ class InMemoryQueryExpansionCache:
             query_expansion_cache_operations_total.labels(outcome="evicted").inc(
                 evicted
             )
+
+    async def get_or_compute(
+        self,
+        *,
+        model: str,
+        max_queries: int,
+        query: str,
+        compute: Callable[[], Awaitable[ExpandedQueries]],
+    ) -> ExpandedQueries:
+        """Return one provider result for concurrent callers of an exact key."""
+        key = self._key(model=model, max_queries=max_queries, query=query)
+        owner = False
+        expired = False
+        async with self._lock:
+            entry = self._entries.get(key)
+            if entry is not None and entry.expires_at <= self._clock():
+                self._entries.pop(key, None)
+                entry = None
+                expired = True
+            if entry is not None:
+                self._entries.move_to_end(key)
+                future = None
+                cached = entry.queries
+            else:
+                cached = None
+                future = self._inflight.get(key)
+                if future is None:
+                    future = asyncio.get_running_loop().create_future()
+                    self._inflight[key] = future
+                    owner = True
+
+        if expired:
+            query_expansion_cache_operations_total.labels(outcome="expired").inc()
+        if cached is not None:
+            query_expansion_cache_operations_total.labels(outcome="hit").inc()
+            return ExpandedQueries(queries=cached)
+        query_expansion_cache_operations_total.labels(outcome="miss").inc()
+        assert future is not None
+        if not owner:
+            query_expansion_cache_operations_total.labels(outcome="coalesced").inc()
+            try:
+                queries = await asyncio.shield(future)
+            except _SingleFlightOwnerCancelled:
+                return await self.get_or_compute(
+                    model=model,
+                    max_queries=max_queries,
+                    query=query,
+                    compute=compute,
+                )
+            return ExpandedQueries(queries=queries)
+
+        try:
+            expanded = await compute()
+        except BaseException as exc:
+            async with self._lock:
+                if self._inflight.get(key) is future:
+                    self._inflight.pop(key, None)
+                if not future.done():
+                    if isinstance(exc, asyncio.CancelledError):
+                        future.set_exception(_SingleFlightOwnerCancelled())
+                    else:
+                        future.set_exception(exc)
+            await asyncio.gather(future, return_exceptions=True)
+            raise
+
+        evicted = 0
+        async with self._lock:
+            if len(expanded.queries) > 1:
+                self._entries[key] = _ExpansionCacheEntry(
+                    expires_at=self._clock() + self._ttl_seconds,
+                    queries=tuple(expanded.queries),
+                )
+                self._entries.move_to_end(key)
+                while len(self._entries) > self._max_entries:
+                    self._entries.popitem(last=False)
+                    evicted += 1
+            if self._inflight.get(key) is future:
+                self._inflight.pop(key, None)
+            if not future.done():
+                future.set_result(tuple(expanded.queries))
+        if len(expanded.queries) > 1:
+            query_expansion_cache_operations_total.labels(outcome="store").inc()
+        if evicted:
+            query_expansion_cache_operations_total.labels(outcome="evicted").inc(
+                evicted
+            )
+        return expanded
 
 
 @lru_cache(maxsize=16)
@@ -278,14 +369,16 @@ class LiteLLMQueryExpander:
         self._expansion_cache = expansion_cache
 
     async def expand(self, query: str, *, model: str) -> ExpandedQueries:
-        if self._expansion_cache is not None:
-            cached = await self._expansion_cache.get(
-                model=model,
-                max_queries=self._max_queries,
-                query=query,
-            )
-            if cached is not None:
-                return ExpandedQueries(queries=cached)
+        if self._expansion_cache is None:
+            return await self._expand_uncached(query, model=model)
+        return await self._expansion_cache.get_or_compute(
+            model=model,
+            max_queries=self._max_queries,
+            query=query,
+            compute=lambda: self._expand_uncached(query, model=model),
+        )
+
+    async def _expand_uncached(self, query: str, *, model: str) -> ExpandedQueries:
         perspective_keys = _PERSPECTIVE_KEYS[: self._max_queries - 1]
         payload: dict[str, object] = {
             "model": model,
@@ -367,13 +460,6 @@ class LiteLLMQueryExpander:
             prompt_tokens=_usage_tokens(usage_dict.get("prompt_tokens")),
             completion_tokens=_usage_tokens(usage_dict.get("completion_tokens")),
         )
-        if self._expansion_cache is not None and len(expanded.queries) > 1:
-            await self._expansion_cache.set(
-                model=model,
-                max_queries=self._max_queries,
-                query=query,
-                expanded=expanded.queries,
-            )
         return expanded
 
 

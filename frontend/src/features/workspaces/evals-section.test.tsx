@@ -45,13 +45,16 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function renderSection(fetchMock: ReturnType<typeof vi.fn>) {
+function renderSection(
+  fetchMock: ReturnType<typeof vi.fn>,
+  capabilities: { canRead?: boolean; canManage?: boolean; canRun?: boolean } = {},
+) {
   vi.stubGlobal('fetch', fetchMock);
   render(
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
-      <EvalsSection workspaceId="w1" />
+      <EvalsSection workspaceId="w1" {...capabilities} />
     </QueryClientProvider>,
   );
 }
@@ -234,4 +237,38 @@ test('renders single and multi-query answers side by side with sources and timin
   expect(within(multiCard as HTMLElement).getByText('policy.pdf')).toBeInTheDocument();
   expect(screen.getByText('12.0 ms total')).toBeInTheDocument();
   expect(screen.getByText('16.0 ms total')).toBeInTheDocument();
+});
+
+test('read-only capability lists fixtures without mounting run or manage controls', async () => {
+  const fetchMock = vi.fn(async (req: Request) => {
+    if (req.url.includes('/golden-queries')) return jsonResponse([GOLDEN_QUERY]);
+    return jsonResponse([]);
+  });
+  renderSection(fetchMock, { canRead: true, canManage: false, canRun: false });
+
+  expect(await screen.findByText('Where is the muster point?')).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Retrieval A/B lab' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Add golden query' })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Delete golden query: Where is the muster point?' }),
+  ).not.toBeInTheDocument();
+  expect(
+    vi.mocked(fetch).mock.calls.some(([req]) => (req as Request).url.endsWith('/api/v1/models')),
+  ).toBe(false);
+});
+
+test('run-only capability mounts comparison without forbidden golden-query reads', async () => {
+  const fetchMock = vi.fn(async (req: Request) => {
+    if (req.url.endsWith('/api/v1/models')) return jsonResponse([MODEL]);
+    return jsonResponse([]);
+  });
+  renderSection(fetchMock, { canRead: false, canManage: false, canRun: true });
+
+  expect(await screen.findByRole('heading', { name: 'Retrieval A/B lab' })).toBeInTheDocument();
+  expect(screen.queryByRole('heading', { name: 'Golden queries' })).not.toBeInTheDocument();
+  expect(
+    vi.mocked(fetch).mock.calls.some(([req]) =>
+      (req as Request).url.includes('/golden-queries'),
+    ),
+  ).toBe(false);
 });

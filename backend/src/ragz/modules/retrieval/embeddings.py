@@ -1,8 +1,9 @@
+import asyncio
 import hashlib
 import math
 import re
 from collections import OrderedDict
-from collections.abc import Callable, Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 from time import monotonic
@@ -62,6 +63,17 @@ class QueryEmbeddingCache(Protocol):
         vectors: Sequence[Sequence[float]],
     ) -> None: ...
 
+    async def get_or_compute(
+        self,
+        namespace: str,
+        texts: Sequence[str],
+        compute: Callable[
+            [list[str]], Awaitable[tuple[list[list[float]], int]]
+        ],
+    ) -> tuple[list[list[float]], int, int, int, float, float, float]:
+        """Return vectors, billing/cache counts, and lookup/store/wait timings."""
+        ...
+
 
 def query_embedding_cache_namespace(
     *, model_id: UUID, provider_kind: str, model: str, dimension: int | None
@@ -74,6 +86,10 @@ def query_embedding_cache_namespace(
 class _CacheEntry:
     expires_at: float
     vector: tuple[float, ...]
+
+
+class _SingleFlightOwnerCancelled(Exception):
+    """Internal retry signal; never crosses the cache API boundary."""
 
 
 class InMemoryQueryEmbeddingCache:
@@ -89,12 +105,11 @@ class InMemoryQueryEmbeddingCache:
             raise ValueError("max_entries must be positive")
         if ttl_seconds <= 0:
             raise ValueError("ttl_seconds must be positive")
-        import asyncio
-
         self._max_entries = max_entries
         self._ttl_seconds = float(ttl_seconds)
         self._clock = clock
         self._entries: OrderedDict[str, _CacheEntry] = OrderedDict()
+        self._inflight: dict[str, asyncio.Future[tuple[float, ...]]] = {}
         self._lock = asyncio.Lock()
 
     @staticmethod
@@ -157,6 +172,164 @@ class InMemoryQueryEmbeddingCache:
             query_embedding_cache_operations_total.labels(outcome="store").inc(len(texts))
         if evicted:
             query_embedding_cache_operations_total.labels(outcome="evicted").inc(evicted)
+
+    async def get_or_compute(
+        self,
+        namespace: str,
+        texts: Sequence[str],
+        compute: Callable[
+            [list[str]], Awaitable[tuple[list[list[float]], int]]
+        ],
+    ) -> tuple[list[list[float]], int, int, int, float, float, float]:
+        """Coalesce identical cold keys while allowing unrelated keys in parallel.
+
+        The provider callback owns only the keys this request reserved. Other
+        callers await opaque-key futures under ``shield`` so cancelling one
+        waiter cannot cancel the request that is actually paying for the
+        provider call.
+        """
+        if not texts:
+            return [], 0, 0, 0, 0.0, 0.0, 0.0
+
+        slots: list[tuple[float, ...] | asyncio.Future[tuple[float, ...]]] = []
+        owner_keys: list[str] = []
+        owner_texts: list[str] = []
+        owner_futures: list[asyncio.Future[tuple[float, ...]]] = []
+        hits = misses = expired = coalesced = 0
+        loop = asyncio.get_running_loop()
+        lookup_started = monotonic()
+        async with self._lock:
+            now = self._clock()
+            for text in texts:
+                key = self._key(namespace, text)
+                entry = self._entries.get(key)
+                if entry is not None and entry.expires_at <= now:
+                    self._entries.pop(key, None)
+                    entry = None
+                    expired += 1
+                if entry is not None:
+                    self._entries.move_to_end(key)
+                    hits += 1
+                    slots.append(entry.vector)
+                    continue
+                misses += 1
+                future = self._inflight.get(key)
+                if future is None:
+                    future = loop.create_future()
+                    self._inflight[key] = future
+                    owner_keys.append(key)
+                    owner_texts.append(text)
+                    owner_futures.append(future)
+                else:
+                    coalesced += 1
+                slots.append(future)
+        lookup_ms = (monotonic() - lookup_started) * 1000
+
+        if hits:
+            query_embedding_cache_operations_total.labels(outcome="hit").inc(hits)
+        if misses:
+            query_embedding_cache_operations_total.labels(outcome="miss").inc(misses)
+        if expired:
+            query_embedding_cache_operations_total.labels(outcome="expired").inc(expired)
+        if coalesced:
+            query_embedding_cache_operations_total.labels(outcome="coalesced").inc(
+                coalesced
+            )
+
+        billed_tokens = 0
+        if owner_texts:
+            try:
+                computed, billed_tokens = await compute(owner_texts)
+                if len(computed) != len(owner_texts):
+                    raise UpstreamError("dense embedder returned the wrong vector count")
+                normalized = [tuple(float(value) for value in vector) for vector in computed]
+            except BaseException as exc:
+                async with self._lock:
+                    for key, future in zip(owner_keys, owner_futures, strict=True):
+                        if self._inflight.get(key) is future:
+                            self._inflight.pop(key, None)
+                        if future.done():
+                            continue
+                        if isinstance(exc, asyncio.CancelledError):
+                            future.set_exception(_SingleFlightOwnerCancelled())
+                        else:
+                            future.set_exception(exc)
+                # Consume exceptions on owner-created futures even when no
+                # waiter survived long enough to observe them.
+                await asyncio.gather(*owner_futures, return_exceptions=True)
+                raise
+
+            evicted = 0
+            store_started = monotonic()
+            async with self._lock:
+                expires_at = self._clock() + self._ttl_seconds
+                for key, vector, future in zip(
+                    owner_keys, normalized, owner_futures, strict=True
+                ):
+                    self._entries[key] = _CacheEntry(
+                        expires_at=expires_at,
+                        vector=vector,
+                    )
+                    self._entries.move_to_end(key)
+                    if self._inflight.get(key) is future:
+                        self._inflight.pop(key, None)
+                    if not future.done():
+                        future.set_result(vector)
+                while len(self._entries) > self._max_entries:
+                    self._entries.popitem(last=False)
+                    evicted += 1
+            store_ms = (monotonic() - store_started) * 1000
+            query_embedding_cache_operations_total.labels(outcome="store").inc(
+                len(owner_texts)
+            )
+            if evicted:
+                query_embedding_cache_operations_total.labels(outcome="evicted").inc(
+                    evicted
+                )
+        else:
+            store_ms = 0.0
+
+        owner_future_ids = {id(future) for future in owner_futures}
+        resolved: list[list[float]] = []
+        wait_ms = 0.0
+        for text, slot in zip(texts, slots, strict=True):
+            if isinstance(slot, asyncio.Future):
+                wait_on_other = id(slot) not in owner_future_ids and not slot.done()
+                slot_wait_started = monotonic()
+                try:
+                    vector = await asyncio.shield(slot)
+                except _SingleFlightOwnerCancelled:
+                    if wait_on_other:
+                        wait_ms += (monotonic() - slot_wait_started) * 1000
+                    (
+                        retry_vectors,
+                        retry_billed,
+                        _retry_hits,
+                        _retry_misses,
+                        retry_lookup_ms,
+                        retry_store_ms,
+                        retry_wait_ms,
+                    ) = await self.get_or_compute(namespace, [text], compute)
+                    billed_tokens += retry_billed
+                    lookup_ms += retry_lookup_ms
+                    store_ms += retry_store_ms
+                    wait_ms += retry_wait_ms
+                    resolved.append(retry_vectors[0])
+                    continue
+                if wait_on_other:
+                    wait_ms += (monotonic() - slot_wait_started) * 1000
+                resolved.append(list(vector))
+            else:
+                resolved.append(list(slot))
+        return (
+            resolved,
+            billed_tokens,
+            hits,
+            misses,
+            lookup_ms,
+            store_ms,
+            wait_ms,
+        )
 
 
 @lru_cache(maxsize=16)

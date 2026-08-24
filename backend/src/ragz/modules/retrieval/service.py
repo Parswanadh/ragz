@@ -120,47 +120,51 @@ async def _embed_query_batch(
     expected_dimension: int,
     stage_timings_ms: dict[str, float] | None,
 ) -> _EmbeddedQueryBatch:
-    with _capture_stage(stage_timings_ms, "embedding_cache_lookup"):
-        cached_vectors: list[list[float] | None]
-        cached_vectors = (
-            await query_cache.get_many(cache_namespace, queries)
-            if query_cache is not None
-            else [None] * len(queries)
-        )
-    if len(cached_vectors) != len(queries):
-        raise UpstreamError("query embedding cache returned the wrong vector count")
-    if any(
-        vector is not None and len(vector) != expected_dimension
-        for vector in cached_vectors
-    ):
-        raise UpstreamError("query embedding cache returned the wrong vector width")
-    miss_indices = [index for index, vector in enumerate(cached_vectors) if vector is None]
-    miss_texts = [queries[index] for index in miss_indices]
-    miss_vectors: list[list[float]] = []
-    billed_tokens = 0
-    with _capture_stage(stage_timings_ms, "dense_embedding"), observe_stage(
-        "embed_dense"
-    ):
-        if miss_texts:
-            miss_vectors, billed_tokens = await dense_embedder.embed_with_usage(
-                miss_texts
-            )
-    if len(miss_vectors) != len(miss_indices):
+    async def compute(miss_texts: list[str]) -> tuple[list[list[float]], int]:
+        with _capture_stage(stage_timings_ms, "dense_embedding"), observe_stage(
+            "embed_dense"
+        ):
+            computed, billed = await dense_embedder.embed_with_usage(miss_texts)
+        if len(computed) != len(miss_texts):
+            raise UpstreamError("dense embedder returned the wrong vector count")
+        if any(len(vector) != expected_dimension for vector in computed):
+            raise UpstreamError("dense embedder returned the wrong vector width")
+        return computed, billed
+
+    if query_cache is None:
+        vectors, billed_tokens = await compute(list(queries))
+        cache_hits = 0
+        cache_misses = len(queries)
+    else:
+        (
+            vectors,
+            billed_tokens,
+            cache_hits,
+            cache_misses,
+            cache_lookup_ms,
+            cache_store_ms,
+            cache_wait_ms,
+        ) = await query_cache.get_or_compute(cache_namespace, queries, compute)
+        if stage_timings_ms is not None:
+            for stage, elapsed_ms in (
+                ("embedding_cache_lookup", cache_lookup_ms),
+                ("embedding_cache_store", cache_store_ms),
+                ("embedding_cache_wait", cache_wait_ms),
+            ):
+                if elapsed_ms > 0:
+                    stage_timings_ms[stage] = round(
+                        stage_timings_ms.get(stage, 0.0) + elapsed_ms,
+                        4,
+                    )
+    if len(vectors) != len(queries):
         raise UpstreamError("dense embedder returned the wrong vector count")
-    if any(len(vector) != expected_dimension for vector in miss_vectors):
-        raise UpstreamError("dense embedder returned the wrong vector width")
-    for index, vector in zip(miss_indices, miss_vectors, strict=True):
-        cached_vectors[index] = vector
-    with _capture_stage(stage_timings_ms, "embedding_cache_store"):
-        if query_cache is not None and miss_texts:
-            await query_cache.set_many(cache_namespace, miss_texts, miss_vectors)
-    if any(vector is None for vector in cached_vectors):
-        raise UpstreamError("query embedding cache left an unresolved vector")
+    if any(len(vector) != expected_dimension for vector in vectors):
+        raise UpstreamError("query embedding cache returned the wrong vector width")
     return _EmbeddedQueryBatch(
-        vectors=[vector for vector in cached_vectors if vector is not None],
+        vectors=vectors,
         billed_tokens=billed_tokens,
-        cache_hits=len(queries) - len(miss_indices),
-        cache_misses=len(miss_indices),
+        cache_hits=cache_hits,
+        cache_misses=cache_misses,
     )
 
 
@@ -649,7 +653,7 @@ async def retrieve(
             ws.multi_query_enabled
             if multi_query_enabled_override is None
             else multi_query_enabled_override
-        )
+        ) and requested_query_count > 1
         embedding_model = await models_service.get_model(session, ws.embedding_model_id)
         utility_model = (
             await models_service.resolve_utility_model(session)
@@ -687,7 +691,6 @@ async def retrieve(
     expected_dimension = int(embedding_model.dimension or 0)
     queries: tuple[str, ...] = (query,)
     expansion_task: asyncio.Task[ExpandedQueries] | None = None
-    expansion_deadline: float | None = None
     if multi_query_enabled:
         if utility_model is None:
             query_expansion_outcomes_total.labels(outcome="no_utility_model").inc()
@@ -704,10 +707,11 @@ async def retrieve(
                 if multi_query_expansion_timeout_ms_override is None
                 else multi_query_expansion_timeout_ms_override
             )
-            loop = asyncio.get_running_loop()
-            expansion_deadline = loop.time() + timeout_ms / 1000
             expansion_task = asyncio.create_task(
-                expander.expand(query, model=utility_model.litellm_model_name)
+                asyncio.wait_for(
+                    expander.expand(query, model=utility_model.litellm_model_name),
+                    timeout=timeout_ms / 1000,
+                )
             )
     try:
         original_batch = await _embed_query_batch(
@@ -719,8 +723,9 @@ async def retrieve(
             stage_timings_ms=stage_timings_ms,
         )
     except BaseException:
-        if expansion_task is not None and not expansion_task.done():
-            expansion_task.cancel()
+        if expansion_task is not None:
+            if not expansion_task.done():
+                expansion_task.cancel()
             await asyncio.gather(expansion_task, return_exceptions=True)
         raise
     dense_vecs = list(original_batch.vectors)
@@ -728,11 +733,10 @@ async def retrieve(
     embedding_cache_hits = original_batch.cache_hits
     embedding_cache_misses = original_batch.cache_misses
     if expansion_task is not None:
-        assert expansion_deadline is not None and utility_model is not None
-        remaining = max(0.0, expansion_deadline - asyncio.get_running_loop().time())
+        assert utility_model is not None
         try:
             with _capture_stage(stage_timings_ms, "query_expansion"):
-                expanded = await asyncio.wait_for(expansion_task, timeout=remaining)
+                expanded = await expansion_task
         except TimeoutError:
             query_expansion_outcomes_total.labels(outcome="timeout").inc()
             structlog.get_logger().info(

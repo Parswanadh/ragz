@@ -1117,6 +1117,11 @@ async def stream_reply(
             )
             return
 
+        # Retrieval/agent providers have finished and all incurred usage is now
+        # staged. Commit before the first sources frame leaves the server: a
+        # client may disconnect at any yield, including before one answer token
+        # exists for the detached partial-answer path to persist.
+        await session.commit()
         yield sources_event(sources)
 
         if no_answer:  # decline policy: pre-Plan-I behavior, byte-identical
@@ -1172,6 +1177,12 @@ async def stream_reply(
         use_gatekeeper = (
             workspace.strict_mode and completer is not None and utility_model is not None
         )
+        # Retrieval may have staged expansion, embedding, and rerank usage rows.
+        # Make incurred provider work durable before either the streaming model
+        # call or the non-streaming Gatekeeper path. This also releases the read
+        # transaction while waiting on the provider, matching the conversational
+        # and general-knowledge branches above.
+        await session.commit()
         validation_failed = False
         usage: LLMUsage | None = None
         if use_gatekeeper and completer is not None and utility_model is not None:

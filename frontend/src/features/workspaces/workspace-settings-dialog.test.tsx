@@ -30,10 +30,19 @@ const b64 = (value: object) =>
 const tokenFor = (role: 'superadmin' | 'admin' | 'user') =>
   `${b64({ alg: 'HS256' })}.${b64({ sub: 'u1', org: 'o1', role, exp: 9999999999 })}.s`;
 
-function stubFetch(responseBody: WorkspaceOut) {
+function stubFetch(
+  responseBody: WorkspaceOut,
+  permissions: string[] = ['evals.read', 'evals.manage', 'evals.run'],
+) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (req: Request) => {
+      if (req.url.includes('/me/authorization')) {
+        return new Response(
+          JSON.stringify({ role: 'user', permissions, policy_version: 1 }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      }
       // MetadataFieldsSection (H-C8 mount point) fetches its own field list
       // on mount — stub it to an empty schema so it doesn't interfere with
       // these settings-form assertions.
@@ -67,8 +76,12 @@ function stubFetch(responseBody: WorkspaceOut) {
   );
 }
 
-function renderDialog(workspace: WorkspaceOut = ws, responseBody: WorkspaceOut = ws) {
-  stubFetch(responseBody);
+function renderDialog(
+  workspace: WorkspaceOut = ws,
+  responseBody: WorkspaceOut = ws,
+  permissions: string[] = ['evals.read', 'evals.manage', 'evals.run'],
+) {
+  stubFetch(responseBody, permissions);
   render(
     <QueryClientProvider client={new QueryClient()}>
       <WorkspaceSettingsDialog workspace={workspace} open onOpenChange={vi.fn()} />
@@ -142,6 +155,30 @@ test.each(['admin', 'user'] as const)(
       screen.queryByLabelText('Expand each question into multiple searches'),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/Superadmin control/)).not.toBeInTheDocument();
+  },
+);
+
+test('hides the evaluations tab without evals.run permission', async () => {
+  setAccessToken(tokenFor('user'));
+  renderDialog(ws, ws, []);
+
+  await waitFor(() =>
+    expect(
+      vi.mocked(fetch).mock.calls.some(([req]) =>
+        (req as Request).url.includes('/me/authorization'),
+      ),
+    ).toBe(true),
+  );
+  expect(screen.queryByRole('button', { name: 'evals' })).not.toBeInTheDocument();
+});
+
+test.each(['evals.read', 'evals.manage', 'evals.run'])(
+  'shows the evaluations tab with %s permission',
+  async (permission) => {
+    setAccessToken(tokenFor('user'));
+    renderDialog(ws, ws, [permission]);
+
+    expect(await screen.findByRole('button', { name: 'evals' })).toBeInTheDocument();
   },
 );
 

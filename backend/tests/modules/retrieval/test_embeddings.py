@@ -1,3 +1,4 @@
+import asyncio
 import json
 import math
 from dataclasses import dataclass
@@ -71,6 +72,100 @@ async def test_query_embedding_cache_is_exact_bounded_and_copy_safe() -> None:
         [1.0, 2.0],
         [5.0, 6.0],
     ]
+
+
+async def test_query_embedding_cache_coalesces_concurrent_cold_computes() -> None:
+    cache = InMemoryQueryEmbeddingCache(max_entries=2)
+    started = asyncio.Event()
+    release = asyncio.Event()
+    calls = 0
+
+    async def compute(texts: list[str]) -> tuple[list[list[float]], int]:
+        nonlocal calls
+        calls += 1
+        started.set()
+        await release.wait()
+        return [[1.0, 2.0] for _ in texts], 7
+
+    first = asyncio.create_task(cache.get_or_compute("space", ["alpha"], compute))
+    await started.wait()
+    second = asyncio.create_task(cache.get_or_compute("space", ["alpha"], compute))
+    await asyncio.sleep(0)
+
+    assert calls == 1
+    release.set()
+    owner, waiter = await asyncio.gather(first, second)
+
+    assert owner[0] == waiter[0] == [[1.0, 2.0]]
+    assert owner[1] == 7
+    assert waiter[1] == 0
+    assert owner[2:4] == (0, 1)
+    assert waiter[2:4] == (0, 1)
+    assert owner[4] >= 0.0  # lookup
+    assert owner[5] >= 0.0  # store
+    assert owner[6] == 0.0  # owner never waits on another request
+    assert waiter[6] >= 0.0
+
+
+async def test_query_embedding_singleflight_failure_fans_out_and_recovers() -> None:
+    cache = InMemoryQueryEmbeddingCache(max_entries=2)
+    started = asyncio.Event()
+    release = asyncio.Event()
+    calls = 0
+
+    async def failing(_texts: list[str]) -> tuple[list[list[float]], int]:
+        nonlocal calls
+        calls += 1
+        started.set()
+        await release.wait()
+        raise UpstreamError("provider down")
+
+    owner = asyncio.create_task(cache.get_or_compute("space", ["alpha"], failing))
+    await started.wait()
+    waiter = asyncio.create_task(cache.get_or_compute("space", ["alpha"], failing))
+    await asyncio.sleep(0)
+    release.set()
+    failed = await asyncio.gather(owner, waiter, return_exceptions=True)
+
+    assert calls == 1
+    assert all(isinstance(item, UpstreamError) for item in failed)
+
+    async def recovered(_texts: list[str]) -> tuple[list[list[float]], int]:
+        nonlocal calls
+        calls += 1
+        return [[3.0, 4.0]], 5
+
+    result = await cache.get_or_compute("space", ["alpha"], recovered)
+    assert result[0] == [[3.0, 4.0]]
+    assert result[1] == 5
+    assert calls == 2
+
+
+async def test_query_embedding_waiter_retries_after_owner_cancellation() -> None:
+    cache = InMemoryQueryEmbeddingCache(max_entries=2)
+    started = asyncio.Event()
+    calls = 0
+
+    async def compute(_texts: list[str]) -> tuple[list[list[float]], int]:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            started.set()
+            await asyncio.Event().wait()
+        return [[5.0, 6.0]], 9
+
+    owner = asyncio.create_task(cache.get_or_compute("space", ["alpha"], compute))
+    await started.wait()
+    waiter = asyncio.create_task(cache.get_or_compute("space", ["alpha"], compute))
+    await asyncio.sleep(0)
+    owner.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await owner
+
+    result = await asyncio.wait_for(waiter, timeout=1)
+    assert result[0] == [[5.0, 6.0]]
+    assert result[1] == 9
+    assert calls == 2
 
 
 async def test_query_embedding_cache_rejects_misaligned_batch() -> None:
