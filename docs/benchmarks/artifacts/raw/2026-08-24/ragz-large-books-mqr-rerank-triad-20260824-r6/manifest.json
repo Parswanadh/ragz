@@ -1,0 +1,2234 @@
+{
+  "artifacts_sha256": {
+    "per_query": "f1c05f43cf39e9caa48ecff077cd596d474301a044a1a8a24137f26a1c25cfb7",
+    "provider_calls": "027d51e1eb29503e2e3171a59f022c8ce6a30af8263da44eec337f6c841e92e7"
+  },
+  "benchmark": "ragz-large-books-mqr-rerank-triad",
+  "conditions": [
+    "q1_rerank-off_cache-off",
+    "q1_rerank-10_cache-off",
+    "q1_rerank-20_cache-off",
+    "q1_rerank-50_cache-off",
+    "q3_rerank-off_cache-off",
+    "q3_rerank-10_cache-off",
+    "q3_rerank-20_cache-off",
+    "q3_rerank-50_cache-off",
+    "q5_rerank-off_cache-off",
+    "q5_rerank-10_cache-off",
+    "q5_rerank-20_cache-off",
+    "q5_rerank-50_cache-off"
+  ],
+  "cost": {
+    "actual_provider_cost_usd": "0.92011950",
+    "basis": "provider_calls_usage_only",
+    "by_endpoint": {
+      "generation": {
+        "actual_provider_cost_usd": "0.1719630",
+        "cached_input_tokens": 0,
+        "calls": 287,
+        "input_tokens": 550143,
+        "output_tokens": 51612
+      },
+      "judge": {
+        "actual_provider_cost_usd": "0.74815650",
+        "cached_input_tokens": 0,
+        "calls": 287,
+        "input_tokens": 589854,
+        "output_tokens": 67948
+      }
+    },
+    "hard_cap_usd": "5.00",
+    "rates_usd_per_million": {
+      "gpt-5.4-mini": {
+        "cached_input": "0.075",
+        "input": "0.75",
+        "output": "4.50"
+      },
+      "gpt-5.6-luna": {
+        "cached_input": "0.02",
+        "input": "0.20",
+        "output": "1.20"
+      },
+      "text-embedding-3-large": "0.13",
+      "text-embedding-3-small": "0.02"
+    }
+  },
+  "created_at_utc": "2026-08-24T08:30:48.551696+00:00",
+  "denominator": {
+    "answerable": 20,
+    "total": 24,
+    "unanswerable": 4
+  },
+  "judge_independence": "separate_model_same_provider",
+  "models": {
+    "embedding_alias": "ragz-openai-text-embedding-3-large-d1024",
+    "embedding_dimension": 1024,
+    "embedding_model": "text-embedding-3-large",
+    "generation": "gpt-5.6-luna",
+    "generation_reasoning_effort": "low",
+    "judge": "gpt-5.4-mini",
+    "judge_reasoning_effort": "low",
+    "reranker": "rerank-v4.0-fast"
+  },
+  "privacy": {
+    "answers_persisted": false,
+    "contexts_persisted": false,
+    "private_inputs_persisted_publicly": false,
+    "provider_bodies_persisted": false,
+    "questions_persisted": false
+  },
+  "provider_calls": 574,
+  "rag_triad": "exploratory_llm_judge_not_independent_ground_truth",
+  "schema_version": 1,
+  "state_sha256": {
+    "postgres_dump": "f58c3be647d817ca32445fbffc862baf4fc991de59ef4d136155ff4bad9068cb",
+    "private_queries": "81900489ee0218cec7ee1713ebc41d47b4623901391cc687f769e62e8f572f32",
+    "qdrant_snapshot": "f89a3f1f70423694ff926247372652ea1f2cf11b2f78d4844485224909249fd6",
+    "retrieval_screen_manifest": "3589d8879b7219309b2366bd4d201254db47d3375c73d5d56c5ebcbe4ee04168"
+  },
+  "status": "failed_query_errors",
+  "summaries": {
+    "q1_rerank-10_cache-off": {
+      "answer_abstention": {
+        "f1": 0.7272727272727273,
+        "false_negative": 0,
+        "false_positive": 3,
+        "precision": 0.5714285714285714,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.2139,
+          "mean_ms": 0.1029625,
+          "observations": 24,
+          "p50_ms": 0.08465
+        },
+        "generation_provider": {
+          "max_ms": 12329.3527,
+          "mean_ms": 3080.3738166666667,
+          "observations": 24,
+          "p50_ms": 2359.0613
+        },
+        "judge_provider": {
+          "max_ms": 4213.0059,
+          "mean_ms": 2624.1191166666667,
+          "observations": 24,
+          "p50_ms": 2565.9683
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 5.3565,
+          "mean_ms": 2.6460541666666666,
+          "observations": 24,
+          "p50_ms": 2.41455
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.776,
+          "mean_ms": 0.8399708333333332,
+          "observations": 24,
+          "p50_ms": 0.843
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.0916,
+          "mean_ms": 0.0471875,
+          "observations": 24,
+          "p50_ms": 0.03705
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0119,
+          "mean_ms": 0.0070625,
+          "observations": 24,
+          "p50_ms": 0.00615
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.2669,
+          "mean_ms": 3.0212541666666666,
+          "observations": 24,
+          "p50_ms": 3.09645
+        },
+        "retrieval.database_release": {
+          "max_ms": 16.8295,
+          "mean_ms": 2.64675,
+          "observations": 24,
+          "p50_ms": 0.6956500000000001
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1531.342,
+          "mean_ms": 772.4452833333334,
+          "observations": 24,
+          "p50_ms": 728.64995
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0369,
+          "mean_ms": 0.010108333333333334,
+          "observations": 24,
+          "p50_ms": 0.00775
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0023,
+          "mean_ms": 0.00115,
+          "observations": 24,
+          "p50_ms": 0.0009
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0006,
+          "mean_ms": 0.00040416666666666666,
+          "observations": 24,
+          "p50_ms": 0.0005
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1358,
+          "mean_ms": 0.10944166666666666,
+          "observations": 24,
+          "p50_ms": 0.1181
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.0009,
+          "mean_ms": 0.000475,
+          "observations": 24,
+          "p50_ms": 0.0004
+        },
+        "retrieval.rerank.local": {
+          "max_ms": 0.0949,
+          "mean_ms": 0.03671666666666667,
+          "observations": 24,
+          "p50_ms": 0.034199999999999994
+        },
+        "retrieval.rerank.provider": {
+          "max_ms": 778.8723,
+          "mean_ms": 512.6215083333333,
+          "observations": 24,
+          "p50_ms": 504.82475
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max_ms": 2911.0761,
+          "mean_ms": 1083.0196291666666,
+          "observations": 24,
+          "p50_ms": 1142.0686999999998
+        },
+        "retrieval.reranker_resolution": {
+          "max_ms": 0.0061,
+          "mean_ms": 0.00225,
+          "observations": 24,
+          "p50_ms": 0.002
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 0.6949,
+          "mean_ms": 0.4158041666666667,
+          "observations": 24,
+          "p50_ms": 0.38580000000000003
+        },
+        "retrieval.vector_search": {
+          "max_ms": 17.4022,
+          "mean_ms": 10.604366666666666,
+          "observations": 24,
+          "p50_ms": 10.0656
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 4.0929,
+          "mean_ms": 2.4771,
+          "observations": 24,
+          "p50_ms": 2.59715
+        },
+        "retrieval_total": {
+          "max_ms": 4138.0007,
+          "mean_ms": 2391.401395833333,
+          "observations": 24,
+          "p50_ms": 2461.55725
+        },
+        "total": {
+          "max_ms": 16965.5027,
+          "mean_ms": 8096.128808333334,
+          "observations": 24,
+          "p50_ms": 7544.94315
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8560000000000001,
+        "citation_completeness": 0.8074999999999999,
+        "citation_entailment": 0.8800000000000001,
+        "citation_precision": 0.874,
+        "context_relevance": 0.9195,
+        "correctness": 0.734,
+        "groundedness": 0.9720000000000001,
+        "secondary_composite": 0.9158333333333334
+      },
+      "ranking_stability": {
+        "drift": 6,
+        "exact": 15,
+        "score_profile_equivalent_boundary_tie": 3,
+        "score_tie_equivalent": 0,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.4130929753571458,
+        "recall_at_k": 0.45,
+        "reciprocal_rank": 0.4
+      },
+      "screen_repairs": 0
+    },
+    "q1_rerank-20_cache-off": {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.2006,
+          "mean_ms": 0.1049,
+          "observations": 24,
+          "p50_ms": 0.09809999999999999
+        },
+        "generation_provider": {
+          "max_ms": 10759.2341,
+          "mean_ms": 3152.2209125000004,
+          "observations": 24,
+          "p50_ms": 2258.2010499999997
+        },
+        "judge_provider": {
+          "max_ms": 4401.0404,
+          "mean_ms": 2588.0372958333332,
+          "observations": 24,
+          "p50_ms": 2412.3461500000003
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 4.6396,
+          "mean_ms": 2.869845833333333,
+          "observations": 24,
+          "p50_ms": 2.6534
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.454,
+          "mean_ms": 0.858025,
+          "observations": 24,
+          "p50_ms": 0.7507999999999999
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.1533,
+          "mean_ms": 0.0754625,
+          "observations": 24,
+          "p50_ms": 0.05505
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0208,
+          "mean_ms": 0.0123,
+          "observations": 24,
+          "p50_ms": 0.01105
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.8024,
+          "mean_ms": 2.9447791666666667,
+          "observations": 24,
+          "p50_ms": 2.96375
+        },
+        "retrieval.database_release": {
+          "max_ms": 17.8453,
+          "mean_ms": 4.0693875,
+          "observations": 24,
+          "p50_ms": 0.68635
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1012.5973,
+          "mean_ms": 792.6187624999999,
+          "observations": 24,
+          "p50_ms": 790.2221
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0188,
+          "mean_ms": 0.009166666666666667,
+          "observations": 24,
+          "p50_ms": 0.0083
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0022,
+          "mean_ms": 0.0010875,
+          "observations": 24,
+          "p50_ms": 0.00095
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0007,
+          "mean_ms": 0.0003791666666666667,
+          "observations": 24,
+          "p50_ms": 0.0004
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1367,
+          "mean_ms": 0.10172083333333333,
+          "observations": 24,
+          "p50_ms": 0.1035
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.0009,
+          "mean_ms": 0.00047916666666666664,
+          "observations": 24,
+          "p50_ms": 0.00045
+        },
+        "retrieval.rerank.local": {
+          "max_ms": 0.0494,
+          "mean_ms": 0.03381666666666667,
+          "observations": 24,
+          "p50_ms": 0.033600000000000005
+        },
+        "retrieval.rerank.provider": {
+          "max_ms": 832.8241,
+          "mean_ms": 620.1603083333333,
+          "observations": 24,
+          "p50_ms": 590.7733499999999
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max_ms": 2473.7466,
+          "mean_ms": 1154.223825,
+          "observations": 24,
+          "p50_ms": 1316.0812999999998
+        },
+        "retrieval.reranker_resolution": {
+          "max_ms": 0.0029,
+          "mean_ms": 0.0021458333333333334,
+          "observations": 24,
+          "p50_ms": 0.0021
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 0.6706,
+          "mean_ms": 0.43083333333333335,
+          "observations": 24,
+          "p50_ms": 0.44945
+        },
+        "retrieval.vector_search": {
+          "max_ms": 13.5824,
+          "mean_ms": 11.487158333333333,
+          "observations": 24,
+          "p50_ms": 11.34275
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 3.7525,
+          "mean_ms": 2.4366375000000002,
+          "observations": 24,
+          "p50_ms": 2.2427
+        },
+        "retrieval_total": {
+          "max_ms": 4033.388,
+          "mean_ms": 2592.7923583333336,
+          "observations": 24,
+          "p50_ms": 2856.7704000000003
+        },
+        "total": {
+          "max_ms": 16680.7744,
+          "mean_ms": 8333.269829166666,
+          "observations": 24,
+          "p50_ms": 7716.49085
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.7995,
+        "citation_completeness": 0.7424999999999999,
+        "citation_entailment": 0.7769999999999999,
+        "citation_precision": 0.7655000000000001,
+        "context_relevance": 0.9605,
+        "correctness": 0.8135,
+        "groundedness": 0.882,
+        "secondary_composite": 0.8806666666666666
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 19,
+        "score_profile_equivalent_boundary_tie": 3,
+        "score_tie_equivalent": 0,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.48243561571887283,
+        "recall_at_k": 0.55,
+        "reciprocal_rank": 0.45999999999999996
+      },
+      "screen_repairs": 0
+    },
+    "q1_rerank-50_cache-off": {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.3137,
+          "mean_ms": 0.114325,
+          "observations": 24,
+          "p50_ms": 0.1074
+        },
+        "generation_provider": {
+          "max_ms": 8201.2075,
+          "mean_ms": 3023.3518958333334,
+          "observations": 24,
+          "p50_ms": 2506.2463
+        },
+        "judge_provider": {
+          "max_ms": 4466.1091,
+          "mean_ms": 2724.890408333333,
+          "observations": 24,
+          "p50_ms": 2596.4825
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 5.5239,
+          "mean_ms": 3.0024416666666665,
+          "observations": 24,
+          "p50_ms": 2.9589
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.4678,
+          "mean_ms": 1.0352041666666667,
+          "observations": 24,
+          "p50_ms": 1.09755
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.3098,
+          "mean_ms": 0.16206666666666666,
+          "observations": 24,
+          "p50_ms": 0.1311
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0391,
+          "mean_ms": 0.028358333333333333,
+          "observations": 24,
+          "p50_ms": 0.02895
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.3955,
+          "mean_ms": 2.918875,
+          "observations": 24,
+          "p50_ms": 2.99885
+        },
+        "retrieval.database_release": {
+          "max_ms": 16.4285,
+          "mean_ms": 2.6672083333333334,
+          "observations": 24,
+          "p50_ms": 0.80185
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1331.2499,
+          "mean_ms": 799.3036541666667,
+          "observations": 24,
+          "p50_ms": 805.19965
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0194,
+          "mean_ms": 0.008495833333333333,
+          "observations": 24,
+          "p50_ms": 0.007949999999999999
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0019,
+          "mean_ms": 0.0009291666666666667,
+          "observations": 24,
+          "p50_ms": 0.00075
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0006,
+          "mean_ms": 0.0004,
+          "observations": 24,
+          "p50_ms": 0.0004
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1446,
+          "mean_ms": 0.1071125,
+          "observations": 24,
+          "p50_ms": 0.10595
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.0009,
+          "mean_ms": 0.0004458333333333333,
+          "observations": 24,
+          "p50_ms": 0.0004
+        },
+        "retrieval.rerank.local": {
+          "max_ms": 0.0734,
+          "mean_ms": 0.038983333333333335,
+          "observations": 24,
+          "p50_ms": 0.03845
+        },
+        "retrieval.rerank.provider": {
+          "max_ms": 1182.3992,
+          "mean_ms": 710.7032666666668,
+          "observations": 24,
+          "p50_ms": 668.42325
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max_ms": 2734.0304,
+          "mean_ms": 876.3138208333334,
+          "observations": 24,
+          "p50_ms": 600.1329499999999
+        },
+        "retrieval.reranker_resolution": {
+          "max_ms": 0.0033,
+          "mean_ms": 0.0023166666666666665,
+          "observations": 24,
+          "p50_ms": 0.0024
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 0.6581,
+          "mean_ms": 0.46101666666666663,
+          "observations": 24,
+          "p50_ms": 0.47614999999999996
+        },
+        "retrieval.vector_search": {
+          "max_ms": 26.5732,
+          "mean_ms": 15.733616666666668,
+          "observations": 24,
+          "p50_ms": 14.5136
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 3.8367,
+          "mean_ms": 2.3913875,
+          "observations": 24,
+          "p50_ms": 2.23565
+        },
+        "retrieval_total": {
+          "max_ms": 4169.1686,
+          "mean_ms": 2415.4021958333333,
+          "observations": 24,
+          "p50_ms": 2403.22195
+        },
+        "total": {
+          "max_ms": 11931.0547,
+          "mean_ms": 8163.877283333334,
+          "observations": 24,
+          "p50_ms": 8094.92475
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8109999999999999,
+        "citation_completeness": 0.7215,
+        "citation_entailment": 0.7855000000000001,
+        "citation_precision": 0.7765,
+        "context_relevance": 0.8835,
+        "correctness": 0.7565000000000001,
+        "groundedness": 0.9570000000000001,
+        "secondary_composite": 0.8838333333333334
+      },
+      "ranking_stability": {
+        "drift": 0,
+        "exact": 21,
+        "score_profile_equivalent_boundary_tie": 3,
+        "score_tie_equivalent": 0,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.5065464876785729,
+        "recall_at_k": 0.55,
+        "reciprocal_rank": 0.4916666666666667
+      },
+      "screen_repairs": 0
+    },
+    "q1_rerank-off_cache-off": {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.1398,
+          "mean_ms": 0.08209166666666666,
+          "observations": 24,
+          "p50_ms": 0.07494999999999999
+        },
+        "generation_provider": {
+          "max_ms": 8560.1638,
+          "mean_ms": 3062.63675,
+          "observations": 24,
+          "p50_ms": 2831.39625
+        },
+        "judge_provider": {
+          "max_ms": 4196.7455,
+          "mean_ms": 2537.4567125,
+          "observations": 24,
+          "p50_ms": 2521.95695
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 11.5158,
+          "mean_ms": 2.9293041666666664,
+          "observations": 24,
+          "p50_ms": 2.25105
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.1612,
+          "mean_ms": 0.7620583333333334,
+          "observations": 24,
+          "p50_ms": 0.71515
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.0571,
+          "mean_ms": 0.02878333333333333,
+          "observations": 24,
+          "p50_ms": 0.0249
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0089,
+          "mean_ms": 0.004720833333333333,
+          "observations": 24,
+          "p50_ms": 0.00415
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 36.5033,
+          "mean_ms": 4.184379166666667,
+          "observations": 24,
+          "p50_ms": 2.8235
+        },
+        "retrieval.database_release": {
+          "max_ms": 18.1125,
+          "mean_ms": 2.3905375,
+          "observations": 24,
+          "p50_ms": 0.99505
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1322.2905,
+          "mean_ms": 801.8490375,
+          "observations": 24,
+          "p50_ms": 763.2296
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0267,
+          "mean_ms": 0.008429166666666666,
+          "observations": 24,
+          "p50_ms": 0.0074
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0019,
+          "mean_ms": 0.001,
+          "observations": 24,
+          "p50_ms": 0.0007999999999999999
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0006,
+          "mean_ms": 0.000325,
+          "observations": 24,
+          "p50_ms": 0.00025
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1788,
+          "mean_ms": 0.10202916666666667,
+          "observations": 24,
+          "p50_ms": 0.0923
+        },
+        "retrieval.no_answer_probe": {
+          "max_ms": 11.3886,
+          "mean_ms": 5.9665,
+          "observations": 24,
+          "p50_ms": 5.5288
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.0008,
+          "mean_ms": 0.0004333333333333333,
+          "observations": 24,
+          "p50_ms": 0.0004
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 104.2705,
+          "mean_ms": 4.687891666666666,
+          "observations": 24,
+          "p50_ms": 0.3504
+        },
+        "retrieval.vector_search": {
+          "max_ms": 16.8802,
+          "mean_ms": 10.314933333333334,
+          "observations": 24,
+          "p50_ms": 9.8995
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 3.1381,
+          "mean_ms": 2.1093041666666665,
+          "observations": 24,
+          "p50_ms": 2.09915
+        },
+        "retrieval_total": {
+          "max_ms": 1584.1968,
+          "mean_ms": 839.4980333333333,
+          "observations": 24,
+          "p50_ms": 791.22135
+        },
+        "total": {
+          "max_ms": 11924.2906,
+          "mean_ms": 6439.77675,
+          "observations": 24,
+          "p50_ms": 6265.8145
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8474999999999999,
+        "citation_completeness": 0.7275,
+        "citation_entailment": 0.7985,
+        "citation_precision": 0.8005000000000001,
+        "context_relevance": 0.891,
+        "correctness": 0.788,
+        "groundedness": 0.9754999999999999,
+        "secondary_composite": 0.9046666666666667
+      },
+      "ranking_stability": {
+        "drift": 0,
+        "exact": 10,
+        "score_profile_equivalent_boundary_tie": 5,
+        "score_tie_equivalent": 9,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.5074356157188729,
+        "recall_at_k": 0.6,
+        "reciprocal_rank": 0.4766666666666667
+      },
+      "screen_repairs": 0
+    },
+    "q3_rerank-10_cache-off": {
+      "answer_abstention": {
+        "f1": 0.7272727272727273,
+        "false_negative": 0,
+        "false_positive": 3,
+        "precision": 0.5714285714285714,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.3128,
+          "mean_ms": 0.10502916666666667,
+          "observations": 24,
+          "p50_ms": 0.08460000000000001
+        },
+        "generation_provider": {
+          "max_ms": 13295.2377,
+          "mean_ms": 3278.02875,
+          "observations": 24,
+          "p50_ms": 2665.0828
+        },
+        "judge_provider": {
+          "max_ms": 4490.4743,
+          "mean_ms": 2477.4203166666666,
+          "observations": 24,
+          "p50_ms": 2381.51425
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 5.4301,
+          "mean_ms": 3.0543791666666666,
+          "observations": 24,
+          "p50_ms": 2.7672499999999998
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.5651,
+          "mean_ms": 0.9164291666666666,
+          "observations": 24,
+          "p50_ms": 0.8098000000000001
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.0918,
+          "mean_ms": 0.04239166666666667,
+          "observations": 24,
+          "p50_ms": 0.03585
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0861,
+          "mean_ms": 0.011070833333333334,
+          "observations": 24,
+          "p50_ms": 0.007350000000000001
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 5.068,
+          "mean_ms": 3.2505375,
+          "observations": 24,
+          "p50_ms": 3.1712
+        },
+        "retrieval.database_release": {
+          "max_ms": 66.467,
+          "mean_ms": 7.345400000000001,
+          "observations": 24,
+          "p50_ms": 0.7709
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1544.8726,
+          "mean_ms": 1088.8103125,
+          "observations": 24,
+          "p50_ms": 1065.28105
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0205,
+          "mean_ms": 0.009158333333333333,
+          "observations": 24,
+          "p50_ms": 0.008549999999999999
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0022,
+          "mean_ms": 0.0010375,
+          "observations": 24,
+          "p50_ms": 0.00075
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0005,
+          "mean_ms": 0.00030416666666666667,
+          "observations": 24,
+          "p50_ms": 0.0003
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1425,
+          "mean_ms": 0.09508749999999999,
+          "observations": 24,
+          "p50_ms": 0.08765
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.232,
+          "mean_ms": 0.13728333333333334,
+          "observations": 24,
+          "p50_ms": 0.126
+        },
+        "retrieval.rerank.local": {
+          "max_ms": 0.0431,
+          "mean_ms": 0.03079583333333333,
+          "observations": 24,
+          "p50_ms": 0.0286
+        },
+        "retrieval.rerank.provider": {
+          "max_ms": 959.425,
+          "mean_ms": 568.9762916666667,
+          "observations": 24,
+          "p50_ms": 547.3103000000001
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max_ms": 2616.7352,
+          "mean_ms": 891.5032375000001,
+          "observations": 24,
+          "p50_ms": 847.359
+        },
+        "retrieval.reranker_resolution": {
+          "max_ms": 0.003,
+          "mean_ms": 0.0022083333333333334,
+          "observations": 24,
+          "p50_ms": 0.0022
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 1.0857,
+          "mean_ms": 0.5975041666666666,
+          "observations": 24,
+          "p50_ms": 0.60375
+        },
+        "retrieval.vector_search": {
+          "max_ms": 26.2275,
+          "mean_ms": 21.5292,
+          "observations": 24,
+          "p50_ms": 21.2282
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 6.4928,
+          "mean_ms": 3.099625,
+          "observations": 24,
+          "p50_ms": 2.90735
+        },
+        "retrieval_total": {
+          "max_ms": 4232.809,
+          "mean_ms": 2589.9378291666667,
+          "observations": 24,
+          "p50_ms": 2450.0014499999997
+        },
+        "total": {
+          "max_ms": 19901.4291,
+          "mean_ms": 8345.607958333334,
+          "observations": 24,
+          "p50_ms": 7633.9154
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8400000000000001,
+        "citation_completeness": 0.747,
+        "citation_entailment": 0.8789999999999999,
+        "citation_precision": 0.865,
+        "context_relevance": 0.8959999999999999,
+        "correctness": 0.73,
+        "groundedness": 0.885,
+        "secondary_composite": 0.8736666666666667
+      },
+      "ranking_stability": {
+        "drift": 1,
+        "exact": 16,
+        "score_profile_equivalent_boundary_tie": 0,
+        "score_tie_equivalent": 2,
+        "screen_repair": 5
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.48243561571887283,
+        "recall_at_k": 0.55,
+        "reciprocal_rank": 0.45999999999999996
+      },
+      "screen_repairs": 5
+    },
+    "q3_rerank-20_cache-off": {
+      "answer_abstention": {
+        "f1": 0.6153846153846153,
+        "false_negative": 0,
+        "false_positive": 5,
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.3565,
+          "mean_ms": 0.10729583333333333,
+          "observations": 24,
+          "p50_ms": 0.08249999999999999
+        },
+        "generation_provider": {
+          "max_ms": 7266.2739,
+          "mean_ms": 2712.2628125,
+          "observations": 24,
+          "p50_ms": 2269.9181
+        },
+        "judge_provider": {
+          "max_ms": 3993.3757,
+          "mean_ms": 2512.4242708333336,
+          "observations": 24,
+          "p50_ms": 2396.5024000000003
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 4.6064,
+          "mean_ms": 2.4627125,
+          "observations": 24,
+          "p50_ms": 2.38345
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.281,
+          "mean_ms": 0.9024625,
+          "observations": 24,
+          "p50_ms": 0.7717
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.0957,
+          "mean_ms": 0.06557500000000001,
+          "observations": 24,
+          "p50_ms": 0.0554
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0181,
+          "mean_ms": 0.0121625,
+          "observations": 24,
+          "p50_ms": 0.011
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.3428,
+          "mean_ms": 3.24925,
+          "observations": 24,
+          "p50_ms": 3.3024
+        },
+        "retrieval.database_release": {
+          "max_ms": 25.0271,
+          "mean_ms": 1.7116375000000001,
+          "observations": 24,
+          "p50_ms": 0.68415
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1220.6936,
+          "mean_ms": 1041.7380916666666,
+          "observations": 24,
+          "p50_ms": 1021.71515
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0154,
+          "mean_ms": 0.009433333333333334,
+          "observations": 24,
+          "p50_ms": 0.0093
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0024,
+          "mean_ms": 0.0011666666666666668,
+          "observations": 24,
+          "p50_ms": 0.00115
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0006,
+          "mean_ms": 0.00035833333333333333,
+          "observations": 24,
+          "p50_ms": 0.0003
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1417,
+          "mean_ms": 0.09925416666666666,
+          "observations": 24,
+          "p50_ms": 0.09534999999999999
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.2584,
+          "mean_ms": 0.15235416666666665,
+          "observations": 24,
+          "p50_ms": 0.15615
+        },
+        "retrieval.rerank.local": {
+          "max_ms": 0.0502,
+          "mean_ms": 0.0349625,
+          "observations": 24,
+          "p50_ms": 0.0361
+        },
+        "retrieval.rerank.provider": {
+          "max_ms": 749.3972,
+          "mean_ms": 584.9533666666666,
+          "observations": 24,
+          "p50_ms": 572.6976999999999
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max_ms": 2106.2871,
+          "mean_ms": 902.4203166666666,
+          "observations": 24,
+          "p50_ms": 1053.24265
+        },
+        "retrieval.reranker_resolution": {
+          "max_ms": 0.0031,
+          "mean_ms": 0.0020916666666666666,
+          "observations": 24,
+          "p50_ms": 0.002
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 1.3068,
+          "mean_ms": 0.5983291666666667,
+          "observations": 24,
+          "p50_ms": 0.5862
+        },
+        "retrieval.vector_search": {
+          "max_ms": 25.773,
+          "mean_ms": 22.414975,
+          "observations": 24,
+          "p50_ms": 22.1675
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 5.7144,
+          "mean_ms": 3.1117749999999997,
+          "observations": 24,
+          "p50_ms": 2.9275
+        },
+        "retrieval_total": {
+          "max_ms": 3782.9273,
+          "mean_ms": 2564.4810041666665,
+          "observations": 24,
+          "p50_ms": 2752.67895
+        },
+        "total": {
+          "max_ms": 12378.5352,
+          "mean_ms": 7789.388379166667,
+          "observations": 24,
+          "p50_ms": 7488.9411
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.7725,
+        "citation_completeness": 0.6925,
+        "citation_entailment": 0.7275,
+        "citation_precision": 0.71,
+        "context_relevance": 0.877,
+        "correctness": 0.7205,
+        "groundedness": 0.9720000000000001,
+        "secondary_composite": 0.8738333333333334
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 21,
+        "score_profile_equivalent_boundary_tie": 0,
+        "score_tie_equivalent": 1,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.4630929753571458,
+        "recall_at_k": 0.5,
+        "reciprocal_rank": 0.45
+      },
+      "screen_repairs": 0
+    },
+    "q3_rerank-50_cache-off": {
+      "answer_abstention": {
+        "f1": 0.7272727272727273,
+        "false_negative": 0,
+        "false_positive": 3,
+        "precision": 0.5714285714285714,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.7989,
+          "mean_ms": 0.12174583333333333,
+          "observations": 24,
+          "p50_ms": 0.08510000000000001
+        },
+        "generation_provider": {
+          "max_ms": 9081.3624,
+          "mean_ms": 3107.8952958333334,
+          "observations": 24,
+          "p50_ms": 2604.2668000000003
+        },
+        "judge_provider": {
+          "max_ms": 4412.3737,
+          "mean_ms": 2657.510366666667,
+          "observations": 24,
+          "p50_ms": 2568.70735
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 4.4639,
+          "mean_ms": 2.698529166666667,
+          "observations": 24,
+          "p50_ms": 2.62125
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.442,
+          "mean_ms": 0.8961250000000001,
+          "observations": 24,
+          "p50_ms": 0.77395
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.2945,
+          "mean_ms": 0.14707499999999998,
+          "observations": 24,
+          "p50_ms": 0.119
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0425,
+          "mean_ms": 0.023670833333333335,
+          "observations": 24,
+          "p50_ms": 0.021150000000000002
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.5029,
+          "mean_ms": 2.9801083333333334,
+          "observations": 24,
+          "p50_ms": 2.7862999999999998
+        },
+        "retrieval.database_release": {
+          "max_ms": 87.4835,
+          "mean_ms": 5.797604166666667,
+          "observations": 24,
+          "p50_ms": 0.6356999999999999
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1132.9029,
+          "mean_ms": 1065.8550666666667,
+          "observations": 24,
+          "p50_ms": 1087.6775499999999
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.017,
+          "mean_ms": 0.009379166666666666,
+          "observations": 24,
+          "p50_ms": 0.00955
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0019,
+          "mean_ms": 0.0011541666666666666,
+          "observations": 24,
+          "p50_ms": 0.0009500000000000001
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0006,
+          "mean_ms": 0.00033749999999999996,
+          "observations": 24,
+          "p50_ms": 0.0003
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1362,
+          "mean_ms": 0.09722916666666666,
+          "observations": 24,
+          "p50_ms": 0.08940000000000001
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.2476,
+          "mean_ms": 0.14835833333333334,
+          "observations": 24,
+          "p50_ms": 0.15165
+        },
+        "retrieval.rerank.local": {
+          "max_ms": 0.0558,
+          "mean_ms": 0.03618333333333333,
+          "observations": 24,
+          "p50_ms": 0.03585
+        },
+        "retrieval.rerank.provider": {
+          "max_ms": 1794.4028,
+          "mean_ms": 708.4469083333333,
+          "observations": 24,
+          "p50_ms": 656.91165
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max_ms": 2334.9846,
+          "mean_ms": 746.6141958333333,
+          "observations": 24,
+          "p50_ms": 461.1153
+        },
+        "retrieval.reranker_resolution": {
+          "max_ms": 0.0035,
+          "mean_ms": 0.0022083333333333334,
+          "observations": 24,
+          "p50_ms": 0.0020499999999999997
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 1.0916,
+          "mean_ms": 0.6039833333333333,
+          "observations": 24,
+          "p50_ms": 0.55125
+        },
+        "retrieval.vector_search": {
+          "max_ms": 29.3344,
+          "mean_ms": 24.588033333333332,
+          "observations": 24,
+          "p50_ms": 24.4894
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 4.116,
+          "mean_ms": 2.6874708333333337,
+          "observations": 24,
+          "p50_ms": 2.7061
+        },
+        "retrieval_total": {
+          "max_ms": 4500.0727,
+          "mean_ms": 2562.202620833333,
+          "observations": 24,
+          "p50_ms": 2205.9804999999997
+        },
+        "total": {
+          "max_ms": 14553.2065,
+          "mean_ms": 8327.840666666667,
+          "observations": 24,
+          "p50_ms": 8095.735000000001
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8539999999999999,
+        "citation_completeness": 0.7415,
+        "citation_entailment": 0.8225,
+        "citation_precision": 0.8160000000000001,
+        "context_relevance": 0.9065,
+        "correctness": 0.8029999999999999,
+        "groundedness": 0.925,
+        "secondary_composite": 0.8951666666666667
+      },
+      "ranking_stability": {
+        "drift": 1,
+        "exact": 21,
+        "score_profile_equivalent_boundary_tie": 2,
+        "score_tie_equivalent": 0,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.5065464876785729,
+        "recall_at_k": 0.55,
+        "reciprocal_rank": 0.4916666666666667
+      },
+      "screen_repairs": 0
+    },
+    "q3_rerank-off_cache-off": {
+      "answer_abstention": {
+        "f1": 0.6153846153846153,
+        "false_negative": 0,
+        "false_positive": 5,
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.1477,
+          "mean_ms": 0.08286666666666666,
+          "observations": 24,
+          "p50_ms": 0.07915
+        },
+        "generation_provider": {
+          "max_ms": 6669.294,
+          "mean_ms": 2789.4221374999997,
+          "observations": 24,
+          "p50_ms": 2471.4743
+        },
+        "judge_provider": {
+          "max_ms": 4707.9167,
+          "mean_ms": 2730.292325,
+          "observations": 24,
+          "p50_ms": 2629.9764999999998
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 4.9097,
+          "mean_ms": 2.6522875,
+          "observations": 24,
+          "p50_ms": 2.42375
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.4079,
+          "mean_ms": 0.8937166666666667,
+          "observations": 24,
+          "p50_ms": 0.81835
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.0489,
+          "mean_ms": 0.0311,
+          "observations": 24,
+          "p50_ms": 0.02645
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0116,
+          "mean_ms": 0.005541666666666667,
+          "observations": 24,
+          "p50_ms": 0.0048000000000000004
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.9863,
+          "mean_ms": 3.2354291666666666,
+          "observations": 24,
+          "p50_ms": 3.1416500000000003
+        },
+        "retrieval.database_release": {
+          "max_ms": 16.9936,
+          "mean_ms": 2.9372291666666666,
+          "observations": 24,
+          "p50_ms": 0.79895
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1578.6139,
+          "mean_ms": 1140.048125,
+          "observations": 24,
+          "p50_ms": 1037.2689
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0258,
+          "mean_ms": 0.010025000000000001,
+          "observations": 24,
+          "p50_ms": 0.009899999999999999
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0023,
+          "mean_ms": 0.0012083333333333332,
+          "observations": 24,
+          "p50_ms": 0.0012
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0006,
+          "mean_ms": 0.0003333333333333333,
+          "observations": 24,
+          "p50_ms": 0.0003
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1344,
+          "mean_ms": 0.097625,
+          "observations": 24,
+          "p50_ms": 0.0917
+        },
+        "retrieval.no_answer_probe": {
+          "max_ms": 18.4619,
+          "mean_ms": 12.367691666666666,
+          "observations": 24,
+          "p50_ms": 11.447099999999999
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.251,
+          "mean_ms": 0.15527916666666666,
+          "observations": 24,
+          "p50_ms": 0.16144999999999998
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 0.9143,
+          "mean_ms": 0.5759875,
+          "observations": 24,
+          "p50_ms": 0.5629
+        },
+        "retrieval.vector_search": {
+          "max_ms": 25.9442,
+          "mean_ms": 21.602341666666664,
+          "observations": 24,
+          "p50_ms": 21.286250000000003
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 5.6801,
+          "mean_ms": 2.845204166666667,
+          "observations": 24,
+          "p50_ms": 2.66045
+        },
+        "retrieval_total": {
+          "max_ms": 1626.9227,
+          "mean_ms": 1187.8273916666667,
+          "observations": 24,
+          "p50_ms": 1083.3707
+        },
+        "total": {
+          "max_ms": 11089.275,
+          "mean_ms": 6707.732816666667,
+          "observations": 24,
+          "p50_ms": 6239.2063
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8029999999999999,
+        "citation_completeness": 0.6825,
+        "citation_entailment": 0.7665,
+        "citation_precision": 0.725,
+        "context_relevance": 0.9175000000000001,
+        "correctness": 0.702,
+        "groundedness": 0.9535,
+        "secondary_composite": 0.8913333333333333
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 20,
+        "score_profile_equivalent_boundary_tie": 1,
+        "score_tie_equivalent": 1,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.49742295594396957,
+        "recall_at_k": 0.6,
+        "reciprocal_rank": 0.46416666666666667
+      },
+      "screen_repairs": 0
+    },
+    "q5_rerank-10_cache-off": {
+      "answer_abstention": {
+        "f1": 0.6153846153846153,
+        "false_negative": 0,
+        "false_positive": 5,
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 19,
+      "complete": 23,
+      "errors": 1,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.1825,
+          "mean_ms": 0.09081739130434782,
+          "observations": 23,
+          "p50_ms": 0.0839
+        },
+        "generation_provider": {
+          "max_ms": 13355.3161,
+          "mean_ms": 3207.9864260869567,
+          "observations": 23,
+          "p50_ms": 2565.9402
+        },
+        "judge_provider": {
+          "max_ms": 4007.2777,
+          "mean_ms": 2694.5270782608695,
+          "observations": 23,
+          "p50_ms": 2661.7009
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 5.4288,
+          "mean_ms": 2.7936217391304345,
+          "observations": 23,
+          "p50_ms": 2.5661
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.8983,
+          "mean_ms": 0.9869260869565217,
+          "observations": 23,
+          "p50_ms": 0.8501
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.1035,
+          "mean_ms": 0.04754782608695652,
+          "observations": 23,
+          "p50_ms": 0.0372
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0177,
+          "mean_ms": 0.009060869565217391,
+          "observations": 23,
+          "p50_ms": 0.0076
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.3473,
+          "mean_ms": 3.083926086956522,
+          "observations": 23,
+          "p50_ms": 2.8851
+        },
+        "retrieval.database_release": {
+          "max_ms": 53.1447,
+          "mean_ms": 3.9902521739130434,
+          "observations": 23,
+          "p50_ms": 0.7076
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1640.4999,
+          "mean_ms": 1107.8532652173913,
+          "observations": 23,
+          "p50_ms": 1029.0929
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0137,
+          "mean_ms": 0.008982608695652174,
+          "observations": 23,
+          "p50_ms": 0.0089
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0026,
+          "mean_ms": 0.001108695652173913,
+          "observations": 23,
+          "p50_ms": 0.001
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0004,
+          "mean_ms": 0.0002652173913043478,
+          "observations": 23,
+          "p50_ms": 0.0003
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1095,
+          "mean_ms": 0.08710434782608696,
+          "observations": 23,
+          "p50_ms": 0.0846
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.2225,
+          "mean_ms": 0.1365173913043478,
+          "observations": 23,
+          "p50_ms": 0.1401
+        },
+        "retrieval.rerank.local": {
+          "max_ms": 0.0438,
+          "mean_ms": 0.03296521739130435,
+          "observations": 23,
+          "p50_ms": 0.0333
+        },
+        "retrieval.rerank.provider": {
+          "max_ms": 11006.3177,
+          "mean_ms": 1044.2824826086958,
+          "observations": 23,
+          "p50_ms": 539.8503
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max_ms": 2307.2136,
+          "mean_ms": 695.8594130434783,
+          "observations": 23,
+          "p50_ms": 0.001
+        },
+        "retrieval.reranker_resolution": {
+          "max_ms": 0.0041,
+          "mean_ms": 0.0021652173913043475,
+          "observations": 23,
+          "p50_ms": 0.002
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 1.4063,
+          "mean_ms": 0.8096565217391304,
+          "observations": 23,
+          "p50_ms": 0.7853
+        },
+        "retrieval.vector_search": {
+          "max_ms": 38.05,
+          "mean_ms": 32.07060434782609,
+          "observations": 23,
+          "p50_ms": 31.0174
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 4.5759,
+          "mean_ms": 2.7718434782608696,
+          "observations": 23,
+          "p50_ms": 2.5589
+        },
+        "retrieval_total": {
+          "max_ms": 12075.8209,
+          "mean_ms": 2895.4506,
+          "observations": 23,
+          "p50_ms": 2539.3588
+        },
+        "total": {
+          "max_ms": 18427.7439,
+          "mean_ms": 8798.173291304347,
+          "observations": 23,
+          "p50_ms": 7950.5444
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8094736842105262,
+        "citation_completeness": 0.7005263157894737,
+        "citation_entailment": 0.7636842105263157,
+        "citation_precision": 0.7531578947368421,
+        "context_relevance": 0.9178947368421053,
+        "correctness": 0.7178947368421053,
+        "groundedness": 0.9242105263157894,
+        "secondary_composite": 0.883859649122807
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 18,
+        "score_profile_equivalent_boundary_tie": 3,
+        "score_tie_equivalent": 0,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.5281876379795789,
+        "recall_at_k": 0.631578947368421,
+        "reciprocal_rank": 0.4947368421052632
+      },
+      "screen_repairs": 0
+    },
+    "q5_rerank-20_cache-off": {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.2071,
+          "mean_ms": 0.09555000000000001,
+          "observations": 24,
+          "p50_ms": 0.0859
+        },
+        "generation_provider": {
+          "max_ms": 7974.3081,
+          "mean_ms": 2962.1644125000003,
+          "observations": 24,
+          "p50_ms": 2614.16355
+        },
+        "judge_provider": {
+          "max_ms": 6365.9511,
+          "mean_ms": 2657.634216666667,
+          "observations": 24,
+          "p50_ms": 2471.0953
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 4.3536,
+          "mean_ms": 2.4676791666666666,
+          "observations": 24,
+          "p50_ms": 2.31345
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.6817,
+          "mean_ms": 0.9385958333333333,
+          "observations": 24,
+          "p50_ms": 0.8226
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.1452,
+          "mean_ms": 0.073825,
+          "observations": 24,
+          "p50_ms": 0.060899999999999996
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0208,
+          "mean_ms": 0.012679166666666667,
+          "observations": 24,
+          "p50_ms": 0.0108
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.7716,
+          "mean_ms": 2.8737,
+          "observations": 24,
+          "p50_ms": 2.62025
+        },
+        "retrieval.database_release": {
+          "max_ms": 15.6475,
+          "mean_ms": 2.5068208333333333,
+          "observations": 24,
+          "p50_ms": 0.6665
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1228.4912,
+          "mean_ms": 1066.7003833333333,
+          "observations": 24,
+          "p50_ms": 1068.5125
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0167,
+          "mean_ms": 0.008624999999999999,
+          "observations": 24,
+          "p50_ms": 0.0084
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.0021,
+          "mean_ms": 0.0010624999999999999,
+          "observations": 24,
+          "p50_ms": 0.00095
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0005,
+          "mean_ms": 0.0002875,
+          "observations": 24,
+          "p50_ms": 0.0002
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.129,
+          "mean_ms": 0.09018749999999999,
+          "observations": 24,
+          "p50_ms": 0.07949999999999999
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.2305,
+          "mean_ms": 0.14005416666666667,
+          "observations": 24,
+          "p50_ms": 0.1208
+        },
+        "retrieval.rerank.local": {
+          "max_ms": 0.1022,
+          "mean_ms": 0.03714166666666666,
+          "observations": 24,
+          "p50_ms": 0.03515
+        },
+        "retrieval.rerank.provider": {
+          "max_ms": 949.5128,
+          "mean_ms": 573.8454958333333,
+          "observations": 24,
+          "p50_ms": 556.14855
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max_ms": 2250.4861,
+          "mean_ms": 903.9246541666666,
+          "observations": 24,
+          "p50_ms": 750.8985
+        },
+        "retrieval.reranker_resolution": {
+          "max_ms": 0.0032,
+          "mean_ms": 0.002170833333333333,
+          "observations": 24,
+          "p50_ms": 0.002
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 1.069,
+          "mean_ms": 0.7886583333333334,
+          "observations": 24,
+          "p50_ms": 0.8422499999999999
+        },
+        "retrieval.vector_search": {
+          "max_ms": 41.8021,
+          "mean_ms": 33.898475,
+          "observations": 24,
+          "p50_ms": 33.593149999999994
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 4.4389,
+          "mean_ms": 2.735958333333333,
+          "observations": 24,
+          "p50_ms": 2.4058
+        },
+        "retrieval_total": {
+          "max_ms": 3963.9902,
+          "mean_ms": 2591.6956208333336,
+          "observations": 24,
+          "p50_ms": 2375.5188500000004
+        },
+        "total": {
+          "max_ms": 12569.2157,
+          "mean_ms": 8211.702345833333,
+          "observations": 24,
+          "p50_ms": 7624.1867
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8119999999999999,
+        "citation_completeness": 0.717,
+        "citation_entailment": 0.7979999999999999,
+        "citation_precision": 0.7995,
+        "context_relevance": 0.907,
+        "correctness": 0.735,
+        "groundedness": 0.9515,
+        "secondary_composite": 0.8901666666666667
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 21,
+        "score_profile_equivalent_boundary_tie": 0,
+        "score_tie_equivalent": 1,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.4630929753571458,
+        "recall_at_k": 0.5,
+        "reciprocal_rank": 0.45
+      },
+      "screen_repairs": 0
+    },
+    "q5_rerank-50_cache-off": {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.2044,
+          "mean_ms": 0.08839583333333334,
+          "observations": 24,
+          "p50_ms": 0.08965000000000001
+        },
+        "generation_provider": {
+          "max_ms": 21199.3354,
+          "mean_ms": 3600.351575,
+          "observations": 24,
+          "p50_ms": 2361.40875
+        },
+        "judge_provider": {
+          "max_ms": 4398.6985,
+          "mean_ms": 2704.883033333333,
+          "observations": 24,
+          "p50_ms": 2531.22375
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 4.5201,
+          "mean_ms": 2.4710916666666667,
+          "observations": 24,
+          "p50_ms": 2.2832999999999997
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.3147,
+          "mean_ms": 0.90885,
+          "observations": 24,
+          "p50_ms": 0.8028500000000001
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.2307,
+          "mean_ms": 0.13565833333333333,
+          "observations": 24,
+          "p50_ms": 0.11415
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0426,
+          "mean_ms": 0.0241875,
+          "observations": 24,
+          "p50_ms": 0.02065
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.366,
+          "mean_ms": 3.0304291666666665,
+          "observations": 24,
+          "p50_ms": 3.1036
+        },
+        "retrieval.database_release": {
+          "max_ms": 15.7979,
+          "mean_ms": 2.64745,
+          "observations": 24,
+          "p50_ms": 0.7927500000000001
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1640.7343,
+          "mean_ms": 1122.8420083333333,
+          "observations": 24,
+          "p50_ms": 1089.5552
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.017,
+          "mean_ms": 0.008624999999999999,
+          "observations": 24,
+          "p50_ms": 0.00875
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.002,
+          "mean_ms": 0.0011708333333333334,
+          "observations": 24,
+          "p50_ms": 0.0011
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0005,
+          "mean_ms": 0.00032083333333333334,
+          "observations": 24,
+          "p50_ms": 0.0003
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.2048,
+          "mean_ms": 0.09802083333333333,
+          "observations": 24,
+          "p50_ms": 0.0873
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.2353,
+          "mean_ms": 0.14596666666666666,
+          "observations": 24,
+          "p50_ms": 0.1547
+        },
+        "retrieval.rerank.local": {
+          "max_ms": 0.0489,
+          "mean_ms": 0.03641666666666667,
+          "observations": 24,
+          "p50_ms": 0.035949999999999996
+        },
+        "retrieval.rerank.provider": {
+          "max_ms": 965.6696,
+          "mean_ms": 642.7278166666666,
+          "observations": 24,
+          "p50_ms": 629.1844
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max_ms": 2107.2876,
+          "mean_ms": 673.5123708333333,
+          "observations": 24,
+          "p50_ms": 325.4724
+        },
+        "retrieval.reranker_resolution": {
+          "max_ms": 0.0029,
+          "mean_ms": 0.0020958333333333332,
+          "observations": 24,
+          "p50_ms": 0.002
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 1.055,
+          "mean_ms": 0.7275166666666667,
+          "observations": 24,
+          "p50_ms": 0.7537
+        },
+        "retrieval.vector_search": {
+          "max_ms": 44.6195,
+          "mean_ms": 36.648975,
+          "observations": 24,
+          "p50_ms": 36.109899999999996
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 6.178,
+          "mean_ms": 3.257054166666667,
+          "observations": 24,
+          "p50_ms": 2.8661000000000003
+        },
+        "retrieval_total": {
+          "max_ms": 3985.9638,
+          "mean_ms": 2489.8934916666667,
+          "observations": 24,
+          "p50_ms": 2149.80575
+        },
+        "total": {
+          "max_ms": 27361.3262,
+          "mean_ms": 8795.328175,
+          "observations": 24,
+          "p50_ms": 7675.7672999999995
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8210000000000001,
+        "citation_completeness": 0.7515,
+        "citation_entailment": 0.841,
+        "citation_precision": 0.9225,
+        "context_relevance": 0.951,
+        "correctness": 0.745,
+        "groundedness": 0.966,
+        "secondary_composite": 0.9126666666666666
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 19,
+        "score_profile_equivalent_boundary_tie": 3,
+        "score_tie_equivalent": 0,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.4815464876785729,
+        "recall_at_k": 0.5,
+        "reciprocal_rank": 0.475
+      },
+      "screen_repairs": 0
+    },
+    "q5_rerank-off_cache-off": {
+      "answer_abstention": {
+        "f1": 0.6153846153846153,
+        "false_negative": 0,
+        "false_positive": 5,
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "true_positive": 4
+      },
+      "answerable": 20,
+      "complete": 24,
+      "errors": 0,
+      "latency_ms": {
+        "context_assembly": {
+          "max_ms": 0.2052,
+          "mean_ms": 0.08822083333333335,
+          "observations": 24,
+          "p50_ms": 0.08685000000000001
+        },
+        "generation_provider": {
+          "max_ms": 5476.8033,
+          "mean_ms": 2637.0883333333336,
+          "observations": 24,
+          "p50_ms": 2363.1396999999997
+        },
+        "judge_provider": {
+          "max_ms": 5223.9837,
+          "mean_ms": 2608.826525,
+          "observations": 24,
+          "p50_ms": 2291.86215
+        },
+        "retrieval.authorization_prefilter": {
+          "max_ms": 5.2195,
+          "mean_ms": 2.6182458333333334,
+          "observations": 24,
+          "p50_ms": 2.5123
+        },
+        "retrieval.authorization_recheck": {
+          "max_ms": 1.7563,
+          "mean_ms": 0.9749500000000001,
+          "observations": 24,
+          "p50_ms": 0.8543499999999999
+        },
+        "retrieval.candidate_decode": {
+          "max_ms": 0.0671,
+          "mean_ms": 0.029800000000000004,
+          "observations": 24,
+          "p50_ms": 0.0256
+        },
+        "retrieval.candidate_dedupe": {
+          "max_ms": 0.0124,
+          "mean_ms": 0.00565,
+          "observations": 24,
+          "p50_ms": 0.0049499999999999995
+        },
+        "retrieval.collection_ready": {
+          "max_ms": 4.5749,
+          "mean_ms": 2.946320833333333,
+          "observations": 24,
+          "p50_ms": 2.8857
+        },
+        "retrieval.database_release": {
+          "max_ms": 16.6838,
+          "mean_ms": 1.4414833333333334,
+          "observations": 24,
+          "p50_ms": 0.8028
+        },
+        "retrieval.dense_embedding": {
+          "max_ms": 1633.9851,
+          "mean_ms": 1126.2975291666667,
+          "observations": 24,
+          "p50_ms": 1123.2645
+        },
+        "retrieval.embedder_resolution": {
+          "max_ms": 0.0135,
+          "mean_ms": 0.007620833333333334,
+          "observations": 24,
+          "p50_ms": 0.00655
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max_ms": 0.002,
+          "mean_ms": 0.0009750000000000001,
+          "observations": 24,
+          "p50_ms": 0.0007
+        },
+        "retrieval.embedding_cache_store": {
+          "max_ms": 0.0006,
+          "mean_ms": 0.0002916666666666667,
+          "observations": 24,
+          "p50_ms": 0.00025
+        },
+        "retrieval.embedding_usage_record": {
+          "max_ms": 0.1318,
+          "mean_ms": 0.09201666666666668,
+          "observations": 24,
+          "p50_ms": 0.0828
+        },
+        "retrieval.no_answer_probe": {
+          "max_ms": 22.9727,
+          "mean_ms": 16.987820833333334,
+          "observations": 24,
+          "p50_ms": 16.8116
+        },
+        "retrieval.query_expansion": {
+          "max_ms": 0.2285,
+          "mean_ms": 0.12709583333333332,
+          "observations": 24,
+          "p50_ms": 0.10195
+        },
+        "retrieval.sparse_embedding": {
+          "max_ms": 1.1911,
+          "mean_ms": 0.763925,
+          "observations": 24,
+          "p50_ms": 0.7922
+        },
+        "retrieval.vector_search": {
+          "max_ms": 38.6892,
+          "mean_ms": 32.88959583333333,
+          "observations": 24,
+          "p50_ms": 32.38575
+        },
+        "retrieval.workspace_model_resolution": {
+          "max_ms": 4.3301,
+          "mean_ms": 2.581275,
+          "observations": 24,
+          "p50_ms": 2.31945
+        },
+        "retrieval_total": {
+          "max_ms": 1689.2353,
+          "mean_ms": 1188.218025,
+          "observations": 24,
+          "p50_ms": 1183.6964
+        },
+        "total": {
+          "max_ms": 9396.1052,
+          "mean_ms": 6434.339708333333,
+          "observations": 24,
+          "p50_ms": 6130.8138500000005
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.763,
+        "citation_completeness": 0.6725,
+        "citation_entailment": 0.725,
+        "citation_precision": 0.7635,
+        "context_relevance": 0.8105,
+        "correctness": 0.702,
+        "groundedness": 0.967,
+        "secondary_composite": 0.8468333333333333
+      },
+      "ranking_stability": {
+        "drift": 5,
+        "exact": 19,
+        "score_profile_equivalent_boundary_tie": 0,
+        "score_tie_equivalent": 0,
+        "screen_repair": 0
+      },
+      "retrieval": {
+        "ndcg_at_k": 0.4758891280403,
+        "recall_at_k": 0.55,
+        "reciprocal_rank": 0.45166666666666666
+      },
+      "screen_repairs": 0
+    }
+  }
+}

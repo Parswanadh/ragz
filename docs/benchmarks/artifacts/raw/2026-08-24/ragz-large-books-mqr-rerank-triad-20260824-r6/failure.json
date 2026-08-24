@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "status": "failed_query_errors",
+  "completed_rows": 288,
+  "zero_error_rows": 287,
+  "provider_calls_persisted": 574,
+  "failed_cell": {
+    "condition_id": "q5_rerank-10_cache-off",
+    "query_id": "postgres-001",
+    "error_type": "RerankUnavailable"
+  },
+  "quality_aggregate_eligible": false,
+  "private_content_persisted": false,
+  "resolution": "Resume from this artifact, reuse only its 287 zero-error rows and provider ledger, and rerun the failed cell from the exact restored state at 6 Cohere requests/minute."
+}

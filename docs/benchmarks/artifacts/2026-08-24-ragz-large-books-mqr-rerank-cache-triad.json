@@ -1,0 +1,3785 @@
+{
+  "analysis_kind": "ragz-large-books-mqr-rerank-cache-triad",
+  "conditions": [
+    {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_negative": 16,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.1398,
+          "mean": 0.08209166666666666,
+          "min": 0.041,
+          "observations": 24,
+          "p50": 0.07494999999999999,
+          "p95": 0.135875,
+          "p99": 0.139156
+        },
+        "generation_provider": {
+          "max": 8560.1638,
+          "mean": 3062.63675,
+          "min": 1718.6595,
+          "observations": 24,
+          "p50": 2831.39625,
+          "p95": 4854.850224999999,
+          "p99": 7722.914142999998
+        },
+        "judge_provider": {
+          "max": 4196.7455,
+          "mean": 2537.4567125,
+          "min": 1443.4607,
+          "observations": 24,
+          "p50": 2521.95695,
+          "p95": 3425.290975,
+          "p99": 4021.341681
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 11.5158,
+          "mean": 2.9293041666666664,
+          "min": 1.4904,
+          "observations": 24,
+          "p50": 2.25105,
+          "p95": 5.780739999999997,
+          "p99": 10.233181999999998
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.1612,
+          "mean": 0.7620583333333334,
+          "min": 0.5481,
+          "observations": 24,
+          "p50": 0.71515,
+          "p95": 1.09724,
+          "p99": 1.1494010000000001
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.0571,
+          "mean": 0.02878333333333333,
+          "min": 0.0217,
+          "observations": 24,
+          "p50": 0.0249,
+          "p95": 0.045655,
+          "p99": 0.05447799999999999
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0089,
+          "mean": 0.004720833333333333,
+          "min": 0.0035,
+          "observations": 24,
+          "p50": 0.00415,
+          "p95": 0.0076549999999999995,
+          "p99": 0.008624
+        },
+        "retrieval.collection_ready": {
+          "max": 36.5033,
+          "mean": 4.184379166666667,
+          "min": 1.9004,
+          "observations": 24,
+          "p50": 2.8235,
+          "p95": 3.767025,
+          "p99": 28.97976999999999
+        },
+        "retrieval.database_release": {
+          "max": 18.1125,
+          "mean": 2.3905375,
+          "min": 0.1654,
+          "observations": 24,
+          "p50": 0.99505,
+          "p95": 14.83604499999997,
+          "p99": 17.850185
+        },
+        "retrieval.dense_embedding": {
+          "max": 1322.2905,
+          "mean": 801.8490375,
+          "min": 681.5241,
+          "observations": 24,
+          "p50": 763.2296,
+          "p95": 1165.1283549999994,
+          "p99": 1296.658541
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0267,
+          "mean": 0.008429166666666666,
+          "min": 0.0053,
+          "observations": 24,
+          "p50": 0.0074,
+          "p95": 0.012644999999999997,
+          "p99": 0.023525999999999995
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0019,
+          "mean": 0.001,
+          "min": 0.0006,
+          "observations": 24,
+          "p50": 0.0007999999999999999,
+          "p95": 0.0016849999999999996,
+          "p99": 0.001854
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0006,
+          "mean": 0.000325,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.00025,
+          "p95": 0.0006,
+          "p99": 0.0006
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1788,
+          "mean": 0.10202916666666667,
+          "min": 0.0756,
+          "observations": 24,
+          "p50": 0.0923,
+          "p95": 0.13885499999999998,
+          "p99": 0.16989899999999997
+        },
+        "retrieval.no_answer_probe": {
+          "max": 11.3886,
+          "mean": 5.9665,
+          "min": 4.9895,
+          "observations": 24,
+          "p50": 5.5288,
+          "p95": 7.1262099999999995,
+          "p99": 10.410340999999999
+        },
+        "retrieval.query_expansion": {
+          "max": 0.0008,
+          "mean": 0.0004333333333333333,
+          "min": 0.0003,
+          "observations": 24,
+          "p50": 0.0004,
+          "p95": 0.0006849999999999997,
+          "p99": 0.000777
+        },
+        "retrieval.sparse_embedding": {
+          "max": 104.2705,
+          "mean": 4.687891666666666,
+          "min": 0.2293,
+          "observations": 24,
+          "p50": 0.3504,
+          "p95": 0.5998749999999997,
+          "p99": 80.43044799999996
+        },
+        "retrieval.vector_search": {
+          "max": 16.8802,
+          "mean": 10.314933333333334,
+          "min": 8.7053,
+          "observations": 24,
+          "p50": 9.8995,
+          "p95": 12.471414999999997,
+          "p99": 15.927447999999996
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 3.1381,
+          "mean": 2.1093041666666665,
+          "min": 1.2392,
+          "observations": 24,
+          "p50": 2.09915,
+          "p95": 2.867285,
+          "p99": 3.078369
+        },
+        "retrieval_total": {
+          "max": 1584.1968,
+          "mean": 839.4980333333333,
+          "min": 707.2657,
+          "observations": 24,
+          "p50": 791.22135,
+          "p95": 1188.2475749999994,
+          "p99": 1503.5701619999998
+        },
+        "total": {
+          "max": 11924.2906,
+          "mean": 6439.77675,
+          "min": 4125.0006,
+          "observations": 24,
+          "p50": 6265.8145,
+          "p95": 8669.075425,
+          "p99": 11183.605753
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.4411764705882353,
+        "citation_evidence_recall": 0.45,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q1_rerank-off_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 8560.1638,
+          "mean": 3062.63675,
+          "min": 1718.6595,
+          "observations": 24,
+          "p50": 2831.39625,
+          "p95": 4854.850224999999,
+          "p99": 7722.914142999998
+        },
+        "judge": {
+          "max": 4196.7455,
+          "mean": 2537.4567125,
+          "min": 1443.4607,
+          "observations": 24,
+          "p50": 2521.95695,
+          "p95": 3425.290975,
+          "p99": 4021.341681
+        },
+        "reranker_account_wait": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "observations": 24,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "retrieval_observed": {
+          "max": 1584.1968,
+          "mean": 839.4980333333333,
+          "min": 707.2657,
+          "observations": 24,
+          "p50": 791.22135,
+          "p95": 1188.2475749999994,
+          "p99": 1503.5701619999998
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 1584.1968,
+          "mean": 839.4980333333333,
+          "min": 707.2657,
+          "observations": 24,
+          "p50": 791.22135,
+          "p95": 1188.2475749999994,
+          "p99": 1503.5701619999998
+        },
+        "total_with_judge": {
+          "max": 11924.2906,
+          "mean": 6439.77675,
+          "min": 4125.0006,
+          "observations": 24,
+          "p50": 6265.8145,
+          "p95": 8669.075425,
+          "p99": 11183.605753
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8474999999999999,
+        "citation_completeness": 0.7275,
+        "citation_entailment": 0.7985,
+        "citation_precision": 0.8005000000000001,
+        "context_relevance": 0.891,
+        "correctness": 0.788,
+        "groundedness": 0.9754999999999999
+      },
+      "ranking_stability": {
+        "exact": 10,
+        "score_profile_equivalent_boundary_tie": 5,
+        "score_tie_equivalent": 9
+      },
+      "retrieval": {
+        "mrr_at_5": 0.4766666666666667,
+        "ndcg_at_5": 0.5074356157188729,
+        "recall_at_5": 0.6
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.7272727272727273,
+        "false_negative": 0,
+        "false_positive": 3,
+        "precision": 0.5714285714285714,
+        "recall": 1.0,
+        "true_negative": 17,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.2139,
+          "mean": 0.1029625,
+          "min": 0.0491,
+          "observations": 24,
+          "p50": 0.08465,
+          "p95": 0.2058649999999999,
+          "p99": 0.21332500000000001
+        },
+        "generation_provider": {
+          "max": 12329.3527,
+          "mean": 3080.3738166666667,
+          "min": 1532.7978,
+          "observations": 24,
+          "p50": 2359.0613,
+          "p95": 5093.41057,
+          "p99": 10671.830559999997
+        },
+        "judge_provider": {
+          "max": 4213.0059,
+          "mean": 2624.1191166666667,
+          "min": 1458.9103,
+          "observations": 24,
+          "p50": 2565.9683,
+          "p95": 3909.5847699999995,
+          "p99": 4152.238175
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 5.3565,
+          "mean": 2.6460541666666666,
+          "min": 1.6201,
+          "observations": 24,
+          "p50": 2.41455,
+          "p95": 4.573365,
+          "p99": 5.182550999999999
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.776,
+          "mean": 0.8399708333333332,
+          "min": 0.5926,
+          "observations": 24,
+          "p50": 0.843,
+          "p95": 1.0878349999999997,
+          "p99": 1.6204509999999996
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.0916,
+          "mean": 0.0471875,
+          "min": 0.0312,
+          "observations": 24,
+          "p50": 0.03705,
+          "p95": 0.07708499999999997,
+          "p99": 0.088541
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0119,
+          "mean": 0.0070625,
+          "min": 0.005,
+          "observations": 24,
+          "p50": 0.00615,
+          "p95": 0.011479999999999997,
+          "p99": 0.011831
+        },
+        "retrieval.collection_ready": {
+          "max": 4.2669,
+          "mean": 3.0212541666666666,
+          "min": 2.0817,
+          "observations": 24,
+          "p50": 3.09645,
+          "p95": 4.19153,
+          "p99": 4.249626999999999
+        },
+        "retrieval.database_release": {
+          "max": 16.8295,
+          "mean": 2.64675,
+          "min": 0.1149,
+          "observations": 24,
+          "p50": 0.6956500000000001,
+          "p95": 16.327575,
+          "p99": 16.721078
+        },
+        "retrieval.dense_embedding": {
+          "max": 1531.342,
+          "mean": 772.4452833333334,
+          "min": 702.5345,
+          "observations": 24,
+          "p50": 728.64995,
+          "p95": 839.5603299999999,
+          "p99": 1373.160121
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0369,
+          "mean": 0.010108333333333334,
+          "min": 0.0046,
+          "observations": 24,
+          "p50": 0.00775,
+          "p95": 0.018224999999999998,
+          "p99": 0.03262199999999999
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0023,
+          "mean": 0.00115,
+          "min": 0.0005,
+          "observations": 24,
+          "p50": 0.0009,
+          "p95": 0.002254999999999999,
+          "p99": 0.0023
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0006,
+          "mean": 0.00040416666666666666,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0005,
+          "p95": 0.0005849999999999998,
+          "p99": 0.0006
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1358,
+          "mean": 0.10944166666666666,
+          "min": 0.0772,
+          "observations": 24,
+          "p50": 0.1181,
+          "p95": 0.133045,
+          "p99": 0.135294
+        },
+        "retrieval.query_expansion": {
+          "max": 0.0009,
+          "mean": 0.000475,
+          "min": 0.0003,
+          "observations": 24,
+          "p50": 0.0004,
+          "p95": 0.0008699999999999996,
+          "p99": 0.0009
+        },
+        "retrieval.rerank.local": {
+          "max": 0.0949,
+          "mean": 0.03671666666666667,
+          "min": 0.0222,
+          "observations": 24,
+          "p50": 0.034199999999999994,
+          "p95": 0.05077499999999999,
+          "p99": 0.08494099999999999
+        },
+        "retrieval.rerank.provider": {
+          "max": 778.8723,
+          "mean": 512.6215083333333,
+          "min": 417.3541,
+          "observations": 24,
+          "p50": 504.82475,
+          "p95": 629.4803899999999,
+          "p99": 745.807063
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max": 2911.0761,
+          "mean": 1083.0196291666666,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 1142.0686999999998,
+          "p95": 2516.674629999999,
+          "p99": 2832.798245
+        },
+        "retrieval.reranker_resolution": {
+          "max": 0.0061,
+          "mean": 0.00225,
+          "min": 0.0015,
+          "observations": 24,
+          "p50": 0.002,
+          "p95": 0.003,
+          "p99": 0.005386999999999999
+        },
+        "retrieval.sparse_embedding": {
+          "max": 0.6949,
+          "mean": 0.4158041666666667,
+          "min": 0.2371,
+          "observations": 24,
+          "p50": 0.38580000000000003,
+          "p95": 0.56472,
+          "p99": 0.665276
+        },
+        "retrieval.vector_search": {
+          "max": 17.4022,
+          "mean": 10.604366666666666,
+          "min": 9.0905,
+          "observations": 24,
+          "p50": 10.0656,
+          "p95": 12.831879999999998,
+          "p99": 16.398042999999998
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 4.0929,
+          "mean": 2.4771,
+          "min": 0.9602,
+          "observations": 24,
+          "p50": 2.59715,
+          "p95": 3.623504999999999,
+          "p99": 4.001544
+        },
+        "retrieval_total": {
+          "max": 4138.0007,
+          "mean": 2391.401395833333,
+          "min": 1153.0032,
+          "observations": 24,
+          "p50": 2461.55725,
+          "p95": 3767.51484,
+          "p99": 4056.2408979999996
+        },
+        "total": {
+          "max": 16965.5027,
+          "mean": 8096.128808333334,
+          "min": 5870.9053,
+          "observations": 24,
+          "p50": 7544.94315,
+          "p95": 11609.050384999999,
+          "p99": 15750.621976999999
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.4411764705882353,
+        "citation_evidence_recall": 0.45,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q1_rerank-10_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 12329.3527,
+          "mean": 3080.3738166666667,
+          "min": 1532.7978,
+          "observations": 24,
+          "p50": 2359.0613,
+          "p95": 5093.41057,
+          "p99": 10671.830559999997
+        },
+        "judge": {
+          "max": 4213.0059,
+          "mean": 2624.1191166666667,
+          "min": 1458.9103,
+          "observations": 24,
+          "p50": 2565.9683,
+          "p95": 3909.5847699999995,
+          "p99": 4152.238175
+        },
+        "reranker_account_wait": {
+          "max": 2911.0761,
+          "mean": 1083.0196291666666,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 1142.0686999999998,
+          "p95": 2516.674629999999,
+          "p99": 2832.798245
+        },
+        "retrieval_observed": {
+          "max": 4138.0007,
+          "mean": 2391.401395833333,
+          "min": 1153.0032,
+          "observations": 24,
+          "p50": 2461.55725,
+          "p95": 3767.51484,
+          "p99": 4056.2408979999996
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 2047.1576,
+          "mean": 1308.3817666666666,
+          "min": 1153.0030000000002,
+          "observations": 24,
+          "p50": 1258.3355999999999,
+          "p95": 1626.7339249999995,
+          "p99": 1956.7344799999998
+        },
+        "total_with_judge": {
+          "max": 16965.5027,
+          "mean": 8096.128808333334,
+          "min": 5870.9053,
+          "observations": 24,
+          "p50": 7544.94315,
+          "p95": 11609.050384999999,
+          "p99": 15750.621976999999
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8560000000000001,
+        "citation_completeness": 0.8074999999999999,
+        "citation_entailment": 0.8800000000000001,
+        "citation_precision": 0.874,
+        "context_relevance": 0.9195,
+        "correctness": 0.734,
+        "groundedness": 0.9720000000000001
+      },
+      "ranking_stability": {
+        "drift": 6,
+        "exact": 15,
+        "score_profile_equivalent_boundary_tie": 3
+      },
+      "retrieval": {
+        "mrr_at_5": 0.4,
+        "ndcg_at_5": 0.4130929753571458,
+        "recall_at_5": 0.45
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_negative": 16,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.2006,
+          "mean": 0.1049,
+          "min": 0.044,
+          "observations": 24,
+          "p50": 0.09809999999999999,
+          "p95": 0.19381499999999993,
+          "p99": 0.199933
+        },
+        "generation_provider": {
+          "max": 10759.2341,
+          "mean": 3152.2209125000004,
+          "min": 1336.223,
+          "observations": 24,
+          "p50": 2258.2010499999997,
+          "p95": 7179.588984999995,
+          "p99": 10026.754296
+        },
+        "judge_provider": {
+          "max": 4401.0404,
+          "mean": 2588.0372958333332,
+          "min": 1721.2011,
+          "observations": 24,
+          "p50": 2412.3461500000003,
+          "p95": 4044.760134999999,
+          "p99": 4336.385721
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 4.6396,
+          "mean": 2.869845833333333,
+          "min": 1.5503,
+          "observations": 24,
+          "p50": 2.6534,
+          "p95": 4.49513,
+          "p99": 4.612437
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.454,
+          "mean": 0.858025,
+          "min": 0.6044,
+          "observations": 24,
+          "p50": 0.7507999999999999,
+          "p95": 1.3632599999999995,
+          "p99": 1.440844
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.1533,
+          "mean": 0.0754625,
+          "min": 0.0496,
+          "observations": 24,
+          "p50": 0.05505,
+          "p95": 0.13144999999999998,
+          "p99": 0.14837799999999998
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0208,
+          "mean": 0.0123,
+          "min": 0.0073,
+          "observations": 24,
+          "p50": 0.01105,
+          "p95": 0.019559999999999998,
+          "p99": 0.020569999999999998
+        },
+        "retrieval.collection_ready": {
+          "max": 4.8024,
+          "mean": 2.9447791666666667,
+          "min": 1.9785,
+          "observations": 24,
+          "p50": 2.96375,
+          "p95": 3.7654549999999998,
+          "p99": 4.567845999999999
+        },
+        "retrieval.database_release": {
+          "max": 17.8453,
+          "mean": 4.0693875,
+          "min": 0.1344,
+          "observations": 24,
+          "p50": 0.68635,
+          "p95": 17.18895,
+          "p99": 17.721215
+        },
+        "retrieval.dense_embedding": {
+          "max": 1012.5973,
+          "mean": 792.6187624999999,
+          "min": 697.072,
+          "observations": 24,
+          "p50": 790.2221,
+          "p95": 930.4945649999999,
+          "p99": 995.0460919999999
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0188,
+          "mean": 0.009166666666666667,
+          "min": 0.0054,
+          "observations": 24,
+          "p50": 0.0083,
+          "p95": 0.016355,
+          "p99": 0.018248
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0022,
+          "mean": 0.0010875,
+          "min": 0.0006,
+          "observations": 24,
+          "p50": 0.00095,
+          "p95": 0.0020849999999999996,
+          "p99": 0.002177
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0007,
+          "mean": 0.0003791666666666667,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0004,
+          "p95": 0.0006,
+          "p99": 0.000677
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1367,
+          "mean": 0.10172083333333333,
+          "min": 0.0734,
+          "observations": 24,
+          "p50": 0.1035,
+          "p95": 0.133165,
+          "p99": 0.135987
+        },
+        "retrieval.query_expansion": {
+          "max": 0.0009,
+          "mean": 0.00047916666666666664,
+          "min": 0.0003,
+          "observations": 24,
+          "p50": 0.00045,
+          "p95": 0.0008,
+          "p99": 0.000877
+        },
+        "retrieval.rerank.local": {
+          "max": 0.0494,
+          "mean": 0.03381666666666667,
+          "min": 0.0233,
+          "observations": 24,
+          "p50": 0.033600000000000005,
+          "p95": 0.047339999999999986,
+          "p99": 0.049146999999999996
+        },
+        "retrieval.rerank.provider": {
+          "max": 832.8241,
+          "mean": 620.1603083333333,
+          "min": 447.5811,
+          "observations": 24,
+          "p50": 590.7733499999999,
+          "p95": 816.6252,
+          "p99": 829.9979060000001
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max": 2473.7466,
+          "mean": 1154.223825,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 1316.0812999999998,
+          "p95": 2227.7070849999996,
+          "p99": 2420.302259
+        },
+        "retrieval.reranker_resolution": {
+          "max": 0.0029,
+          "mean": 0.0021458333333333334,
+          "min": 0.0015,
+          "observations": 24,
+          "p50": 0.0021,
+          "p95": 0.002685,
+          "p99": 0.0028539999999999998
+        },
+        "retrieval.sparse_embedding": {
+          "max": 0.6706,
+          "mean": 0.43083333333333335,
+          "min": 0.2389,
+          "observations": 24,
+          "p50": 0.44945,
+          "p95": 0.6456399999999999,
+          "p99": 0.667909
+        },
+        "retrieval.vector_search": {
+          "max": 13.5824,
+          "mean": 11.487158333333333,
+          "min": 9.5073,
+          "observations": 24,
+          "p50": 11.34275,
+          "p95": 13.190315,
+          "p99": 13.503809
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 3.7525,
+          "mean": 2.4366375000000002,
+          "min": 1.3866,
+          "observations": 24,
+          "p50": 2.2427,
+          "p95": 3.6358149999999996,
+          "p99": 3.733111
+        },
+        "retrieval_total": {
+          "max": 4033.388,
+          "mean": 2592.7923583333336,
+          "min": 1283.3211,
+          "observations": 24,
+          "p50": 2856.7704000000003,
+          "p95": 3692.1252799999997,
+          "p99": 3957.4300399999997
+        },
+        "total": {
+          "max": 16680.7744,
+          "mean": 8333.269829166666,
+          "min": 5527.2272,
+          "observations": 24,
+          "p50": 7716.49085,
+          "p95": 13760.185149999994,
+          "p99": 16093.824588999998
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.46875,
+        "citation_evidence_recall": 0.5,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q1_rerank-20_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 10759.2341,
+          "mean": 3152.2209125000004,
+          "min": 1336.223,
+          "observations": 24,
+          "p50": 2258.2010499999997,
+          "p95": 7179.588984999995,
+          "p99": 10026.754296
+        },
+        "judge": {
+          "max": 4401.0404,
+          "mean": 2588.0372958333332,
+          "min": 1721.2011,
+          "observations": 24,
+          "p50": 2412.3461500000003,
+          "p95": 4044.760134999999,
+          "p99": 4336.385721
+        },
+        "reranker_account_wait": {
+          "max": 2473.7466,
+          "mean": 1154.223825,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 1316.0812999999998,
+          "p95": 2227.7070849999996,
+          "p99": 2420.302259
+        },
+        "retrieval_observed": {
+          "max": 4033.388,
+          "mean": 2592.7923583333336,
+          "min": 1283.3211,
+          "observations": 24,
+          "p50": 2856.7704000000003,
+          "p95": 3692.1252799999997,
+          "p99": 3957.4300399999997
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 1729.6797,
+          "mean": 1438.5685333333333,
+          "min": 1246.9321999999997,
+          "observations": 24,
+          "p50": 1408.04815,
+          "p95": 1661.228385,
+          "p99": 1716.2992889999998
+        },
+        "total_with_judge": {
+          "max": 16680.7744,
+          "mean": 8333.269829166666,
+          "min": 5527.2272,
+          "observations": 24,
+          "p50": 7716.49085,
+          "p95": 13760.185149999994,
+          "p99": 16093.824588999998
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.7995,
+        "citation_completeness": 0.7424999999999999,
+        "citation_entailment": 0.7769999999999999,
+        "citation_precision": 0.7655000000000001,
+        "context_relevance": 0.9605,
+        "correctness": 0.8135,
+        "groundedness": 0.882
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 19,
+        "score_profile_equivalent_boundary_tie": 3
+      },
+      "retrieval": {
+        "mrr_at_5": 0.45999999999999996,
+        "ndcg_at_5": 0.48243561571887283,
+        "recall_at_5": 0.55
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_negative": 16,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.3137,
+          "mean": 0.114325,
+          "min": 0.0309,
+          "observations": 24,
+          "p50": 0.1074,
+          "p95": 0.2780799999999998,
+          "p99": 0.30863999999999997
+        },
+        "generation_provider": {
+          "max": 8201.2075,
+          "mean": 3023.3518958333334,
+          "min": 1438.4898,
+          "observations": 24,
+          "p50": 2506.2463,
+          "p95": 4484.970055,
+          "p99": 7351.668873999999
+        },
+        "judge_provider": {
+          "max": 4466.1091,
+          "mean": 2724.890408333333,
+          "min": 1595.0545,
+          "observations": 24,
+          "p50": 2596.4825,
+          "p95": 4349.753134999999,
+          "p99": 4451.486988
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 5.5239,
+          "mean": 3.0024416666666665,
+          "min": 1.6312,
+          "observations": 24,
+          "p50": 2.9589,
+          "p95": 4.656809999999998,
+          "p99": 5.351469
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.4678,
+          "mean": 1.0352041666666667,
+          "min": 0.6592,
+          "observations": 24,
+          "p50": 1.09755,
+          "p95": 1.3532799999999998,
+          "p99": 1.442937
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.3098,
+          "mean": 0.16206666666666666,
+          "min": 0.1006,
+          "observations": 24,
+          "p50": 0.1311,
+          "p95": 0.26275,
+          "p99": 0.299151
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0391,
+          "mean": 0.028358333333333333,
+          "min": 0.0151,
+          "observations": 24,
+          "p50": 0.02895,
+          "p95": 0.038735,
+          "p99": 0.039054
+        },
+        "retrieval.collection_ready": {
+          "max": 4.3955,
+          "mean": 2.918875,
+          "min": 2.0087,
+          "observations": 24,
+          "p50": 2.99885,
+          "p95": 3.55705,
+          "p99": 4.207659
+        },
+        "retrieval.database_release": {
+          "max": 16.4285,
+          "mean": 2.6672083333333334,
+          "min": 0.2575,
+          "observations": 24,
+          "p50": 0.80185,
+          "p95": 15.796405,
+          "p99": 16.297515
+        },
+        "retrieval.dense_embedding": {
+          "max": 1331.2499,
+          "mean": 799.3036541666667,
+          "min": 698.2434,
+          "observations": 24,
+          "p50": 805.19965,
+          "p95": 817.211565,
+          "p99": 1213.0604439999997
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0194,
+          "mean": 0.008495833333333333,
+          "min": 0.0045,
+          "observations": 24,
+          "p50": 0.007949999999999999,
+          "p95": 0.013584999999999995,
+          "p99": 0.018135
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0019,
+          "mean": 0.0009291666666666667,
+          "min": 0.0005,
+          "observations": 24,
+          "p50": 0.00075,
+          "p95": 0.0017249999999999989,
+          "p99": 0.001877
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0006,
+          "mean": 0.0004,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0004,
+          "p95": 0.0006,
+          "p99": 0.0006
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1446,
+          "mean": 0.1071125,
+          "min": 0.0764,
+          "observations": 24,
+          "p50": 0.10595,
+          "p95": 0.132155,
+          "p99": 0.141817
+        },
+        "retrieval.query_expansion": {
+          "max": 0.0009,
+          "mean": 0.0004458333333333333,
+          "min": 0.0003,
+          "observations": 24,
+          "p50": 0.0004,
+          "p95": 0.0006849999999999997,
+          "p99": 0.0008539999999999999
+        },
+        "retrieval.rerank.local": {
+          "max": 0.0734,
+          "mean": 0.038983333333333335,
+          "min": 0.0255,
+          "observations": 24,
+          "p50": 0.03845,
+          "p95": 0.05469499999999998,
+          "p99": 0.069398
+        },
+        "retrieval.rerank.provider": {
+          "max": 1182.3992,
+          "mean": 710.7032666666668,
+          "min": 500.3992,
+          "observations": 24,
+          "p50": 668.42325,
+          "p95": 1038.9262849999996,
+          "p99": 1153.839755
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max": 2734.0304,
+          "mean": 876.3138208333334,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 600.1329499999999,
+          "p95": 2604.2747149999987,
+          "p99": 2724.263933
+        },
+        "retrieval.reranker_resolution": {
+          "max": 0.0033,
+          "mean": 0.0023166666666666665,
+          "min": 0.0015,
+          "observations": 24,
+          "p50": 0.0024,
+          "p95": 0.0030699999999999994,
+          "p99": 0.003254
+        },
+        "retrieval.sparse_embedding": {
+          "max": 0.6581,
+          "mean": 0.46101666666666663,
+          "min": 0.2647,
+          "observations": 24,
+          "p50": 0.47614999999999996,
+          "p95": 0.611085,
+          "p99": 0.647911
+        },
+        "retrieval.vector_search": {
+          "max": 26.5732,
+          "mean": 15.733616666666668,
+          "min": 10.9958,
+          "observations": 24,
+          "p50": 14.5136,
+          "p95": 24.375594999999997,
+          "p99": 26.101171
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 3.8367,
+          "mean": 2.3913875,
+          "min": 1.7063,
+          "observations": 24,
+          "p50": 2.23565,
+          "p95": 3.685119999999998,
+          "p99": 3.827546
+        },
+        "retrieval_total": {
+          "max": 4169.1686,
+          "mean": 2415.4021958333333,
+          "min": 1310.0704,
+          "observations": 24,
+          "p50": 2403.22195,
+          "p95": 4012.091614999999,
+          "p99": 4150.680119
+        },
+        "total": {
+          "max": 11931.0547,
+          "mean": 8163.877283333334,
+          "min": 4914.6192,
+          "observations": 24,
+          "p50": 8094.92475,
+          "p95": 11126.538814999998,
+          "p99": 11773.798686
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.5588235294117647,
+        "citation_evidence_recall": 0.55,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q1_rerank-50_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 8201.2075,
+          "mean": 3023.3518958333334,
+          "min": 1438.4898,
+          "observations": 24,
+          "p50": 2506.2463,
+          "p95": 4484.970055,
+          "p99": 7351.668873999999
+        },
+        "judge": {
+          "max": 4466.1091,
+          "mean": 2724.890408333333,
+          "min": 1595.0545,
+          "observations": 24,
+          "p50": 2596.4825,
+          "p95": 4349.753134999999,
+          "p99": 4451.486988
+        },
+        "reranker_account_wait": {
+          "max": 2734.0304,
+          "mean": 876.3138208333334,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 600.1329499999999,
+          "p95": 2604.2747149999987,
+          "p99": 2724.263933
+        },
+        "retrieval_observed": {
+          "max": 4169.1686,
+          "mean": 2415.4021958333333,
+          "min": 1310.0704,
+          "observations": 24,
+          "p50": 2403.22195,
+          "p95": 4012.091614999999,
+          "p99": 4150.680119
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 2029.1067999999998,
+          "mean": 1539.088375,
+          "min": 1310.0700000000002,
+          "observations": 24,
+          "p50": 1507.3951499999998,
+          "p95": 1894.285225,
+          "p99": 1999.1487249999998
+        },
+        "total_with_judge": {
+          "max": 11931.0547,
+          "mean": 8163.877283333334,
+          "min": 4914.6192,
+          "observations": 24,
+          "p50": 8094.92475,
+          "p95": 11126.538814999998,
+          "p99": 11773.798686
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8109999999999999,
+        "citation_completeness": 0.7215,
+        "citation_entailment": 0.7855000000000001,
+        "citation_precision": 0.7765,
+        "context_relevance": 0.8835,
+        "correctness": 0.7565000000000001,
+        "groundedness": 0.9570000000000001
+      },
+      "ranking_stability": {
+        "exact": 21,
+        "score_profile_equivalent_boundary_tie": 3
+      },
+      "retrieval": {
+        "mrr_at_5": 0.4916666666666667,
+        "ndcg_at_5": 0.5065464876785729,
+        "recall_at_5": 0.55
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.6153846153846153,
+        "false_negative": 0,
+        "false_positive": 5,
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "true_negative": 15,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.1477,
+          "mean": 0.08286666666666666,
+          "min": 0.0435,
+          "observations": 24,
+          "p50": 0.07915,
+          "p95": 0.144675,
+          "p99": 0.147056
+        },
+        "generation_provider": {
+          "max": 6669.294,
+          "mean": 2789.4221374999997,
+          "min": 1097.5801,
+          "observations": 24,
+          "p50": 2471.4743,
+          "p95": 3929.7236249999996,
+          "p99": 6041.809586999999
+        },
+        "judge_provider": {
+          "max": 4707.9167,
+          "mean": 2730.292325,
+          "min": 1567.3104,
+          "observations": 24,
+          "p50": 2629.9764999999998,
+          "p95": 4343.524139999998,
+          "p99": 4658.875317999999
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 4.9097,
+          "mean": 2.6522875,
+          "min": 1.5584,
+          "observations": 24,
+          "p50": 2.42375,
+          "p95": 4.706459999999998,
+          "p99": 4.888402
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.4079,
+          "mean": 0.8937166666666667,
+          "min": 0.7063,
+          "observations": 24,
+          "p50": 0.81835,
+          "p95": 1.2552449999999997,
+          "p99": 1.3766429999999998
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.0489,
+          "mean": 0.0311,
+          "min": 0.0244,
+          "observations": 24,
+          "p50": 0.02645,
+          "p95": 0.04835,
+          "p99": 0.048808
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0116,
+          "mean": 0.005541666666666667,
+          "min": 0.0036,
+          "observations": 24,
+          "p50": 0.0048000000000000004,
+          "p95": 0.0078,
+          "p99": 0.010725999999999998
+        },
+        "retrieval.collection_ready": {
+          "max": 4.9863,
+          "mean": 3.2354291666666666,
+          "min": 2.0283,
+          "observations": 24,
+          "p50": 3.1416500000000003,
+          "p95": 4.76494,
+          "p99": 4.94375
+        },
+        "retrieval.database_release": {
+          "max": 16.9936,
+          "mean": 2.9372291666666666,
+          "min": 0.145,
+          "observations": 24,
+          "p50": 0.79895,
+          "p95": 15.728359999999997,
+          "p99": 16.754952
+        },
+        "retrieval.dense_embedding": {
+          "max": 1578.6139,
+          "mean": 1140.048125,
+          "min": 960.0646,
+          "observations": 24,
+          "p50": 1037.2689,
+          "p95": 1567.451435,
+          "p99": 1576.207962
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0258,
+          "mean": 0.010025000000000001,
+          "min": 0.005,
+          "observations": 24,
+          "p50": 0.009899999999999999,
+          "p95": 0.015355,
+          "p99": 0.023407999999999998
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0023,
+          "mean": 0.0012083333333333332,
+          "min": 0.0005,
+          "observations": 24,
+          "p50": 0.0012,
+          "p95": 0.0022849999999999997,
+          "p99": 0.0023
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0006,
+          "mean": 0.0003333333333333333,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0003,
+          "p95": 0.0005849999999999998,
+          "p99": 0.0006
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1344,
+          "mean": 0.097625,
+          "min": 0.0769,
+          "observations": 24,
+          "p50": 0.0917,
+          "p95": 0.12824,
+          "p99": 0.13299699999999998
+        },
+        "retrieval.no_answer_probe": {
+          "max": 18.4619,
+          "mean": 12.367691666666666,
+          "min": 9.4251,
+          "observations": 24,
+          "p50": 11.447099999999999,
+          "p95": 17.76757,
+          "p99": 18.309179999999998
+        },
+        "retrieval.query_expansion": {
+          "max": 0.251,
+          "mean": 0.15527916666666666,
+          "min": 0.0911,
+          "observations": 24,
+          "p50": 0.16144999999999998,
+          "p95": 0.235365,
+          "p99": 0.247573
+        },
+        "retrieval.sparse_embedding": {
+          "max": 0.9143,
+          "mean": 0.5759875,
+          "min": 0.3221,
+          "observations": 24,
+          "p50": 0.5629,
+          "p95": 0.775585,
+          "p99": 0.883296
+        },
+        "retrieval.vector_search": {
+          "max": 25.9442,
+          "mean": 21.602341666666664,
+          "min": 18.7257,
+          "observations": 24,
+          "p50": 21.286250000000003,
+          "p95": 25.329784999999998,
+          "p99": 25.872508999999997
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 5.6801,
+          "mean": 2.845204166666667,
+          "min": 1.8413,
+          "observations": 24,
+          "p50": 2.66045,
+          "p95": 4.434925000000001,
+          "p99": 5.395314
+        },
+        "retrieval_total": {
+          "max": 1626.9227,
+          "mean": 1187.8273916666667,
+          "min": 1005.8298,
+          "observations": 24,
+          "p50": 1083.3707,
+          "p95": 1612.95061,
+          "p99": 1623.98583
+        },
+        "total": {
+          "max": 11089.275,
+          "mean": 6707.732816666667,
+          "min": 4504.1352,
+          "observations": 24,
+          "p50": 6239.2063,
+          "p95": 8919.786359999998,
+          "p99": 10614.073863
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.5333333333333333,
+        "citation_evidence_recall": 0.45,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q3_rerank-off_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 6669.294,
+          "mean": 2789.4221374999997,
+          "min": 1097.5801,
+          "observations": 24,
+          "p50": 2471.4743,
+          "p95": 3929.7236249999996,
+          "p99": 6041.809586999999
+        },
+        "judge": {
+          "max": 4707.9167,
+          "mean": 2730.292325,
+          "min": 1567.3104,
+          "observations": 24,
+          "p50": 2629.9764999999998,
+          "p95": 4343.524139999998,
+          "p99": 4658.875317999999
+        },
+        "reranker_account_wait": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "observations": 24,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "retrieval_observed": {
+          "max": 1626.9227,
+          "mean": 1187.8273916666667,
+          "min": 1005.8298,
+          "observations": 24,
+          "p50": 1083.3707,
+          "p95": 1612.95061,
+          "p99": 1623.98583
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 1626.9227,
+          "mean": 1187.8273916666667,
+          "min": 1005.8298,
+          "observations": 24,
+          "p50": 1083.3707,
+          "p95": 1612.95061,
+          "p99": 1623.98583
+        },
+        "total_with_judge": {
+          "max": 11089.275,
+          "mean": 6707.732816666667,
+          "min": 4504.1352,
+          "observations": 24,
+          "p50": 6239.2063,
+          "p95": 8919.786359999998,
+          "p99": 10614.073863
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8029999999999999,
+        "citation_completeness": 0.6825,
+        "citation_entailment": 0.7665,
+        "citation_precision": 0.725,
+        "context_relevance": 0.9175000000000001,
+        "correctness": 0.702,
+        "groundedness": 0.9535
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 20,
+        "score_profile_equivalent_boundary_tie": 1,
+        "score_tie_equivalent": 1
+      },
+      "retrieval": {
+        "mrr_at_5": 0.46416666666666667,
+        "ndcg_at_5": 0.49742295594396957,
+        "recall_at_5": 0.6
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.7272727272727273,
+        "false_negative": 0,
+        "false_positive": 3,
+        "precision": 0.5714285714285714,
+        "recall": 1.0,
+        "true_negative": 17,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.3128,
+          "mean": 0.10502916666666667,
+          "min": 0.0345,
+          "observations": 24,
+          "p50": 0.08460000000000001,
+          "p95": 0.193275,
+          "p99": 0.28542999999999996
+        },
+        "generation_provider": {
+          "max": 13295.2377,
+          "mean": 3278.02875,
+          "min": 1334.5467,
+          "observations": 24,
+          "p50": 2665.0828,
+          "p95": 5253.310489999999,
+          "p99": 11463.076950999995
+        },
+        "judge_provider": {
+          "max": 4490.4743,
+          "mean": 2477.4203166666666,
+          "min": 1433.9537,
+          "observations": 24,
+          "p50": 2381.51425,
+          "p95": 3624.4653599999997,
+          "p99": 4297.459519
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 5.4301,
+          "mean": 3.0543791666666666,
+          "min": 1.6545,
+          "observations": 24,
+          "p50": 2.7672499999999998,
+          "p95": 5.169,
+          "p99": 5.374256
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.5651,
+          "mean": 0.9164291666666666,
+          "min": 0.7093,
+          "observations": 24,
+          "p50": 0.8098000000000001,
+          "p95": 1.3693699999999995,
+          "p99": 1.5269199999999998
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.0918,
+          "mean": 0.04239166666666667,
+          "min": 0.0337,
+          "observations": 24,
+          "p50": 0.03585,
+          "p95": 0.06684999999999999,
+          "p99": 0.08616499999999999
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0861,
+          "mean": 0.011070833333333334,
+          "min": 0.0053,
+          "observations": 24,
+          "p50": 0.007350000000000001,
+          "p95": 0.011979999999999998,
+          "p99": 0.06907999999999997
+        },
+        "retrieval.collection_ready": {
+          "max": 5.068,
+          "mean": 3.2505375,
+          "min": 2.0711,
+          "observations": 24,
+          "p50": 3.1712,
+          "p95": 4.875015,
+          "p99": 5.025956
+        },
+        "retrieval.database_release": {
+          "max": 66.467,
+          "mean": 7.345400000000001,
+          "min": 0.1352,
+          "observations": 24,
+          "p50": 0.7709,
+          "p95": 17.076745,
+          "p99": 55.12730999999998
+        },
+        "retrieval.dense_embedding": {
+          "max": 1544.8726,
+          "mean": 1088.8103125,
+          "min": 1004.3506,
+          "observations": 24,
+          "p50": 1065.28105,
+          "p95": 1212.2704649999998,
+          "p99": 1471.2477829999998
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0205,
+          "mean": 0.009158333333333333,
+          "min": 0.0049,
+          "observations": 24,
+          "p50": 0.008549999999999999,
+          "p95": 0.015764999999999998,
+          "p99": 0.019441999999999997
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0022,
+          "mean": 0.0010375,
+          "min": 0.0006,
+          "observations": 24,
+          "p50": 0.00075,
+          "p95": 0.0019,
+          "p99": 0.002131
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0005,
+          "mean": 0.00030416666666666667,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0003,
+          "p95": 0.0005,
+          "p99": 0.0005
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1425,
+          "mean": 0.09508749999999999,
+          "min": 0.0731,
+          "observations": 24,
+          "p50": 0.08765,
+          "p95": 0.127,
+          "p99": 0.13921099999999997
+        },
+        "retrieval.query_expansion": {
+          "max": 0.232,
+          "mean": 0.13728333333333334,
+          "min": 0.0879,
+          "observations": 24,
+          "p50": 0.126,
+          "p95": 0.22542999999999994,
+          "p99": 0.231241
+        },
+        "retrieval.rerank.local": {
+          "max": 0.0431,
+          "mean": 0.03079583333333333,
+          "min": 0.0242,
+          "observations": 24,
+          "p50": 0.0286,
+          "p95": 0.038235,
+          "p99": 0.042018999999999994
+        },
+        "retrieval.rerank.provider": {
+          "max": 959.425,
+          "mean": 568.9762916666667,
+          "min": 431.9692,
+          "observations": 24,
+          "p50": 547.3103000000001,
+          "p95": 824.4333349999996,
+          "p99": 934.3584269999999
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max": 2616.7352,
+          "mean": 891.5032375000001,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 847.359,
+          "p95": 2339.0516099999995,
+          "p99": 2557.893196
+        },
+        "retrieval.reranker_resolution": {
+          "max": 0.003,
+          "mean": 0.0022083333333333334,
+          "min": 0.0015,
+          "observations": 24,
+          "p50": 0.0022,
+          "p95": 0.0029,
+          "p99": 0.002977
+        },
+        "retrieval.sparse_embedding": {
+          "max": 1.0857,
+          "mean": 0.5975041666666666,
+          "min": 0.3356,
+          "observations": 24,
+          "p50": 0.60375,
+          "p95": 0.8480249999999999,
+          "p99": 1.032432
+        },
+        "retrieval.vector_search": {
+          "max": 26.2275,
+          "mean": 21.5292,
+          "min": 18.6591,
+          "observations": 24,
+          "p50": 21.2282,
+          "p95": 25.202724999999997,
+          "p99": 26.049502999999998
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 6.4928,
+          "mean": 3.099625,
+          "min": 1.4239,
+          "observations": 24,
+          "p50": 2.90735,
+          "p95": 4.723449999999998,
+          "p99": 6.112931999999999
+        },
+        "retrieval_total": {
+          "max": 4232.809,
+          "mean": 2589.9378291666667,
+          "min": 1523.7915,
+          "observations": 24,
+          "p50": 2450.0014499999997,
+          "p95": 3966.4857849999994,
+          "p99": 4176.195811
+        },
+        "total": {
+          "max": 19901.4291,
+          "mean": 8345.607958333334,
+          "min": 5792.159,
+          "observations": 24,
+          "p50": 7633.9154,
+          "p95": 12138.108924999999,
+          "p99": 18159.099841999996
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.4473684210526316,
+        "citation_evidence_recall": 0.5,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q3_rerank-10_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 13295.2377,
+          "mean": 3278.02875,
+          "min": 1334.5467,
+          "observations": 24,
+          "p50": 2665.0828,
+          "p95": 5253.310489999999,
+          "p99": 11463.076950999995
+        },
+        "judge": {
+          "max": 4490.4743,
+          "mean": 2477.4203166666666,
+          "min": 1433.9537,
+          "observations": 24,
+          "p50": 2381.51425,
+          "p95": 3624.4653599999997,
+          "p99": 4297.459519
+        },
+        "reranker_account_wait": {
+          "max": 2616.7352,
+          "mean": 891.5032375000001,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 847.359,
+          "p95": 2339.0516099999995,
+          "p99": 2557.893196
+        },
+        "retrieval_observed": {
+          "max": 4232.809,
+          "mean": 2589.9378291666667,
+          "min": 1523.7915,
+          "observations": 24,
+          "p50": 2450.0014499999997,
+          "p95": 3966.4857849999994,
+          "p99": 4176.195811
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 2106.7888,
+          "mean": 1698.4345916666668,
+          "min": 1491.2382000000002,
+          "observations": 24,
+          "p50": 1651.14475,
+          "p95": 2026.9786199999999,
+          "p99": 2089.183634
+        },
+        "total_with_judge": {
+          "max": 19901.4291,
+          "mean": 8345.607958333334,
+          "min": 5792.159,
+          "observations": 24,
+          "p50": 7633.9154,
+          "p95": 12138.108924999999,
+          "p99": 18159.099841999996
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8400000000000001,
+        "citation_completeness": 0.747,
+        "citation_entailment": 0.8789999999999999,
+        "citation_precision": 0.865,
+        "context_relevance": 0.8959999999999999,
+        "correctness": 0.73,
+        "groundedness": 0.885
+      },
+      "ranking_stability": {
+        "drift": 1,
+        "exact": 16,
+        "score_tie_equivalent": 2,
+        "screen_repair": 5
+      },
+      "retrieval": {
+        "mrr_at_5": 0.45999999999999996,
+        "ndcg_at_5": 0.48243561571887283,
+        "recall_at_5": 0.55
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.6153846153846153,
+        "false_negative": 0,
+        "false_positive": 5,
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "true_negative": 15,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.3565,
+          "mean": 0.10729583333333333,
+          "min": 0.0367,
+          "observations": 24,
+          "p50": 0.08249999999999999,
+          "p95": 0.187585,
+          "p99": 0.3178599999999999
+        },
+        "generation_provider": {
+          "max": 7266.2739,
+          "mean": 2712.2628125,
+          "min": 1599.564,
+          "observations": 24,
+          "p50": 2269.9181,
+          "p95": 3984.072295,
+          "p99": 6514.331587999999
+        },
+        "judge_provider": {
+          "max": 3993.3757,
+          "mean": 2512.4242708333336,
+          "min": 1498.8271,
+          "observations": 24,
+          "p50": 2396.5024000000003,
+          "p95": 3564.3207299999995,
+          "p99": 3902.139323
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 4.6064,
+          "mean": 2.4627125,
+          "min": 1.6707,
+          "observations": 24,
+          "p50": 2.38345,
+          "p95": 3.329154999999999,
+          "p99": 4.323614999999999
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.281,
+          "mean": 0.9024625,
+          "min": 0.7187,
+          "observations": 24,
+          "p50": 0.7717,
+          "p95": 1.2612649999999996,
+          "p99": 1.279666
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.0957,
+          "mean": 0.06557500000000001,
+          "min": 0.0526,
+          "observations": 24,
+          "p50": 0.0554,
+          "p95": 0.09436,
+          "p99": 0.09544699999999999
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0181,
+          "mean": 0.0121625,
+          "min": 0.0071,
+          "observations": 24,
+          "p50": 0.011,
+          "p95": 0.0181,
+          "p99": 0.0181
+        },
+        "retrieval.collection_ready": {
+          "max": 4.3428,
+          "mean": 3.24925,
+          "min": 2.2081,
+          "observations": 24,
+          "p50": 3.3024,
+          "p95": 4.16059,
+          "p99": 4.304183
+        },
+        "retrieval.database_release": {
+          "max": 25.0271,
+          "mean": 1.7116375000000001,
+          "min": 0.15,
+          "observations": 24,
+          "p50": 0.68415,
+          "p95": 1.06877,
+          "p99": 19.51696699999999
+        },
+        "retrieval.dense_embedding": {
+          "max": 1220.6936,
+          "mean": 1041.7380916666666,
+          "min": 806.7734,
+          "observations": 24,
+          "p50": 1021.71515,
+          "p95": 1123.5576999999998,
+          "p99": 1198.363935
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0154,
+          "mean": 0.009433333333333334,
+          "min": 0.0051,
+          "observations": 24,
+          "p50": 0.0093,
+          "p95": 0.014749999999999997,
+          "p99": 0.015285
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0024,
+          "mean": 0.0011666666666666668,
+          "min": 0.0005,
+          "observations": 24,
+          "p50": 0.00115,
+          "p95": 0.0021699999999999996,
+          "p99": 0.0023539999999999998
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0006,
+          "mean": 0.00035833333333333333,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0003,
+          "p95": 0.0005849999999999998,
+          "p99": 0.0006
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1417,
+          "mean": 0.09925416666666666,
+          "min": 0.0731,
+          "observations": 24,
+          "p50": 0.09534999999999999,
+          "p95": 0.13191999999999998,
+          "p99": 0.139699
+        },
+        "retrieval.query_expansion": {
+          "max": 0.2584,
+          "mean": 0.15235416666666665,
+          "min": 0.0912,
+          "observations": 24,
+          "p50": 0.15615,
+          "p95": 0.235935,
+          "p99": 0.25334
+        },
+        "retrieval.rerank.local": {
+          "max": 0.0502,
+          "mean": 0.0349625,
+          "min": 0.0241,
+          "observations": 24,
+          "p50": 0.0361,
+          "p95": 0.048305,
+          "p99": 0.049809
+        },
+        "retrieval.rerank.provider": {
+          "max": 749.3972,
+          "mean": 584.9533666666666,
+          "min": 453.7064,
+          "observations": 24,
+          "p50": 572.6976999999999,
+          "p95": 695.147085,
+          "p99": 737.068027
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max": 2106.2871,
+          "mean": 902.4203166666666,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 1053.24265,
+          "p95": 2039.4363249999997,
+          "p99": 2094.3132769999997
+        },
+        "retrieval.reranker_resolution": {
+          "max": 0.0031,
+          "mean": 0.0020916666666666666,
+          "min": 0.0016,
+          "observations": 24,
+          "p50": 0.002,
+          "p95": 0.0028699999999999993,
+          "p99": 0.003054
+        },
+        "retrieval.sparse_embedding": {
+          "max": 1.3068,
+          "mean": 0.5983291666666667,
+          "min": 0.3245,
+          "observations": 24,
+          "p50": 0.5862,
+          "p95": 0.7765549999999999,
+          "p99": 1.1853369999999996
+        },
+        "retrieval.vector_search": {
+          "max": 25.773,
+          "mean": 22.414975,
+          "min": 19.2663,
+          "observations": 24,
+          "p50": 22.1675,
+          "p95": 25.525889999999997,
+          "p99": 25.733118
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 5.7144,
+          "mean": 3.1117749999999997,
+          "min": 2.1288,
+          "observations": 24,
+          "p50": 2.9275,
+          "p95": 5.463989999999996,
+          "p99": 5.71095
+        },
+        "retrieval_total": {
+          "max": 3782.9273,
+          "mean": 2564.4810041666665,
+          "min": 1495.9307,
+          "observations": 24,
+          "p50": 2752.67895,
+          "p95": 3739.3896349999995,
+          "p99": 3782.593478
+        },
+        "total": {
+          "max": 12378.5352,
+          "mean": 7789.388379166667,
+          "min": 5723.4393,
+          "observations": 24,
+          "p50": 7488.9411,
+          "p95": 9599.555325,
+          "p99": 11742.600011999999
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.5333333333333333,
+        "citation_evidence_recall": 0.5,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q3_rerank-20_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 7266.2739,
+          "mean": 2712.2628125,
+          "min": 1599.564,
+          "observations": 24,
+          "p50": 2269.9181,
+          "p95": 3984.072295,
+          "p99": 6514.331587999999
+        },
+        "judge": {
+          "max": 3993.3757,
+          "mean": 2512.4242708333336,
+          "min": 1498.8271,
+          "observations": 24,
+          "p50": 2396.5024000000003,
+          "p95": 3564.3207299999995,
+          "p99": 3902.139323
+        },
+        "reranker_account_wait": {
+          "max": 2106.2871,
+          "mean": 902.4203166666666,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 1053.24265,
+          "p95": 2039.4363249999997,
+          "p99": 2094.3132769999997
+        },
+        "retrieval_observed": {
+          "max": 3782.9273,
+          "mean": 2564.4810041666665,
+          "min": 1495.9307,
+          "observations": 24,
+          "p50": 2752.67895,
+          "p95": 3739.3896349999995,
+          "p99": 3782.593478
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 1909.0793999999999,
+          "mean": 1662.0606875,
+          "min": 1406.3232000000003,
+          "observations": 24,
+          "p50": 1647.14805,
+          "p95": 1832.8044599999998,
+          "p99": 1891.8360239999997
+        },
+        "total_with_judge": {
+          "max": 12378.5352,
+          "mean": 7789.388379166667,
+          "min": 5723.4393,
+          "observations": 24,
+          "p50": 7488.9411,
+          "p95": 9599.555325,
+          "p99": 11742.600011999999
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.7725,
+        "citation_completeness": 0.6925,
+        "citation_entailment": 0.7275,
+        "citation_precision": 0.71,
+        "context_relevance": 0.877,
+        "correctness": 0.7205,
+        "groundedness": 0.9720000000000001
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 21,
+        "score_tie_equivalent": 1
+      },
+      "retrieval": {
+        "mrr_at_5": 0.45,
+        "ndcg_at_5": 0.4630929753571458,
+        "recall_at_5": 0.5
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.7272727272727273,
+        "false_negative": 0,
+        "false_positive": 3,
+        "precision": 0.5714285714285714,
+        "recall": 1.0,
+        "true_negative": 17,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.7989,
+          "mean": 0.12174583333333333,
+          "min": 0.0323,
+          "observations": 24,
+          "p50": 0.08510000000000001,
+          "p95": 0.19845999999999997,
+          "p99": 0.6613369999999998
+        },
+        "generation_provider": {
+          "max": 9081.3624,
+          "mean": 3107.8952958333334,
+          "min": 1638.6587,
+          "observations": 24,
+          "p50": 2604.2668000000003,
+          "p95": 5086.6397499999985,
+          "p99": 8177.688328999999
+        },
+        "judge_provider": {
+          "max": 4412.3737,
+          "mean": 2657.510366666667,
+          "min": 1611.2663,
+          "observations": 24,
+          "p50": 2568.70735,
+          "p95": 3632.25301,
+          "p99": 4238.239297
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 4.4639,
+          "mean": 2.698529166666667,
+          "min": 1.6615,
+          "observations": 24,
+          "p50": 2.62125,
+          "p95": 3.905815,
+          "p99": 4.336088999999999
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.442,
+          "mean": 0.8961250000000001,
+          "min": 0.6787,
+          "observations": 24,
+          "p50": 0.77395,
+          "p95": 1.34089,
+          "p99": 1.421484
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.2945,
+          "mean": 0.14707499999999998,
+          "min": 0.1018,
+          "observations": 24,
+          "p50": 0.119,
+          "p95": 0.246085,
+          "p99": 0.28336799999999995
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0425,
+          "mean": 0.023670833333333335,
+          "min": 0.0149,
+          "observations": 24,
+          "p50": 0.021150000000000002,
+          "p95": 0.037149999999999996,
+          "p99": 0.041304
+        },
+        "retrieval.collection_ready": {
+          "max": 4.5029,
+          "mean": 2.9801083333333334,
+          "min": 2.0444,
+          "observations": 24,
+          "p50": 2.7862999999999998,
+          "p95": 4.348675,
+          "p99": 4.473966
+        },
+        "retrieval.database_release": {
+          "max": 87.4835,
+          "mean": 5.797604166666667,
+          "min": 0.1315,
+          "observations": 24,
+          "p50": 0.6356999999999999,
+          "p95": 15.289449999999999,
+          "p99": 70.88469899999997
+        },
+        "retrieval.dense_embedding": {
+          "max": 1132.9029,
+          "mean": 1065.8550666666667,
+          "min": 958.5567,
+          "observations": 24,
+          "p50": 1087.6775499999999,
+          "p95": 1123.5780650000002,
+          "p99": 1130.826598
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.017,
+          "mean": 0.009379166666666666,
+          "min": 0.0047,
+          "observations": 24,
+          "p50": 0.00955,
+          "p95": 0.014839999999999999,
+          "p99": 0.016517
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0019,
+          "mean": 0.0011541666666666666,
+          "min": 0.0006,
+          "observations": 24,
+          "p50": 0.0009500000000000001,
+          "p95": 0.0019,
+          "p99": 0.0019
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0006,
+          "mean": 0.00033749999999999996,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0003,
+          "p95": 0.0006,
+          "p99": 0.0006
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1362,
+          "mean": 0.09722916666666666,
+          "min": 0.0753,
+          "observations": 24,
+          "p50": 0.08940000000000001,
+          "p95": 0.13088999999999998,
+          "p99": 0.135096
+        },
+        "retrieval.query_expansion": {
+          "max": 0.2476,
+          "mean": 0.14835833333333334,
+          "min": 0.0912,
+          "observations": 24,
+          "p50": 0.15165,
+          "p95": 0.219715,
+          "p99": 0.24125199999999997
+        },
+        "retrieval.rerank.local": {
+          "max": 0.0558,
+          "mean": 0.03618333333333333,
+          "min": 0.0248,
+          "observations": 24,
+          "p50": 0.03585,
+          "p95": 0.046814999999999996,
+          "p99": 0.053799
+        },
+        "retrieval.rerank.provider": {
+          "max": 1794.4028,
+          "mean": 708.4469083333333,
+          "min": 501.5709,
+          "observations": 24,
+          "p50": 656.91165,
+          "p95": 870.6603799999999,
+          "p99": 1582.8023629999998
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max": 2334.9846,
+          "mean": 746.6141958333333,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 461.1153,
+          "p95": 2251.8423,
+          "p99": 2322.665685
+        },
+        "retrieval.reranker_resolution": {
+          "max": 0.0035,
+          "mean": 0.0022083333333333334,
+          "min": 0.0016,
+          "observations": 24,
+          "p50": 0.0020499999999999997,
+          "p95": 0.0031549999999999994,
+          "p99": 0.003431
+        },
+        "retrieval.sparse_embedding": {
+          "max": 1.0916,
+          "mean": 0.6039833333333333,
+          "min": 0.3647,
+          "observations": 24,
+          "p50": 0.55125,
+          "p95": 0.94006,
+          "p99": 1.057491
+        },
+        "retrieval.vector_search": {
+          "max": 29.3344,
+          "mean": 24.588033333333332,
+          "min": 22.0841,
+          "observations": 24,
+          "p50": 24.4894,
+          "p95": 27.830395,
+          "p99": 28.998922
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 4.116,
+          "mean": 2.6874708333333337,
+          "min": 1.2681,
+          "observations": 24,
+          "p50": 2.7061,
+          "p95": 3.7972099999999998,
+          "p99": 4.046632
+        },
+        "retrieval_total": {
+          "max": 4500.0727,
+          "mean": 2562.202620833333,
+          "min": 1600.5956,
+          "observations": 24,
+          "p50": 2205.9804999999997,
+          "p95": 4300.508519999999,
+          "p99": 4463.556842
+        },
+        "total": {
+          "max": 14553.2065,
+          "mean": 8327.840666666667,
+          "min": 5323.0732,
+          "observations": 24,
+          "p50": 8095.735000000001,
+          "p95": 11340.96374,
+          "p99": 13821.512099999998
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.5277777777777778,
+        "citation_evidence_recall": 0.55,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q3_rerank-50_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 9081.3624,
+          "mean": 3107.8952958333334,
+          "min": 1638.6587,
+          "observations": 24,
+          "p50": 2604.2668000000003,
+          "p95": 5086.6397499999985,
+          "p99": 8177.688328999999
+        },
+        "judge": {
+          "max": 4412.3737,
+          "mean": 2657.510366666667,
+          "min": 1611.2663,
+          "observations": 24,
+          "p50": 2568.70735,
+          "p95": 3632.25301,
+          "p99": 4238.239297
+        },
+        "reranker_account_wait": {
+          "max": 2334.9846,
+          "mean": 746.6141958333333,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 461.1153,
+          "p95": 2251.8423,
+          "p99": 2322.665685
+        },
+        "retrieval_observed": {
+          "max": 4500.0727,
+          "mean": 2562.202620833333,
+          "min": 1600.5956,
+          "observations": 24,
+          "p50": 2205.9804999999997,
+          "p95": 4300.508519999999,
+          "p99": 4463.556842
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 2954.3813,
+          "mean": 1815.588425,
+          "min": 1519.6773,
+          "observations": 24,
+          "p50": 1765.83395,
+          "p95": 2010.9015150000002,
+          "p99": 2737.566763
+        },
+        "total_with_judge": {
+          "max": 14553.2065,
+          "mean": 8327.840666666667,
+          "min": 5323.0732,
+          "observations": 24,
+          "p50": 8095.735000000001,
+          "p95": 11340.96374,
+          "p99": 13821.512099999998
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8539999999999999,
+        "citation_completeness": 0.7415,
+        "citation_entailment": 0.8225,
+        "citation_precision": 0.8160000000000001,
+        "context_relevance": 0.9065,
+        "correctness": 0.8029999999999999,
+        "groundedness": 0.925
+      },
+      "ranking_stability": {
+        "drift": 1,
+        "exact": 21,
+        "score_profile_equivalent_boundary_tie": 2
+      },
+      "retrieval": {
+        "mrr_at_5": 0.4916666666666667,
+        "ndcg_at_5": 0.5065464876785729,
+        "recall_at_5": 0.55
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.6153846153846153,
+        "false_negative": 0,
+        "false_positive": 5,
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "true_negative": 15,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.2052,
+          "mean": 0.08822083333333335,
+          "min": 0.0457,
+          "observations": 24,
+          "p50": 0.08685000000000001,
+          "p95": 0.133485,
+          "p99": 0.18877799999999997
+        },
+        "generation_provider": {
+          "max": 5476.8033,
+          "mean": 2637.0883333333336,
+          "min": 1504.2398,
+          "observations": 24,
+          "p50": 2363.1396999999997,
+          "p95": 4909.073314999997,
+          "p99": 5396.945919999999
+        },
+        "judge_provider": {
+          "max": 5223.9837,
+          "mean": 2608.826525,
+          "min": 1637.7501,
+          "observations": 24,
+          "p50": 2291.86215,
+          "p95": 5011.928934999999,
+          "p99": 5186.552326999999
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 5.2195,
+          "mean": 2.6182458333333334,
+          "min": 1.5977,
+          "observations": 24,
+          "p50": 2.5123,
+          "p95": 4.312555,
+          "p99": 5.016846999999999
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.7563,
+          "mean": 0.9749500000000001,
+          "min": 0.7201,
+          "observations": 24,
+          "p50": 0.8543499999999999,
+          "p95": 1.6658199999999992,
+          "p99": 1.749331
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.0671,
+          "mean": 0.029800000000000004,
+          "min": 0.0239,
+          "observations": 24,
+          "p50": 0.0256,
+          "p95": 0.056354999999999954,
+          "p99": 0.065398
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0124,
+          "mean": 0.00565,
+          "min": 0.0037,
+          "observations": 24,
+          "p50": 0.0049499999999999995,
+          "p95": 0.009999999999999995,
+          "p99": 0.011916999999999999
+        },
+        "retrieval.collection_ready": {
+          "max": 4.5749,
+          "mean": 2.946320833333333,
+          "min": 1.9027,
+          "observations": 24,
+          "p50": 2.8857,
+          "p95": 4.322954999999999,
+          "p99": 4.523656
+        },
+        "retrieval.database_release": {
+          "max": 16.6838,
+          "mean": 1.4414833333333334,
+          "min": 0.1347,
+          "observations": 24,
+          "p50": 0.8028,
+          "p95": 1.1220399999999997,
+          "p99": 13.107230999999995
+        },
+        "retrieval.dense_embedding": {
+          "max": 1633.9851,
+          "mean": 1126.2975291666667,
+          "min": 986.3588,
+          "observations": 24,
+          "p50": 1123.2645,
+          "p95": 1229.637,
+          "p99": 1541.0512079999999
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0135,
+          "mean": 0.007620833333333334,
+          "min": 0.0044,
+          "observations": 24,
+          "p50": 0.00655,
+          "p95": 0.011509999999999998,
+          "p99": 0.013062999999999998
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.002,
+          "mean": 0.0009750000000000001,
+          "min": 0.0005,
+          "observations": 24,
+          "p50": 0.0007,
+          "p95": 0.0018549999999999994,
+          "p99": 0.001977
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0006,
+          "mean": 0.0002916666666666667,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.00025,
+          "p95": 0.0005,
+          "p99": 0.0005769999999999999
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1318,
+          "mean": 0.09201666666666668,
+          "min": 0.0744,
+          "observations": 24,
+          "p50": 0.0828,
+          "p95": 0.12561999999999998,
+          "p99": 0.13042
+        },
+        "retrieval.no_answer_probe": {
+          "max": 22.9727,
+          "mean": 16.987820833333334,
+          "min": 13.3702,
+          "observations": 24,
+          "p50": 16.8116,
+          "p95": 21.897809999999996,
+          "p99": 22.793115999999998
+        },
+        "retrieval.query_expansion": {
+          "max": 0.2285,
+          "mean": 0.12709583333333332,
+          "min": 0.0896,
+          "observations": 24,
+          "p50": 0.10195,
+          "p95": 0.20744499999999994,
+          "p99": 0.224475
+        },
+        "retrieval.sparse_embedding": {
+          "max": 1.1911,
+          "mean": 0.763925,
+          "min": 0.4484,
+          "observations": 24,
+          "p50": 0.7922,
+          "p95": 1.0252099999999997,
+          "p99": 1.15476
+        },
+        "retrieval.vector_search": {
+          "max": 38.6892,
+          "mean": 32.88959583333333,
+          "min": 28.7543,
+          "observations": 24,
+          "p50": 32.38575,
+          "p95": 36.430565,
+          "p99": 38.195827
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 4.3301,
+          "mean": 2.581275,
+          "min": 1.6028,
+          "observations": 24,
+          "p50": 2.31945,
+          "p95": 4.215529999999999,
+          "p99": 4.324787
+        },
+        "retrieval_total": {
+          "max": 1689.2353,
+          "mean": 1188.218025,
+          "min": 1046.0693,
+          "observations": 24,
+          "p50": 1183.6964,
+          "p95": 1298.687215,
+          "p99": 1599.507424
+        },
+        "total": {
+          "max": 9396.1052,
+          "mean": 6434.339708333333,
+          "min": 4712.001,
+          "observations": 24,
+          "p50": 6130.8138500000005,
+          "p95": 9152.301739999999,
+          "p99": 9345.842564
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.5,
+        "citation_evidence_recall": 0.45,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q5_rerank-off_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 5476.8033,
+          "mean": 2637.0883333333336,
+          "min": 1504.2398,
+          "observations": 24,
+          "p50": 2363.1396999999997,
+          "p95": 4909.073314999997,
+          "p99": 5396.945919999999
+        },
+        "judge": {
+          "max": 5223.9837,
+          "mean": 2608.826525,
+          "min": 1637.7501,
+          "observations": 24,
+          "p50": 2291.86215,
+          "p95": 5011.928934999999,
+          "p99": 5186.552326999999
+        },
+        "reranker_account_wait": {
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "observations": 24,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0
+        },
+        "retrieval_observed": {
+          "max": 1689.2353,
+          "mean": 1188.218025,
+          "min": 1046.0693,
+          "observations": 24,
+          "p50": 1183.6964,
+          "p95": 1298.687215,
+          "p99": 1599.507424
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 1689.2353,
+          "mean": 1188.218025,
+          "min": 1046.0693,
+          "observations": 24,
+          "p50": 1183.6964,
+          "p95": 1298.687215,
+          "p99": 1599.507424
+        },
+        "total_with_judge": {
+          "max": 9396.1052,
+          "mean": 6434.339708333333,
+          "min": 4712.001,
+          "observations": 24,
+          "p50": 6130.8138500000005,
+          "p95": 9152.301739999999,
+          "p99": 9345.842564
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.763,
+        "citation_completeness": 0.6725,
+        "citation_entailment": 0.725,
+        "citation_precision": 0.7635,
+        "context_relevance": 0.8105,
+        "correctness": 0.702,
+        "groundedness": 0.967
+      },
+      "ranking_stability": {
+        "drift": 5,
+        "exact": 19
+      },
+      "retrieval": {
+        "mrr_at_5": 0.45166666666666666,
+        "ndcg_at_5": 0.4758891280403,
+        "recall_at_5": 0.55
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.6153846153846153,
+        "false_negative": 0,
+        "false_positive": 5,
+        "precision": 0.4444444444444444,
+        "recall": 1.0,
+        "true_negative": 15,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.1825,
+          "mean": 0.09117083333333333,
+          "min": 0.0469,
+          "observations": 24,
+          "p50": 0.08549999999999999,
+          "p95": 0.15923999999999996,
+          "p99": 0.177647
+        },
+        "generation_provider": {
+          "max": 13355.3161,
+          "mean": 3172.588333333333,
+          "min": 1435.7776,
+          "observations": 24,
+          "p50": 2496.9892,
+          "p95": 5681.497549999996,
+          "p99": 11650.433003999997
+        },
+        "judge_provider": {
+          "max": 4007.2777,
+          "mean": 2650.5676041666666,
+          "min": 1351.3881,
+          "observations": 24,
+          "p50": 2624.83155,
+          "p95": 3594.87365,
+          "p99": 3912.883998
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 6.4393,
+          "mean": 2.945525,
+          "min": 1.6079,
+          "observations": 24,
+          "p50": 2.59245,
+          "p95": 5.40504,
+          "p99": 6.206885
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.8983,
+          "mean": 0.9816208333333334,
+          "min": 0.7184,
+          "observations": 24,
+          "p50": 0.85485,
+          "p95": 1.2774349999999999,
+          "p99": 1.7571259999999997
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.1035,
+          "mean": 0.047204166666666665,
+          "min": 0.0326,
+          "observations": 24,
+          "p50": 0.0373,
+          "p95": 0.07901999999999997,
+          "p99": 0.098463
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0177,
+          "mean": 0.0090125,
+          "min": 0.0054,
+          "observations": 24,
+          "p50": 0.0076500000000000005,
+          "p95": 0.0177,
+          "p99": 0.0177
+        },
+        "retrieval.collection_ready": {
+          "max": 28.9866,
+          "mean": 4.163204166666667,
+          "min": 1.9291,
+          "observations": 24,
+          "p50": 2.9758500000000003,
+          "p95": 4.340355,
+          "p99": 23.31956099999999
+        },
+        "retrieval.database_release": {
+          "max": 53.1447,
+          "mean": 3.8291874999999997,
+          "min": 0.1247,
+          "observations": 24,
+          "p50": 0.68825,
+          "p95": 13.623549999999991,
+          "p99": 44.193145999999984
+        },
+        "retrieval.dense_embedding": {
+          "max": 1661.2542,
+          "mean": 1130.9116375,
+          "min": 997.9253,
+          "observations": 24,
+          "p50": 1051.96145,
+          "p95": 1592.9567999999995,
+          "p99": 1656.4807110000002
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0267,
+          "mean": 0.009720833333333333,
+          "min": 0.0049,
+          "observations": 24,
+          "p50": 0.00925,
+          "p95": 0.013595,
+          "p99": 0.023709999999999995
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0026,
+          "mean": 0.0011416666666666667,
+          "min": 0.0006,
+          "observations": 24,
+          "p50": 0.0010500000000000002,
+          "p95": 0.001985,
+          "p99": 0.0024619999999999998
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0004,
+          "mean": 0.0002708333333333333,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0003,
+          "p95": 0.0004,
+          "p99": 0.0004
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.1613,
+          "mean": 0.09019583333333332,
+          "min": 0.0757,
+          "observations": 24,
+          "p50": 0.0854,
+          "p95": 0.10918499999999999,
+          "p99": 0.14938599999999996
+        },
+        "retrieval.query_expansion": {
+          "max": 0.2421,
+          "mean": 0.14091666666666666,
+          "min": 0.0925,
+          "observations": 24,
+          "p50": 0.14085,
+          "p95": 0.22021999999999997,
+          "p99": 0.237592
+        },
+        "retrieval.rerank.local": {
+          "max": 0.0702,
+          "mean": 0.03451666666666667,
+          "min": 0.0224,
+          "observations": 24,
+          "p50": 0.0335,
+          "p95": 0.043649999999999994,
+          "p99": 0.06412799999999999
+        },
+        "retrieval.rerank.provider": {
+          "max": 11006.3177,
+          "mean": 1024.0540083333333,
+          "min": 454.6153,
+          "observations": 24,
+          "p50": 540.0025,
+          "p95": 1281.7829249999986,
+          "p99": 8790.440958999996
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max": 2307.2136,
+          "mean": 666.8652791666667,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.00075,
+          "p95": 2196.8114299999984,
+          "p99": 2306.801923
+        },
+        "retrieval.reranker_resolution": {
+          "max": 0.0041,
+          "mean": 0.002175,
+          "min": 0.0013,
+          "observations": 24,
+          "p50": 0.002,
+          "p95": 0.003054999999999999,
+          "p99": 0.0038699999999999997
+        },
+        "retrieval.sparse_embedding": {
+          "max": 111.0303,
+          "mean": 5.402183333333333,
+          "min": 0.4103,
+          "observations": 24,
+          "p50": 0.8409,
+          "p95": 1.3796449999999998,
+          "p99": 85.81677999999995
+        },
+        "retrieval.vector_search": {
+          "max": 38.05,
+          "mean": 32.24729583333333,
+          "min": 28.0444,
+          "observations": 24,
+          "p50": 31.25305,
+          "p95": 37.433115,
+          "p99": 37.93385
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 4.5759,
+          "mean": 2.824495833333333,
+          "min": 1.436,
+          "observations": 24,
+          "p50": 2.6148,
+          "p95": 4.439164999999999,
+          "p99": 4.560835
+        },
+        "retrieval_total": {
+          "max": 12075.8209,
+          "mean": 2878.7815083333335,
+          "min": 1523.3106,
+          "observations": 24,
+          "p50": 2517.3756000000003,
+          "p95": 4146.604595,
+          "p99": 10259.859878999996
+        },
+        "total": {
+          "max": 18427.7439,
+          "mean": 8702.146804166667,
+          "min": 5733.1772,
+          "observations": 24,
+          "p50": 7864.511549999999,
+          "p95": 16649.09484499999,
+          "p99": 18192.134614000002
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.53125,
+        "citation_evidence_recall": 0.5,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q5_rerank-10_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 13355.3161,
+          "mean": 3172.588333333333,
+          "min": 1435.7776,
+          "observations": 24,
+          "p50": 2496.9892,
+          "p95": 5681.497549999996,
+          "p99": 11650.433003999997
+        },
+        "judge": {
+          "max": 4007.2777,
+          "mean": 2650.5676041666666,
+          "min": 1351.3881,
+          "observations": 24,
+          "p50": 2624.83155,
+          "p95": 3594.87365,
+          "p99": 3912.883998
+        },
+        "reranker_account_wait": {
+          "max": 2307.2136,
+          "mean": 666.8652791666667,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.00075,
+          "p95": 2196.8114299999984,
+          "p99": 2306.801923
+        },
+        "retrieval_observed": {
+          "max": 12075.8209,
+          "mean": 2878.7815083333335,
+          "min": 1523.3106,
+          "observations": 24,
+          "p50": 2517.3756000000003,
+          "p95": 4146.604595,
+          "p99": 10259.859878999996
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 12075.8207,
+          "mean": 2211.9162291666667,
+          "min": 1523.3103,
+          "observations": 24,
+          "p50": 1706.15085,
+          "p95": 2544.95587,
+          "p99": 9885.733490999995
+        },
+        "total_with_judge": {
+          "max": 18427.7439,
+          "mean": 8702.146804166667,
+          "min": 5733.1772,
+          "observations": 24,
+          "p50": 7864.511549999999,
+          "p95": 16649.09484499999,
+          "p99": 18192.134614000002
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.819,
+        "citation_completeness": 0.7155,
+        "citation_entailment": 0.7755,
+        "citation_precision": 0.7655000000000001,
+        "context_relevance": 0.922,
+        "correctness": 0.732,
+        "groundedness": 0.9279999999999999
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 19,
+        "score_profile_equivalent_boundary_tie": 3
+      },
+      "retrieval": {
+        "mrr_at_5": 0.47000000000000003,
+        "ndcg_at_5": 0.5017782560805999,
+        "recall_at_5": 0.6
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_negative": 16,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.2071,
+          "mean": 0.09555000000000001,
+          "min": 0.0322,
+          "observations": 24,
+          "p50": 0.0859,
+          "p95": 0.17888499999999993,
+          "p99": 0.201787
+        },
+        "generation_provider": {
+          "max": 7974.3081,
+          "mean": 2962.1644125000003,
+          "min": 1334.7393,
+          "observations": 24,
+          "p50": 2614.16355,
+          "p95": 5357.685079999999,
+          "p99": 7390.160217999999
+        },
+        "judge_provider": {
+          "max": 6365.9511,
+          "mean": 2657.634216666667,
+          "min": 1548.9282,
+          "observations": 24,
+          "p50": 2471.0953,
+          "p95": 3747.113955,
+          "p99": 5768.947988999999
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 4.3536,
+          "mean": 2.4676791666666666,
+          "min": 1.5954,
+          "observations": 24,
+          "p50": 2.31345,
+          "p95": 3.773264999999999,
+          "p99": 4.239612
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.6817,
+          "mean": 0.9385958333333333,
+          "min": 0.6861,
+          "observations": 24,
+          "p50": 0.8226,
+          "p95": 1.273825,
+          "p99": 1.5880439999999998
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.1452,
+          "mean": 0.073825,
+          "min": 0.0525,
+          "observations": 24,
+          "p50": 0.060899999999999996,
+          "p95": 0.12154499999999996,
+          "p99": 0.14030099999999998
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0208,
+          "mean": 0.012679166666666667,
+          "min": 0.0076,
+          "observations": 24,
+          "p50": 0.0108,
+          "p95": 0.0205,
+          "p99": 0.020731
+        },
+        "retrieval.collection_ready": {
+          "max": 4.7716,
+          "mean": 2.8737,
+          "min": 1.8541,
+          "observations": 24,
+          "p50": 2.62025,
+          "p95": 4.208839999999999,
+          "p99": 4.658325
+        },
+        "retrieval.database_release": {
+          "max": 15.6475,
+          "mean": 2.5068208333333333,
+          "min": 0.3921,
+          "observations": 24,
+          "p50": 0.6665,
+          "p95": 15.311909999999997,
+          "p99": 15.599936000000001
+        },
+        "retrieval.dense_embedding": {
+          "max": 1228.4912,
+          "mean": 1066.7003833333333,
+          "min": 977.9749,
+          "observations": 24,
+          "p50": 1068.5125,
+          "p95": 1132.2974649999999,
+          "p99": 1206.565392
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.0167,
+          "mean": 0.008624999999999999,
+          "min": 0.0047,
+          "observations": 24,
+          "p50": 0.0084,
+          "p95": 0.012385,
+          "p99": 0.015710999999999996
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.0021,
+          "mean": 0.0010624999999999999,
+          "min": 0.0005,
+          "observations": 24,
+          "p50": 0.00095,
+          "p95": 0.002054999999999999,
+          "p99": 0.0021
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0005,
+          "mean": 0.0002875,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0002,
+          "p95": 0.0005,
+          "p99": 0.0005
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.129,
+          "mean": 0.09018749999999999,
+          "min": 0.0747,
+          "observations": 24,
+          "p50": 0.07949999999999999,
+          "p95": 0.12644,
+          "p99": 0.128425
+        },
+        "retrieval.query_expansion": {
+          "max": 0.2305,
+          "mean": 0.14005416666666667,
+          "min": 0.0886,
+          "observations": 24,
+          "p50": 0.1208,
+          "p95": 0.21491,
+          "p99": 0.226935
+        },
+        "retrieval.rerank.local": {
+          "max": 0.1022,
+          "mean": 0.03714166666666666,
+          "min": 0.0239,
+          "observations": 24,
+          "p50": 0.03515,
+          "p95": 0.04967999999999999,
+          "p99": 0.09035499999999998
+        },
+        "retrieval.rerank.provider": {
+          "max": 949.5128,
+          "mean": 573.8454958333333,
+          "min": 485.152,
+          "observations": 24,
+          "p50": 556.14855,
+          "p95": 713.69673,
+          "p99": 895.8711189999999
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max": 2250.4861,
+          "mean": 903.9246541666666,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 750.8985,
+          "p95": 2080.56832,
+          "p99": 2211.784966
+        },
+        "retrieval.reranker_resolution": {
+          "max": 0.0032,
+          "mean": 0.002170833333333333,
+          "min": 0.0014,
+          "observations": 24,
+          "p50": 0.002,
+          "p95": 0.0030849999999999996,
+          "p99": 0.003177
+        },
+        "retrieval.sparse_embedding": {
+          "max": 1.069,
+          "mean": 0.7886583333333334,
+          "min": 0.4596,
+          "observations": 24,
+          "p50": 0.8422499999999999,
+          "p95": 1.05517,
+          "p99": 1.066654
+        },
+        "retrieval.vector_search": {
+          "max": 41.8021,
+          "mean": 33.898475,
+          "min": 30.0284,
+          "observations": 24,
+          "p50": 33.593149999999994,
+          "p95": 37.971295,
+          "p99": 40.941463
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 4.4389,
+          "mean": 2.735958333333333,
+          "min": 2.1056,
+          "observations": 24,
+          "p50": 2.4058,
+          "p95": 3.93078,
+          "p99": 4.324889
+        },
+        "retrieval_total": {
+          "max": 3963.9902,
+          "mean": 2591.6956208333336,
+          "min": 1527.0229,
+          "observations": 24,
+          "p50": 2375.5188500000004,
+          "p95": 3881.64633,
+          "p99": 3945.345526
+        },
+        "total": {
+          "max": 12569.2157,
+          "mean": 8211.702345833333,
+          "min": 5942.5182,
+          "observations": 24,
+          "p50": 7624.1867,
+          "p95": 11805.523144999997,
+          "p99": 12424.917173
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.46875,
+        "citation_evidence_recall": 0.45,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q5_rerank-20_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 7974.3081,
+          "mean": 2962.1644125000003,
+          "min": 1334.7393,
+          "observations": 24,
+          "p50": 2614.16355,
+          "p95": 5357.685079999999,
+          "p99": 7390.160217999999
+        },
+        "judge": {
+          "max": 6365.9511,
+          "mean": 2657.634216666667,
+          "min": 1548.9282,
+          "observations": 24,
+          "p50": 2471.0953,
+          "p95": 3747.113955,
+          "p99": 5768.947988999999
+        },
+        "reranker_account_wait": {
+          "max": 2250.4861,
+          "mean": 903.9246541666666,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 750.8985,
+          "p95": 2080.56832,
+          "p99": 2211.784966
+        },
+        "retrieval_observed": {
+          "max": 3963.9902,
+          "mean": 2591.6956208333336,
+          "min": 1527.0229,
+          "observations": 24,
+          "p50": 2375.5188500000004,
+          "p95": 3881.64633,
+          "p99": 3945.345526
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 1997.1566999999998,
+          "mean": 1687.7709666666667,
+          "min": 1527.0226,
+          "observations": 24,
+          "p50": 1677.8656,
+          "p95": 1872.4185,
+          "p99": 1969.0887419999997
+        },
+        "total_with_judge": {
+          "max": 12569.2157,
+          "mean": 8211.702345833333,
+          "min": 5942.5182,
+          "observations": 24,
+          "p50": 7624.1867,
+          "p95": 11805.523144999997,
+          "p99": 12424.917173
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8119999999999999,
+        "citation_completeness": 0.717,
+        "citation_entailment": 0.7979999999999999,
+        "citation_precision": 0.7995,
+        "context_relevance": 0.907,
+        "correctness": 0.735,
+        "groundedness": 0.9515
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 21,
+        "score_tie_equivalent": 1
+      },
+      "retrieval": {
+        "mrr_at_5": 0.45,
+        "ndcg_at_5": 0.4630929753571458,
+        "recall_at_5": 0.5
+      },
+      "structured_output_retries": 0
+    },
+    {
+      "answer_abstention": {
+        "f1": 0.6666666666666666,
+        "false_negative": 0,
+        "false_positive": 4,
+        "precision": 0.5,
+        "recall": 1.0,
+        "true_negative": 16,
+        "true_positive": 4
+      },
+      "answerable_observations": 20,
+      "atomic_latency_ms": {
+        "context_assembly": {
+          "max": 0.2044,
+          "mean": 0.08839583333333334,
+          "min": 0.0331,
+          "observations": 24,
+          "p50": 0.08965000000000001,
+          "p95": 0.124805,
+          "p99": 0.18634499999999998
+        },
+        "generation_provider": {
+          "max": 21199.3354,
+          "mean": 3600.351575,
+          "min": 1436.6944,
+          "observations": 24,
+          "p50": 2361.40875,
+          "p95": 5839.780284999997,
+          "p99": 17713.811370999993
+        },
+        "judge_provider": {
+          "max": 4398.6985,
+          "mean": 2704.883033333333,
+          "min": 1535.6798,
+          "observations": 24,
+          "p50": 2531.22375,
+          "p95": 4165.35402,
+          "p99": 4360.088078000001
+        },
+        "retrieval.authorization_prefilter": {
+          "max": 4.5201,
+          "mean": 2.4710916666666667,
+          "min": 1.5764,
+          "observations": 24,
+          "p50": 2.2832999999999997,
+          "p95": 3.975865,
+          "p99": 4.39682
+        },
+        "retrieval.authorization_recheck": {
+          "max": 1.3147,
+          "mean": 0.90885,
+          "min": 0.6901,
+          "observations": 24,
+          "p50": 0.8028500000000001,
+          "p95": 1.265375,
+          "p99": 1.304373
+        },
+        "retrieval.candidate_decode": {
+          "max": 0.2307,
+          "mean": 0.13565833333333333,
+          "min": 0.1047,
+          "observations": 24,
+          "p50": 0.11415,
+          "p95": 0.22376,
+          "p99": 0.229435
+        },
+        "retrieval.candidate_dedupe": {
+          "max": 0.0426,
+          "mean": 0.0241875,
+          "min": 0.0156,
+          "observations": 24,
+          "p50": 0.02065,
+          "p95": 0.04154499999999999,
+          "p99": 0.042485
+        },
+        "retrieval.collection_ready": {
+          "max": 4.366,
+          "mean": 3.0304291666666665,
+          "min": 2.0024,
+          "observations": 24,
+          "p50": 3.1036,
+          "p95": 4.087224999999999,
+          "p99": 4.30666
+        },
+        "retrieval.database_release": {
+          "max": 15.7979,
+          "mean": 2.64745,
+          "min": 0.2876,
+          "observations": 24,
+          "p50": 0.7927500000000001,
+          "p95": 15.72191,
+          "p99": 15.796175
+        },
+        "retrieval.dense_embedding": {
+          "max": 1640.7343,
+          "mean": 1122.8420083333333,
+          "min": 995.3173,
+          "observations": 24,
+          "p50": 1089.5552,
+          "p95": 1509.7194299999994,
+          "p99": 1620.532664
+        },
+        "retrieval.embedder_resolution": {
+          "max": 0.017,
+          "mean": 0.008624999999999999,
+          "min": 0.0049,
+          "observations": 24,
+          "p50": 0.00875,
+          "p95": 0.01177,
+          "p99": 0.015804
+        },
+        "retrieval.embedding_cache_lookup": {
+          "max": 0.002,
+          "mean": 0.0011708333333333334,
+          "min": 0.0006,
+          "observations": 24,
+          "p50": 0.0011,
+          "p95": 0.001985,
+          "p99": 0.002
+        },
+        "retrieval.embedding_cache_store": {
+          "max": 0.0005,
+          "mean": 0.00032083333333333334,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 0.0003,
+          "p95": 0.0005,
+          "p99": 0.0005
+        },
+        "retrieval.embedding_usage_record": {
+          "max": 0.2048,
+          "mean": 0.09802083333333333,
+          "min": 0.0749,
+          "observations": 24,
+          "p50": 0.0873,
+          "p95": 0.127085,
+          "p99": 0.18692899999999996
+        },
+        "retrieval.query_expansion": {
+          "max": 0.2353,
+          "mean": 0.14596666666666666,
+          "min": 0.0913,
+          "observations": 24,
+          "p50": 0.1547,
+          "p95": 0.20584,
+          "p99": 0.228814
+        },
+        "retrieval.rerank.local": {
+          "max": 0.0489,
+          "mean": 0.03641666666666667,
+          "min": 0.0249,
+          "observations": 24,
+          "p50": 0.035949999999999996,
+          "p95": 0.046955,
+          "p99": 0.048463
+        },
+        "retrieval.rerank.provider": {
+          "max": 965.6696,
+          "mean": 642.7278166666666,
+          "min": 525.2106,
+          "observations": 24,
+          "p50": 629.1844,
+          "p95": 795.3514899999998,
+          "p99": 928.9117589999998
+        },
+        "retrieval.rerank.rate_limit_wait": {
+          "max": 2107.2876,
+          "mean": 673.5123708333333,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 325.4724,
+          "p95": 1828.7303349999993,
+          "p99": 2054.789456
+        },
+        "retrieval.reranker_resolution": {
+          "max": 0.0029,
+          "mean": 0.0020958333333333332,
+          "min": 0.0016,
+          "observations": 24,
+          "p50": 0.002,
+          "p95": 0.0028699999999999993,
+          "p99": 0.0029
+        },
+        "retrieval.sparse_embedding": {
+          "max": 1.055,
+          "mean": 0.7275166666666667,
+          "min": 0.3923,
+          "observations": 24,
+          "p50": 0.7537,
+          "p95": 0.955065,
+          "p99": 1.0325289999999998
+        },
+        "retrieval.vector_search": {
+          "max": 44.6195,
+          "mean": 36.648975,
+          "min": 32.288,
+          "observations": 24,
+          "p50": 36.109899999999996,
+          "p95": 42.00308999999999,
+          "p99": 44.11051
+        },
+        "retrieval.workspace_model_resolution": {
+          "max": 6.178,
+          "mean": 3.257054166666667,
+          "min": 2.0408,
+          "observations": 24,
+          "p50": 2.8661000000000003,
+          "p95": 5.187709999999999,
+          "p99": 5.967848999999999
+        },
+        "retrieval_total": {
+          "max": 3985.9638,
+          "mean": 2489.8934916666667,
+          "min": 1624.3685,
+          "observations": 24,
+          "p50": 2149.80575,
+          "p95": 3627.3482749999994,
+          "p99": 3910.0419039999997
+        },
+        "total": {
+          "max": 27361.3262,
+          "mean": 8795.328175,
+          "min": 5824.7135,
+          "observations": 24,
+          "p50": 7675.7672999999995,
+          "p95": 10930.165219999999,
+          "p99": 23609.62280299999
+        }
+      },
+      "citation": {
+        "citation_evidence_precision": 0.47058823529411764,
+        "citation_evidence_recall": 0.5,
+        "citation_validity": 1.0
+      },
+      "condition_id": "q5_rerank-50_cache-off",
+      "latency_ms": {
+        "generation": {
+          "max": 21199.3354,
+          "mean": 3600.351575,
+          "min": 1436.6944,
+          "observations": 24,
+          "p50": 2361.40875,
+          "p95": 5839.780284999997,
+          "p99": 17713.811370999993
+        },
+        "judge": {
+          "max": 4398.6985,
+          "mean": 2704.883033333333,
+          "min": 1535.6798,
+          "observations": 24,
+          "p50": 2531.22375,
+          "p95": 4165.35402,
+          "p99": 4360.088078000001
+        },
+        "reranker_account_wait": {
+          "max": 2107.2876,
+          "mean": 673.5123708333333,
+          "min": 0.0002,
+          "observations": 24,
+          "p50": 325.4724,
+          "p95": 1828.7303349999993,
+          "p99": 2054.789456
+        },
+        "retrieval_observed": {
+          "max": 3985.9638,
+          "mean": 2489.8934916666667,
+          "min": 1624.3685,
+          "observations": 24,
+          "p50": 2149.80575,
+          "p95": 3627.3482749999994,
+          "p99": 3910.0419039999997
+        },
+        "retrieval_without_benchmark_rate_wait": {
+          "max": 2347.7653,
+          "mean": 1816.3811208333334,
+          "min": 1612.2689,
+          "observations": 24,
+          "p50": 1767.3611999999998,
+          "p95": 2164.79299,
+          "p99": 2310.485083
+        },
+        "total_with_judge": {
+          "max": 27361.3262,
+          "mean": 8795.328175,
+          "min": 5824.7135,
+          "observations": 24,
+          "p50": 7675.7672999999995,
+          "p95": 10930.165219999999,
+          "p99": 23609.62280299999
+        }
+      },
+      "observations": 24,
+      "rag_triad": {
+        "answer_relevance": 0.8210000000000001,
+        "citation_completeness": 0.7515,
+        "citation_entailment": 0.841,
+        "citation_precision": 0.9225,
+        "context_relevance": 0.951,
+        "correctness": 0.745,
+        "groundedness": 0.966
+      },
+      "ranking_stability": {
+        "drift": 2,
+        "exact": 19,
+        "score_profile_equivalent_boundary_tie": 3
+      },
+      "retrieval": {
+        "mrr_at_5": 0.475,
+        "ndcg_at_5": 0.4815464876785729,
+        "recall_at_5": 0.5
+      },
+      "structured_output_retries": 0
+    }
+  ],
+  "cost": {
+    "actual_provider_cost_usd": "0.92281055",
+    "basis": "provider_calls_usage_only",
+    "by_endpoint": {
+      "generation": {
+        "actual_provider_cost_usd": "0.1725158",
+        "cached_input_tokens": 0,
+        "calls": 288,
+        "input_tokens": 551995,
+        "output_tokens": 51764
+      },
+      "judge": {
+        "actual_provider_cost_usd": "0.75029475",
+        "cached_input_tokens": 0,
+        "calls": 288,
+        "input_tokens": 591895,
+        "output_tokens": 68083
+      }
+    },
+    "hard_cap_usd": "5.00",
+    "rates_usd_per_million": {
+      "gpt-5.4-mini": {
+        "cached_input": "0.075",
+        "input": "0.75",
+        "output": "4.50"
+      },
+      "gpt-5.6-luna": {
+        "cached_input": "0.02",
+        "input": "0.20",
+        "output": "1.20"
+      },
+      "text-embedding-3-large": "0.13",
+      "text-embedding-3-small": "0.02"
+    }
+  },
+  "embedding_cache": {
+    "complete_conditions": 14,
+    "invalid_condition": "q3_rerank-10_cache-off",
+    "query_lanes": {
+      "q1": {
+        "cache_off_mean_ms": 678.4681958333333,
+        "cold_population_mean_ms": 723.0976,
+        "mean_saved_ms": 659.4643333333333,
+        "mean_speedup": 35.70159465389382,
+        "quality_delta_is_tie_order_diagnostic": {
+          "mrr": -0.025000000000000022,
+          "ndcg": -0.018453512321427112,
+          "recall": 0.0
+        },
+        "scored_hits": 24,
+        "scored_misses": 0,
+        "warm_hit_mean_ms": 19.0038625,
+        "warm_hit_p95_ms": 21.377754999999997
+      },
+      "q3": {
+        "cache_off_mean_ms": 940.8260625,
+        "cold_population_mean_ms": 932.8866374999999,
+        "mean_saved_ms": 898.0252125000001,
+        "mean_speedup": 21.981480800030845,
+        "quality_delta_is_tie_order_diagnostic": {
+          "mrr": 0.0,
+          "ndcg": 0.0,
+          "recall": 0.0
+        },
+        "scored_hits": 72,
+        "scored_misses": 0,
+        "warm_hit_mean_ms": 42.80085,
+        "warm_hit_p95_ms": 49.135775
+      },
+      "q5": {
+        "cache_off_mean_ms": 928.8415833333333,
+        "cold_population_mean_ms": 1052.5146,
+        "mean_saved_ms": 874.0607583333333,
+        "mean_speedup": 16.955596841291335,
+        "quality_delta_is_tie_order_diagnostic": {
+          "mrr": 0.0,
+          "ndcg": 0.0,
+          "recall": 0.0
+        },
+        "scored_hits": 120,
+        "scored_misses": 0,
+        "warm_hit_mean_ms": 54.780825,
+        "warm_hit_p95_ms": 59.911635
+      }
+    },
+    "screen_status": "invalid_as_complete_matrix"
+  },
+  "limitations": [
+    "One scored retrieval/Triad observation per query and condition; no significance claim.",
+    "RAG-Triad is an automated separate-model same-provider evaluation, not human ground truth.",
+    "Cohere account throttling is reported separately from provider/local rerank latency.",
+    "Cache quality differences diagnose equal-score RRF ordering; cache does not change vectors."
+  ],
+  "pareto_condition_ids": [
+    "q1_rerank-off_cache-off",
+    "q1_rerank-50_cache-off"
+  ],
+  "schema_version": 1,
+  "source_sha256": {
+    "screen_manifest": "3589d8879b7219309b2366bd4d201254db47d3375c73d5d56c5ebcbe4ee04168",
+    "screen_validation": "5b397f1c9aabd347634ce544689787a2ced7528351664a967f15f73aeb861336",
+    "triad_manifest": "9924b6f3f81aa9df7c73eb4e03e4c8e853ca05871e199586a92cc3b4a1480c81",
+    "triad_rows": "e87a557777764a0f22ffe146f5844e04061a9461cec08ce04eebe34dfee51661"
+  },
+  "status": "completed"
+}
