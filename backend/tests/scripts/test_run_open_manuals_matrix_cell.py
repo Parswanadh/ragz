@@ -187,6 +187,38 @@ def test_response_calls_are_typed_generation_and_judge_without_prompt_telemetry(
     assert "licensed" not in json.dumps([call.as_dict() for call in client.calls])
 
 
+def test_response_can_pin_separate_reasoning_effort_without_changing_defaults() -> None:
+    bodies: list[dict[str, object]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, json={"usage": {"input_tokens": 1}})
+
+    client = LiteLLMClient(
+        FakeRunner,
+        base_url="http://litellm.test",
+        api_key="test-key",
+        embedding_alias="ragz-openai-text-embedding-3-small-d3",
+        embedding_model="text-embedding-3-small",
+        embedding_dimension=3,
+        generation_reasoning_effort="low",
+        judge_reasoning_effort="none",
+        transport=httpx.MockTransport(handler),
+    )
+    for model, name in (("gpt-5.6-luna", "rag_answer"), (JUDGE_MODEL, "rag_judge")):
+        client.response(
+            model=model,
+            system="s",
+            user="u",
+            name=name,
+            schema={"type": "object"},
+            max_output_tokens=10,
+        )
+
+    assert bodies[0]["reasoning"] == {"effort": "low"}
+    assert bodies[1]["reasoning"] == {"effort": "none"}
+
+
 @pytest.mark.parametrize(
     "usage", [None, {"input_tokens": 0}, {"input_tokens": "bad"}, {"input_tokens": -1}]
 )

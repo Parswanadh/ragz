@@ -547,6 +547,8 @@ async def run(args: argparse.Namespace) -> None:
             "generation": GENERATION_MODEL,
             "judge": JUDGE_MODEL,
             "reranker": RERANK_MODEL,
+            "generation_reasoning_effort": "low",
+            "judge_reasoning_effort": "low",
         },
         "judge_independence": "separate_model_same_provider",
         "rag_triad": "exploratory_llm_judge_not_independent_ground_truth",
@@ -577,6 +579,8 @@ async def run(args: argparse.Namespace) -> None:
         embedding_dimension=EMBEDDING_DIMENSION,
         generation_model=GENERATION_MODEL,
         judge_model=JUDGE_MODEL,
+        generation_reasoning_effort="low",
+        judge_reasoning_effort="low",
         max_retries=args.provider_retries,
     )
     with ExitStack() as stack:
@@ -911,7 +915,7 @@ def parser() -> argparse.ArgumentParser:
     value.add_argument("--provider-retries", type=int, default=3)
     value.add_argument("--structured-retries", type=int, default=1)
     value.add_argument("--max-context-chars", type=int, default=30_000)
-    value.add_argument("--max-output-tokens", type=int, default=3_000)
+    value.add_argument("--max-output-tokens", type=int, default=2_000)
     value.add_argument("--budget-cap-usd", type=Decimal, default=Decimal("5.00"))
     return value
 

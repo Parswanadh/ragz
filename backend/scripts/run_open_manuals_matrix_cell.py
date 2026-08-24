@@ -319,6 +319,8 @@ class LiteLLMClient:
         embedding_dimension: int,
         generation_model: str = GENERATION_MODEL,
         judge_model: str = JUDGE_MODEL,
+        generation_reasoning_effort: str | None = None,
+        judge_reasoning_effort: str | None = None,
         max_retries: int = 3,
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
@@ -335,6 +337,8 @@ class LiteLLMClient:
         self.embedding_dimension = embedding_dimension
         self.generation_model = generation_model
         self.judge_model = judge_model
+        self.generation_reasoning_effort = generation_reasoning_effort
+        self.judge_reasoning_effort = judge_reasoning_effort
         self.max_retries = max(0, max_retries)
         self.sleep = sleep
         self.calls: list[ProviderCall] = []
@@ -503,6 +507,13 @@ class LiteLLMClient:
                 }
             },
         }
+        reasoning_effort = (
+            self.judge_reasoning_effort
+            if endpoint_type == "judge"
+            else self.generation_reasoning_effort
+        )
+        if reasoning_effort is not None:
+            payload["reasoning"] = {"effort": reasoning_effort}
         body, _ = self._request(
             endpoint_type=endpoint_type,
             endpoint="responses",

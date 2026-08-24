@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "failed_interrupted_reasoning_budget",
+  "completed_rows": 29,
+  "provider_calls_persisted": 58,
+  "trigger": "both census-004 attempts consumed exactly the 3000-token ceiling under the model's default medium reasoning effort",
+  "quality_aggregate_eligible": false,
+  "private_content_persisted": false,
+  "resolution": "Pin reasoning.effort=low for both the latency-sensitive extractive answerer and strict judge, as supported by official OpenAI GPT-5.6 guidance; retain a 2000-token ceiling and bounded schema retry."
+}
