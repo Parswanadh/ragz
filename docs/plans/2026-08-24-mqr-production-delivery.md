@@ -199,13 +199,14 @@ commands.
 cannot forge the PATCH, defaults remain off, and a real enabled workspace returns
 `query_count=3` while disabled returns one.
 
-- [ ] Run existing component tests for visible/hidden/PATCH behavior.
-- [ ] Add API tests for superadmin success plus admin/user 403 and unchanged row.
-- [ ] Add an integration retrieval test for enabled/disabled query counts.
-- [ ] Run a local browser smoke with superadmin and admin accounts; capture only
-  route, role, control visibility, response status and setting value.
-- [ ] Regenerate OpenAPI/TypeScript schema only if the contract changed.
-- [ ] Commit and push `test: prove superadmin-only MQR product controls`.
+- [x] Run existing component tests for visible/hidden/PATCH behavior.
+- [x] Add API tests for superadmin success plus admin/user 403 and unchanged row.
+- [x] Add an integration retrieval test for enabled/disabled query counts.
+- [x] Run a local browser smoke with a superadmin and retain the admin/user
+  negative proof at API/component boundaries; capture only route, role, control
+  visibility, response status and setting value.
+- [x] Regenerate OpenAPI/TypeScript schema only if the contract changed.
+- [x] Commit and push `test: prove superadmin-only MQR product controls`.
 
 ### Task 7: Post-change RAGZ confirmation
 
