@@ -60,6 +60,23 @@ warm p50/p95 `0.017/0.047 ms`, 24/24 exact matches and zero provider calls.
 Detailed evidence:
 `docs/benchmarks/2026-08-24-mqr-production-confirmation.md`.
 
+### Large-books common-interval open-source result
+
+The same large-books corpus, large/1,024 embedding alias and 20-page interval
+qrels produced:
+
+| System | Recall@5 | MRR@5 | nDCG@5 | p50 | p95 |
+|---|---:|---:|---:|---:|---:|
+| RAGZ Q1 cache-off | **0.8250** | **0.6583** | **0.7002** | 718.45 ms | 913.52 ms |
+| RAGZ Q3 cache-off | 0.8000 | **0.6792** | **0.7096** | 1,440.66 ms | 1,639.51 ms |
+| AnythingLLM | 0.8000 | 0.6517 | 0.6890 | **306.93 ms** | **354.01 ms** |
+
+AnythingLLM indexes the intervals directly while RAGZ maps native chunks to
+intervals after retrieval, so the evidence unit is common but chunking is not.
+RAGFlow remains source-bound to Open Manuals and Onyx remains
+eligible-protocol-gated; neither receives a fabricated common-corpus score.
+Details: `docs/benchmarks/2026-08-25-normalized-four-system-followup.md`.
+
 ## Frozen published retrieval configuration
 
 | Field | Value |

@@ -1,0 +1,80 @@
+{
+  "claim_boundaries": [
+    "AnythingLLM indexes common intervals directly; RAGZ maps native chunks to intervals after retrieval.",
+    "RAGFlow is source-bound to Open Manuals and is not in the common-corpus ranking.",
+    "Onyx passed resource preflight but was not executed; no numeric score is emitted."
+  ],
+  "common_interval": {
+    "anythingllm": {
+      "indexed_vector_count": 21505,
+      "indexing_ms": 236923.57292200177,
+      "latency_ms": {
+        "p50": 306.9267,
+        "p95": 354.0062,
+        "p99": 409.14727700000003
+      },
+      "mrr_at_5": 0.6516666666666666,
+      "ndcg_at_5": 0.6889821033974457,
+      "peak_container_memory_bytes": 691535872,
+      "quality_observations": 100,
+      "recall_at_5": 0.8
+    },
+    "ragz_q1": {
+      "latency_ms": {
+        "mean": 728.4904016666666,
+        "p50": 718.45405,
+        "p95": 913.5187049999997
+      },
+      "mrr_at_5": 0.6583333333333333,
+      "ndcg_at_5": 0.700207118843058,
+      "quality_observations": 200,
+      "query_count": 1,
+      "recall_at_5": 0.825
+    },
+    "ragz_q3": {
+      "latency_ms": {
+        "mean": 1384.9952320833333,
+        "p50": 1440.65985,
+        "p95": 1639.51456
+      },
+      "mrr_at_5": 0.6791666666666667,
+      "ndcg_at_5": 0.7096268032608154,
+      "quality_observations": 200,
+      "query_count": 3,
+      "recall_at_5": 0.8
+    }
+  },
+  "dataset": {
+    "answerable": 20,
+    "embedding": "text-embedding-3-large/1024",
+    "evaluation_unit": "20-page_interval",
+    "off_corpus": 4,
+    "queries": 24,
+    "source": "large-books-v1",
+    "top_k": 5
+  },
+  "schema_version": 1,
+  "source_bound": {
+    "onyx": {
+      "quality_score_emitted": false,
+      "status": "eligible_not_executed"
+    },
+    "ragflow": {
+      "dataset": "open-manuals-v2",
+      "mrr_at_5": 0.975,
+      "ndcg_at_5": 0.9771821625595243,
+      "not_common_corpus": true,
+      "recall_at_5": 0.9833333333333333,
+      "status": "completed"
+    }
+  },
+  "source_sha256": {
+    "anythingllm_manifest": "44f5bbb5903229e67058e6f4e2775f59bfca65e87c133557a6901fc766b8f2fe",
+    "anythingllm_rows": "5fc0c23c03a97c28f54e1177a3aef5bd6e24dd3fe9b0a3a4beeb1227f29c3c73",
+    "onyx_manifest": "513476ad5e2750d53e11c924055233b431e571ab980a38f152a170f71262ac42",
+    "queries": "70de3abdb62be01945a05a0914b360b8a98ae77a9cfb1d8a466a0e22b63ddb12",
+    "ragflow_summary": "de7c14bbc4ce6792894702de6360df2fe339dd1956947199bc167bc292581c8e",
+    "ragz_manifest": "7e23c6209265e544170b59f2154c7079a64cf33e83e2c2750468220bb9316ea0"
+  },
+  "status": "completed_with_boundaries"
+}

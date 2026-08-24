@@ -242,16 +242,19 @@ retry, tie determinism and concurrent-probe measurements on the current commit.
 order, answer model/reasoning, judge, context budget and cache regime for every
 system that exposes a valid path.
 
-- [ ] AnythingLLM: rebuild the large-books index with large/1,024 and run 24
+- [x] AnythingLLM: rebuild the large-books index with large/1,024 and run 24
   retrieval rows; do not invent physical-page metrics if metadata is absent.
-- [ ] RAGFlow: use API-only cloud models, sequential ingestion, 5-GB aggregate
-  guard plus swap, and stop on sustained PSI/OOM/restart evidence.
-- [ ] Onyx: run Standard only after the current eligible preflight; use hosted
-  embedding/generation, enforce a resource monitor and stop safely on pressure.
-- [ ] Record `not_executed`, `credential_gated` or `resource_stopped` rather than
+- [x] RAGFlow: retain its completed API-only cloud-model Open Manuals run and
+  mark large-books `protocol_gated/not_executed` because the automated adapter
+  requires a pre-seeded exact 22-document corpus; do not perform an unaudited
+  manual database setup.
+- [x] Onyx: retain the eligible native-daemon preflight and mark large-books
+  `eligible_protocol_gated/not_executed` because no frozen hosted-model/evidence
+  adapter exists; do not spend the 10-GB envelope without a scoreable protocol.
+- [x] Record `not_executed`, `credential_gated` or `resource_stopped` rather than
   zero for any incomplete system.
-- [ ] Compare only common metrics/evidence units and label native adapter paths.
-- [ ] Commit and push `bench: add normalized four-system follow-up`.
+- [x] Compare only common metrics/evidence units and label native adapter paths.
+- [x] Commit and push `bench: add normalized four-system follow-up`.
 
 ### Task 9: Issue and PR package, without submission
 
