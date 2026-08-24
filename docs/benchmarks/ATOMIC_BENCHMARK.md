@@ -1,6 +1,6 @@
 # Atomic Benchmark
 
-Last updated: 2026-08-24
+Last updated: 2026-08-25
 
 This is the canonical short-form record for the networking retrieval, atomic
 latency, answer-model parity, AGNO boundary, and RAGFlow execution status. Raw

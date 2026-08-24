@@ -259,21 +259,23 @@ system that exposes a valid path.
 ### Task 9: Issue and PR package, without submission
 
 **Files:**
-- Create: `issues/multi-query-production-delivery/ISSUE_DRAFT.md`
-- Create: `issues/multi-query-production-delivery/PR_DRAFT.md`
-- Create: `issues/multi-query-production-delivery/REVIEW_CHECKLIST.md`
+- Create: `no_rel/issues/multi-query-production-delivery/github-issue-body.md`
+- Create: `no_rel/issues/multi-query-production-delivery/pull-request-body.md`
+- Create: `no_rel/issues/multi-query-production-delivery/review-checklist.md`
+- Create: `no_rel/issues/multi-query-production-delivery/README.md`
+- Create: `no_rel/benchmarks/ATOMIC_BENCHMARK.md`
 - Update: `docs/benchmarks/ATOMIC_BENCHMARK.md`
 - Update: `no_rel/verification/AGENT_TOKEN_USAGE_POLICY.md` only if execution
   reveals a new quota failure mode.
 
-- [ ] Draft a respectful issue with problem, measured evidence, scope,
+- [x] Draft a respectful issue with problem, measured evidence, scope,
   acceptance criteria, security/privacy notes and reproducible commands.
-- [ ] Draft a PR summary separating product behavior, performance, tests,
+- [x] Draft a PR summary separating product behavior, performance, tests,
   migrations/configuration and benchmark-only files.
-- [ ] Include rollback: disable cache/MQR/rerank independently through config or
+- [x] Include rollback: disable cache/MQR/rerank independently through config or
   workspace settings.
-- [ ] Include every known limitation and explicitly state no universal ranking.
-- [ ] Run link, JSON/JSONL, credential-pattern and public-text privacy checks.
+- [x] Include every known limitation and explicitly state no universal ranking.
+- [x] Run link, JSON/JSONL, credential-pattern and public-text privacy checks.
 - [ ] Commit and push `docs: prepare MQR issue and PR package`.
 
 ### Task 10: Final verification and cleanup
