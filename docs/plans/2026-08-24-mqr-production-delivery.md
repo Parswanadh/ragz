@@ -175,17 +175,17 @@ commands.
   vectors and the authorization filter exist; their results are consumed only
   on the non-rerank path.
 
-- [ ] Add failing tests that reverse equal-score Qdrant inputs and require
+- [x] Add failing tests that reverse equal-score Qdrant inputs and require
   byte-identical output IDs/order.
-- [ ] Add failing reranker-tie tests.
-- [ ] Add scheduling tests proving fused search and probes overlap while every
+- [x] Add failing reranker-tie tests.
+- [x] Add scheduling tests proving fused search and probes overlap while every
   query retains the same tenant filter.
-- [ ] Implement stable ordering before HQ dedupe and after rerank scoring.
-- [ ] Start probe tasks with structured cancellation; cancel them on empty or
+- [x] Implement stable ordering before HQ dedupe and after rerank scoring.
+- [x] Start probe tasks with structured cancellation; cancel them on empty or
   reranked paths and await cancellation to avoid task leaks.
-- [ ] Prove ACL prefilter/recheck and no-answer semantics are unchanged.
-- [ ] Run focused tests, Ruff and strict mypy.
-- [ ] Commit and push `perf: stabilize retrieval ties and overlap no-answer probe`.
+- [x] Prove ACL prefilter/recheck and no-answer semantics are unchanged.
+- [x] Run focused tests, Ruff and strict mypy.
+- [x] Commit and push `perf: stabilize retrieval ties and overlap no-answer probe`.
 
 ### Task 6: Superadmin product-path verification
 

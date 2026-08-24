@@ -22,6 +22,8 @@ from ragz.modules.retrieval.service import (
     RetrievedChunk,
     _capture_stage,
     _dedupe_hq,
+    _stable_chunk_order,
+    _stable_rerank_order,
     delete_document_points,
     ensure_collection,
     retrieve,
@@ -50,6 +52,22 @@ def test_atomic_stage_timing_records_failure_without_sensitive_context() -> None
 
     assert timings.keys() == {"failed_stage"}
     assert timings["failed_stage"] >= 0
+
+
+def test_equal_score_chunks_and_reranks_have_deterministic_secondary_order() -> None:
+    first_id = uuid4()
+    second_id = uuid4()
+    low, high = sorted((first_id, second_id), key=str)
+    chunks = [
+        RetrievedChunk(second_id, 2, 0, "second", 0.5),
+        RetrievedChunk(first_id, 1, 0, "first", 0.5),
+    ]
+
+    ordered = _stable_chunk_order(chunks)
+    assert [chunk.document_id for chunk in ordered] == [low, high]
+    assert _stable_rerank_order([0.7, 0.7], chunks) == (
+        [0, 1] if second_id == low else [1, 0]
+    )
 
 
 async def seed_workspace(
@@ -150,6 +168,36 @@ async def test_min_score_triggers_no_answer_with_nearest(
     result = await retrieve(session, ctx, ws.id, "completely different query terms")
     assert result.no_answer
     assert result.chunks  # nearest sources still surfaced (CHAT-9)
+
+
+async def test_no_answer_probe_overlaps_fused_vector_search(
+    session: AsyncSession,
+    qdrant_collection: None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ctx, ws = await seed_workspace(session, "probe-overlap")
+    await upsert_texts(ctx, ws, ["alpha report"])
+    client = get_qdrant()
+    original = client.query_points
+    fused_started = asyncio.Event()
+    probe_started = asyncio.Event()
+
+    async def observed_query_points(*args, **kwargs):  # type: ignore[no-untyped-def]
+        if kwargs.get("prefetch") is not None:
+            fused_started.set()
+            await asyncio.wait_for(probe_started.wait(), timeout=1)
+        elif kwargs.get("using") == "dense" and kwargs.get("limit") == 1:
+            probe_started.set()
+            await asyncio.wait_for(fused_started.wait(), timeout=1)
+        return await original(*args, **kwargs)
+
+    monkeypatch.setattr(client, "query_points", observed_query_points)
+    result = await asyncio.wait_for(
+        retrieve(session, ctx, ws.id, "alpha"), timeout=2
+    )
+
+    assert result.chunks
+    assert fused_started.is_set() and probe_started.is_set()
 
 
 async def test_query_embedding_cache_reports_cold_miss_then_warm_hit(

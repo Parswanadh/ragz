@@ -30,6 +30,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from time import perf_counter
+from typing import Any
 from uuid import UUID, uuid5
 
 import structlog
@@ -543,6 +544,26 @@ def _dedupe_hq(candidates: list[RetrievedChunk]) -> list[RetrievedChunk]:
     return [best[key] for key in order]
 
 
+def _stable_identity(chunk: RetrievedChunk) -> tuple[str, int, int, int]:
+    return (str(chunk.document_id), chunk.page, chunk.chunk_index, chunk.version)
+
+
+def _stable_chunk_order(candidates: Sequence[RetrievedChunk]) -> list[RetrievedChunk]:
+    """Make equal-score RRF output deterministic across Qdrant executions."""
+    return sorted(candidates, key=lambda chunk: (-chunk.score, *_stable_identity(chunk)))
+
+
+def _stable_rerank_order(
+    scores: Sequence[float], candidates: Sequence[RetrievedChunk]
+) -> list[int]:
+    if len(scores) != len(candidates):
+        raise ValueError("rerank scores and candidates must have the same length")
+    return sorted(
+        range(len(candidates)),
+        key=lambda index: (-scores[index], *_stable_identity(candidates[index])),
+    )
+
+
 def _chunk_from_point(point: models.ScoredPoint) -> RetrievedChunk:
     payload = point.payload or {}
     return RetrievedChunk(
@@ -814,19 +835,50 @@ async def retrieve(
             ),
         )
     ]
-    with _capture_stage(stage_timings_ms, "vector_search"), observe_stage(
-        "vector_search"
-    ):
-        fused = await client.query_points(
-            collection_name,
-            prefetch=prefetch,
-            query=models.FusionQuery(fusion=models.Fusion.RRF),
-            query_filter=flt,  # belt and braces on top of the filtered prefetches
-            limit=fetch_k,
-            with_payload=True,
-        )
+    top_dense_results: list[Any] | None = None
+
+    async def run_no_answer_probes() -> list[Any]:
+        with _capture_stage(stage_timings_ms, "no_answer_probe"):
+            return await asyncio.gather(
+                *(
+                    client.query_points(
+                        collection_name,
+                        query=dense_vec,
+                        using="dense",
+                        query_filter=flt,
+                        limit=1,
+                        with_payload=False,
+                    )
+                    for dense_vec in dense_vecs
+                )
+            )
+
+    no_answer_task = (
+        asyncio.create_task(run_no_answer_probes())
+        if not ws.rerank_enabled
+        else None
+    )
+    try:
+        with _capture_stage(stage_timings_ms, "vector_search"), observe_stage(
+            "vector_search"
+        ):
+            fused = await client.query_points(
+                collection_name,
+                prefetch=prefetch,
+                query=models.FusionQuery(fusion=models.Fusion.RRF),
+                query_filter=flt,  # belt and braces on top of filtered prefetches
+                limit=fetch_k,
+                with_payload=True,
+            )
+        if no_answer_task is not None:
+            top_dense_results = await no_answer_task
+    except BaseException:
+        if no_answer_task is not None and not no_answer_task.done():
+            no_answer_task.cancel()
+            await asyncio.gather(no_answer_task, return_exceptions=True)
+        raise
     with _capture_stage(stage_timings_ms, "candidate_decode"):
-        candidates = [_chunk_from_point(p) for p in fused.points]
+        candidates = _stable_chunk_order([_chunk_from_point(p) for p in fused.points])
     # Close the read-then-query window (Cubic P0). The pre-query exclusion above
     # is a SNAPSHOT: an ACL can commit between that read and query_points, and
     # Qdrant would still be serving the pre-change payload for a document the
@@ -901,6 +953,10 @@ async def retrieve(
                 "reranker_unavailable_falling_back",
                 workspace_id=str(workspace_id), error=str(exc),
             )
+            # The optimistic path did not start dense probes because a healthy
+            # reranker supplies the threshold score. On graceful degradation,
+            # recover the original dense-cosine no-answer semantics now.
+            top_dense_results = await run_no_answer_probes()
         else:
             # Cost reporting (design 2026-08-15 §2): a billable reranker (Cohere)
             # exposes its billed search-units; local TEI/lexical rerankers don't
@@ -916,7 +972,7 @@ async def retrieve(
                     prompt_tokens=0, completion_tokens=0,
                     units=rerank_units, commit=False,
                 )
-            order = sorted(range(len(candidates)), key=lambda i: scores[i], reverse=True)
+            order = _stable_rerank_order(scores, candidates)
             top = order[:k]
             reranked = [replace(candidates[i], score=scores[i]) for i in top]
             return RetrievalResult(
@@ -928,20 +984,7 @@ async def retrieve(
             )
 
     chunks = candidates[:k]
-    with _capture_stage(stage_timings_ms, "no_answer_probe"):
-        top_dense_results = await asyncio.gather(
-            *(
-                client.query_points(
-                    collection_name,
-                    query=dense_vec,
-                    using="dense",
-                    query_filter=flt,
-                    limit=1,
-                    with_payload=False,
-                )
-                for dense_vec in dense_vecs
-            )
-        )
+    assert top_dense_results is not None
     best_cosine = max(
         (
             float(result.points[0].score)
