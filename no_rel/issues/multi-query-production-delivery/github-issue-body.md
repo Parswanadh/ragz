@@ -43,12 +43,15 @@ not a claim that MQR is universally better.
 - Run the original dense embedding concurrently with query expansion.
 - Impose an absolute expansion deadline, then use the exact Q1 path on timeout.
 - Cache query embeddings and expansions in bounded, process-local TTL/LRU
-  caches using opaque SHA-256 namespaced keys.
+  caches using opaque SHA-256 namespaced keys; coalesce identical cold keys so
+  concurrent requests do not duplicate provider calls.
 - Retry only transient Cohere statuses/transport failures with bounded backoff;
   never retry authentication failures.
 - Preserve the same tenant, workspace, ACL, security-projection and
   current-version filter on every lane, followed by the existing ACL recheck.
 - Make equal-score fusion and rerank output deterministic.
+- Persist incurred retrieval-provider usage before downstream source assembly
+  or answer generation can fail/cancel.
 - Preserve independent off switches for MQR, reranking and both caches.
 
 ## Acceptance criteria
@@ -63,6 +66,8 @@ not a claim that MQR is universally better.
       not contain query text, generated alternatives, credentials or bodies.
 - [ ] Caches are bounded, expiring, copy-safe and namespaced by effective model,
       dimension/prompt version and lane count as applicable.
+- [ ] Cancelling the request that owns a cold single-flight key does not cancel
+      unrelated waiters; one waiter reclaims the key.
 - [ ] A migration, configuration examples and production defaults are included.
 - [ ] Backend, frontend, browser authorization and production-build gates pass.
 - [ ] Benchmark claims state corpus, qrels unit, denominator, cache state and

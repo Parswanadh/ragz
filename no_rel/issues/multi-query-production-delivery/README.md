@@ -19,7 +19,7 @@ provider calls, caches, production settings, and new latency/failure semantics.
 
 ## Branches and evidence
 
-- Reviewable product branch: `codex/mqr-production-ready` at `649c3cc1`
+- Reviewable product branch: `codex/mqr-production-ready` at `3fac9fb1`
 - Research/evidence branch: `codex/multi-query-retrieval` at `294a8846`
 - Upstream base used for assembly: `9d08839`
 - Canonical implementation plan:
@@ -31,6 +31,11 @@ provider calls, caches, production settings, and new latency/failure semantics.
   `docs/benchmarks/2026-08-25-normalized-four-system-followup.md`
 - Browser/API authorization attestation:
   `docs/verification/2026-08-24-mqr-superadmin-product-smoke.md`
+
+The final independent review also closed cold-cache stampedes, owner-cancellation
+fan-out, pre-deadline cancellation, retrieval-usage rollback windows, invalid
+embedding-model selection, and permission-mismatched Evals hooks. See the PR
+draft and final verification record for the exact regression coverage.
 
 The production branch intentionally excludes raw benchmark runs, private-corpus
 adapters, generated reports, and competitor source trees.

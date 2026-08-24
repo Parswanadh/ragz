@@ -13,9 +13,16 @@ Closes: `#<accepted-issue-number>`
 - Starts the original embedding speculatively while expansion is in flight and
   falls back to Q1 on a bounded deadline or provider failure.
 - Adds bounded process-local TTL/LRU caches for query embeddings and expansions.
+- Coalesces identical cold cache keys and lets a waiter safely reclaim a key if
+  the original owner is cancelled.
 - Adds bounded transient Cohere retries, deterministic tie ordering and an
   overlapping no-answer probe.
+- Makes retrieval-provider usage durable before source assembly, client-visible
+  frames, or answer-provider calls can fail or be cancelled.
 - Adds low-cardinality cache, expansion and rerank-stage metrics.
+- Rejects embedding-only model IDs from completion/eval model resolution and
+  maps the Evals UI to `evals.*`, `documents.list`, and `models.read`
+  capabilities without issuing known-forbidden requests.
 - Adds component, API, retrieval, isolation and Playwright coverage.
 
 ## Security properties preserved
@@ -60,16 +67,18 @@ fabricated zero scores. These results are not a universal product ranking.
 ## Verification
 
 - Focused backend MQR/cache/retry/isolation tests: `102 passed`
-- Frontend unit/component suite: `701 passed`
+- Complete backend suite: `1762 passed, 14 skipped`
+- Frontend unit/component suite: `709 passed`
 - Ruff: passed
 - Strict mypy (`src`, 161 files): passed
 - ESLint and TypeScript: passed
 - Production frontend build: passed
-- Initial bundle: `171.5 kB` gzip against a `200 kB` budget
+- Initial bundle: `171.7 kB` gzip against a `200 kB` budget
 - Production Compose render: passed
 - Alembic: one head (`6a8d2c4f1b90`)
-- Full backend and final Playwright checks: fill from `review-checklist.md` at
-  the exact commit immediately before opening the PR
+- Fresh isolated Playwright superadmin product smoke: `1 passed` in `3.9 s`
+- Three independent read-only audits: no remaining confirmed P1/P2 or
+  permission/evidence discrepancy in their assigned scope
 
 ## Review guide
 

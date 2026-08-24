@@ -25,6 +25,8 @@ different branch or a dirty checkout.
 ## Latency and resilience
 
 - [ ] query-embedding cache TTL, LRU, namespace and vector-width tests pass
+- [ ] identical cold embedding/expansion calls coalesce and owner cancellation
+      makes a waiter reclaim rather than fail the shared request
 - [ ] expansion cache TTL, prompt/model/count namespace tests pass
 - [ ] original embedding begins before expansion completes
 - [ ] absolute deadline produces exact Q1 fallback and no leaked task
@@ -32,6 +34,8 @@ different branch or a dirty checkout.
 - [ ] retry/backoff is bounded and 401 is not retried
 - [ ] equal-score output is deterministic
 - [ ] no-answer probes overlap fused search and are cancelled safely on errors
+- [ ] incurred retrieval usage is visible from another transaction before
+      backfill/source assembly and remains durable on LLM failure/disconnect
 
 ## Verification commands
 

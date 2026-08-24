@@ -18,8 +18,11 @@ React/TypeScript, Vitest, Playwright, Docker, LiteLLM/OpenAI, Cohere.
 
 ## Global constraints
 
-- Work only in `/home/parshu/projects/rag-comparison-sources/ragz-b91c898` on
-  `codex/multi-query-retrieval`; do not edit the shared checkout.
+- Keep research/evidence in
+  `/home/parshu/projects/rag-comparison-sources/ragz-b91c898` on
+  `codex/multi-query-retrieval`; assemble reviewable product code in the
+  isolated `/home/parshu/projects/rag-comparison-sources/ragz-mqr-production-ready`
+  worktree on `codex/mqr-production-ready`. Do not edit the shared checkout.
 - Do not use Superpowers or full-history subagents.
 - `upstream/main` at `9d08839` is already an ancestor; never rebase merely for
   appearance.
@@ -277,20 +280,20 @@ system that exposes a valid path.
   workspace settings.
 - [x] Include every known limitation and explicitly state no universal ranking.
 - [x] Run link, JSON/JSONL, credential-pattern and public-text privacy checks.
-- [ ] Commit and push `docs: prepare MQR issue and PR package`.
+- [x] Commit and push `docs: prepare MQR issue and PR package`.
 
 ### Task 10: Final verification and cleanup
 
-- [ ] Run Ruff over the backend.
-- [ ] Run strict mypy over `src` and every changed script.
-- [ ] Run the complete backend suite against native Docker.
-- [ ] Run frontend lint, typecheck, unit tests and production build/bundle gate.
-- [ ] Run targeted Playwright browser smoke.
-- [ ] Parse every new JSON/JSONL artifact and verify unique denominators/hashes.
-- [ ] Verify no credentials/private text and no benchmark-owned containers.
-- [ ] Move private temporary state to trash after public hashes are durable.
-- [ ] Verify branch equals its pushed remote and remains based on upstream main.
-- [ ] Do not open the issue or PR; report exact commit, tests and remaining
+- [x] Run Ruff over the backend.
+- [x] Run strict mypy over `src` and every changed script.
+- [x] Run the complete backend suite against native Docker.
+- [x] Run frontend lint, typecheck, unit tests and production build/bundle gate.
+- [x] Run targeted Playwright browser smoke.
+- [x] Parse every new JSON/JSONL artifact and verify unique denominators/hashes.
+- [x] Verify no credentials/private text and no benchmark-owned containers.
+- [x] Move private temporary state to trash after public hashes are durable.
+- [x] Verify branch equals its pushed remote and remains based on upstream main.
+- [x] Do not open the issue or PR; report exact commit, tests and remaining
   external gates.
 
 ## Self-review
