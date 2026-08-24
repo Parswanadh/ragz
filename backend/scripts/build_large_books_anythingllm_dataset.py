@@ -171,7 +171,11 @@ async def build(args: argparse.Namespace) -> Path:
     _write_jsonl(output / "qrels.jsonl", qrels)
     manifest = {
         "schema_version": 1,
-        "dataset_id": "large-books-v1-page-normalized",
+        "dataset_id": (
+            "large-books-v1-page-normalized"
+            if args.pages_per_document == 1
+            else f"large-books-v1-{args.pages_per_document}page-normalized"
+        ),
         "source_dataset_id": "large-books-v1",
         "temporary_private_adapter_input": True,
         "redistribution_permitted": False,
