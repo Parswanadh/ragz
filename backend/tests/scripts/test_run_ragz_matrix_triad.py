@@ -11,6 +11,7 @@ from scripts.run_ragz_matrix_triad import (
     condition_id,
     load_private_cases,
     ranking_conditions,
+    ranking_match_kind,
     summarize,
 )
 
@@ -22,6 +23,25 @@ def test_frozen_ranking_matrix_has_twelve_unique_conditions() -> None:
     assert len(set(values)) == 12
     assert values[0] == "q1_rerank-off_cache-off"
     assert values[-1] == "q5_rerank-50_cache-off"
+
+
+def test_ranking_match_accepts_only_reordering_inside_equal_score_ties() -> None:
+    expected = [
+        {"evidence_id": "a", "rank": 1, "score": 1.0},
+        {"evidence_id": "b", "rank": 2, "score": 0.25},
+        {"evidence_id": "c", "rank": 3, "score": 0.25},
+    ]
+    tied = [
+        {"evidence_id": "a", "rank": 1, "score": 1.0},
+        {"evidence_id": "c", "rank": 2, "score": 0.25},
+        {"evidence_id": "b", "rank": 3, "score": 0.25},
+    ]
+    changed = [*tied[:2], {"evidence_id": "d", "rank": 3, "score": 0.25}]
+
+    assert ranking_match_kind(expected, expected) == "exact"
+    assert ranking_match_kind(tied, expected) == "score_tie_equivalent"
+    assert ranking_match_kind(changed, expected) == "drift"
+    assert ranking_match_kind(tied, None) == "screen_repair"
 
 
 @pytest.mark.parametrize("query_count", [0, 2, 4, 6])

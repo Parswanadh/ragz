@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "failed_interrupted_validation_contract",
+  "completed_rows": 18,
+  "provider_calls_persisted": 20,
+  "trigger": "eight restored no-rerank rows reordered candidates having exactly tied RRF scores",
+  "quality_aggregate_eligible": false,
+  "private_content_persisted": false,
+  "resolution": "The replacement runner distinguishes exact order, score-tie-equivalent order, material drift, and repair of a failed screen row. Only material drift fails the run."
+}

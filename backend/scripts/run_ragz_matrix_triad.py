@@ -136,6 +136,30 @@ def ranking_conditions() -> tuple[tuple[int, int | None], ...]:
     )
 
 
+def ranking_match_kind(
+    actual: Sequence[Mapping[str, object]],
+    expected: Sequence[Mapping[str, object]] | None,
+) -> str:
+    """Classify exact, score-tie-equivalent, repaired, and changed rankings."""
+    if expected is None:
+        return "screen_repair"
+    if list(actual) == list(expected):
+        return "exact"
+
+    def score_multiset(rows: Sequence[Mapping[str, object]]) -> list[tuple[str, float]]:
+        result: list[tuple[str, float]] = []
+        for item in rows:
+            score = item.get("score")
+            if isinstance(score, bool) or not isinstance(score, (int, float)):
+                raise TriadContractError("ranking score is not numeric")
+            result.append((str(item.get("evidence_id", "")), float(score)))
+        return sorted(result)
+
+    if score_multiset(actual) == score_multiset(expected):
+        return "score_tie_equivalent"
+    return "drift"
+
+
 def load_private_cases(path: Path) -> list[dict[str, Any]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, list) or not payload:
@@ -617,13 +641,10 @@ async def run(args: argparse.Namespace) -> None:
                             for rank, item in enumerate(chunks, 1)
                         ]
                         expected_screen = screen_rankings[key][query_id]
-                        ranking_match = (
-                            actual_screen == expected_screen
-                            if expected_screen is not None
-                            else None
-                        )
-                        screen_repair = expected_screen is None
-                        if ranking_match is False:
+                        match_kind = ranking_match_kind(actual_screen, expected_screen)
+                        ranking_match = match_kind in {"exact", "score_tie_equivalent"}
+                        screen_repair = match_kind == "screen_repair"
+                        if match_kind == "drift":
                             errors.append("retrieval:RankingDrift")
                         context_started = time.perf_counter()
                         context_text, context_ids = build_context(
@@ -740,6 +761,7 @@ async def run(args: argparse.Namespace) -> None:
                             "answerable": bool(case["answerable"]),
                             "retrieved_ids": [item["screen_id"] for item in chunks],
                             "ranking_match_screen": ranking_match,
+                            "ranking_match_kind": match_kind,
                             "screen_repair": screen_repair,
                             "full_context_sha256": context_hash,
                             "sent_context_sha256": sent_context_hash,

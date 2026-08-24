@@ -1,0 +1,48 @@
+{
+  "benchmark": "ragz-large-books-mqr-rerank-triad",
+  "conditions": [
+    "q1_rerank-off_cache-off",
+    "q1_rerank-10_cache-off",
+    "q1_rerank-20_cache-off",
+    "q1_rerank-50_cache-off",
+    "q3_rerank-off_cache-off",
+    "q3_rerank-10_cache-off",
+    "q3_rerank-20_cache-off",
+    "q3_rerank-50_cache-off",
+    "q5_rerank-off_cache-off",
+    "q5_rerank-10_cache-off",
+    "q5_rerank-20_cache-off",
+    "q5_rerank-50_cache-off"
+  ],
+  "created_at_utc": "2026-08-24T08:10:49.151062+00:00",
+  "denominator": {
+    "answerable": 20,
+    "total": 24,
+    "unanswerable": 4
+  },
+  "judge_independence": "separate_model_same_provider",
+  "models": {
+    "embedding_alias": "ragz-openai-text-embedding-3-large-d1024",
+    "embedding_dimension": 1024,
+    "embedding_model": "text-embedding-3-large",
+    "generation": "gpt-5.6-luna",
+    "judge": "gpt-5.4-mini",
+    "reranker": "rerank-v4.0-fast"
+  },
+  "privacy": {
+    "answers_persisted": false,
+    "contexts_persisted": false,
+    "private_inputs_persisted_publicly": false,
+    "provider_bodies_persisted": false,
+    "questions_persisted": false
+  },
+  "rag_triad": "exploratory_llm_judge_not_independent_ground_truth",
+  "schema_version": 1,
+  "state_sha256": {
+    "postgres_dump": "f58c3be647d817ca32445fbffc862baf4fc991de59ef4d136155ff4bad9068cb",
+    "private_queries": "81900489ee0218cec7ee1713ebc41d47b4623901391cc687f769e62e8f572f32",
+    "qdrant_snapshot": "f89a3f1f70423694ff926247372652ea1f2cf11b2f78d4844485224909249fd6",
+    "retrieval_screen_manifest": "3589d8879b7219309b2366bd4d201254db47d3375c73d5d56c5ebcbe4ee04168"
+  },
+  "status": "running"
+}
