@@ -24,3 +24,5 @@ def test_ingestion_settings_defaults(pristine_env, monkeypatch) -> None:  # type
     assert s.query_expansion_cache_max_entries == 5_000
     assert s.query_expansion_cache_ttl_seconds == 3_600
     assert s.multi_query_expansion_timeout_ms == 3_000
+    assert s.cohere_rerank_max_retries == 2
+    assert s.cohere_rerank_base_backoff_seconds == 0.5

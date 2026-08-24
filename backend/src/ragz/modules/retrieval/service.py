@@ -867,6 +867,33 @@ async def retrieve(
                 reranker = await get_reranker(session, get_settings())
             with _capture_stage(stage_timings_ms, "rerank"), observe_stage("rerank"):
                 scores = await reranker.rerank(query, [c.text for c in candidates])
+            if (
+                stage_timings_ms is not None
+                and hasattr(reranker, "last_provider_latency_ms")
+                and hasattr(reranker, "last_retry_wait_ms")
+                and hasattr(reranker, "last_local_latency_ms")
+            ):
+                total = float(stage_timings_ms.pop("rerank"))
+                retry_wait = min(
+                    total,
+                    max(0.0, float(getattr(reranker, "last_retry_wait_ms", 0.0))),
+                )
+                provider = min(
+                    total - retry_wait,
+                    max(
+                        0.0,
+                        float(getattr(reranker, "last_provider_latency_ms", 0.0)),
+                    ),
+                )
+                local = min(
+                    total - retry_wait - provider,
+                    max(0.0, float(getattr(reranker, "last_local_latency_ms", 0.0))),
+                )
+                stage_timings_ms["rerank.retry_wait"] = round(retry_wait, 4)
+                stage_timings_ms["rerank.provider"] = round(provider, 4)
+                stage_timings_ms["rerank.local"] = round(
+                    max(local, total - retry_wait - provider), 4
+                )
         except RerankUnavailable as exc:
             if strict_rerank:
                 raise

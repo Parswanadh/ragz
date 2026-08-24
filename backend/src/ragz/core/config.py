@@ -107,6 +107,8 @@ class Settings(BaseSettings):
     query_expansion_cache_max_entries: int = Field(default=5_000, ge=1, le=50_000)
     query_expansion_cache_ttl_seconds: int = Field(default=3_600, ge=1, le=86_400)
     multi_query_expansion_timeout_ms: int = Field(default=3_000, ge=100, le=30_000)
+    cohere_rerank_max_retries: int = Field(default=2, ge=0, le=5)
+    cohere_rerank_base_backoff_seconds: float = Field(default=0.5, ge=0.0, le=10.0)
     # Plan E: cross-encoder reranker (CHAT-2 pull-forward)
     rerank_url: str = "http://localhost:58081"
     rerank_backend: str = "tei"  # "tei" | "lexical" (lexical = deterministic, test/dev only)

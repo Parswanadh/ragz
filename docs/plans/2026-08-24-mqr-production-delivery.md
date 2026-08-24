@@ -150,15 +150,15 @@ commands.
 - Expose request attempts and accumulated retry-wait milliseconds for metrics;
   never expose response bodies or credentials.
 
-- [ ] Add failing tests for 429→200, 503 exhaustion, no retry on 401, bounded
+- [x] Add failing tests for 429→200, 503 exhaustion, no retry on 401, bounded
   `Retry-After`, malformed headers and billed units from the successful call.
-- [ ] Implement one reusable `httpx.AsyncClient` per reranker instance and the
+- [x] Implement one reusable `httpx.AsyncClient` per reranker instance and the
   bounded retry loop.
-- [ ] Preserve graceful fusion fallback in production and strict failure in
+- [x] Preserve graceful fusion fallback in production and strict failure in
   benchmark mode.
-- [ ] Split provider/retry-wait/local latency metrics without double counting.
-- [ ] Run focused tests, Ruff and strict mypy.
-- [ ] Commit and push `fix: retry transient Cohere rerank failures safely`.
+- [x] Split provider/retry-wait/local latency metrics without double counting.
+- [x] Run focused tests, Ruff and strict mypy.
+- [x] Commit and push `fix: retry transient Cohere rerank failures safely`.
 
 ### Task 5: Deterministic tie ordering and concurrent no-answer probe
 
