@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "failed_interrupted_output_limit",
+  "completed_rows": 15,
+  "provider_calls_persisted": 30,
+  "trigger": "both generation attempts for census-004 consumed exactly the 1000-token output ceiling before producing valid strict JSON",
+  "quality_aggregate_eligible": false,
+  "private_content_persisted": false,
+  "resolution": "Use a 3000-token output ceiling for every generation and judge call in the replacement run; retain the bounded structured-output retry and usage-derived budget cap."
+}

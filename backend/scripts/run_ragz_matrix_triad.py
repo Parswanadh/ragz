@@ -911,7 +911,7 @@ def parser() -> argparse.ArgumentParser:
     value.add_argument("--provider-retries", type=int, default=3)
     value.add_argument("--structured-retries", type=int, default=1)
     value.add_argument("--max-context-chars", type=int, default=30_000)
-    value.add_argument("--max-output-tokens", type=int, default=800)
+    value.add_argument("--max-output-tokens", type=int, default=3_000)
     value.add_argument("--budget-cap-usd", type=Decimal, default=Decimal("5.00"))
     return value
 
