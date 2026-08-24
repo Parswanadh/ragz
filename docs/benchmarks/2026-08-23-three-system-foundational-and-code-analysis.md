@@ -3,6 +3,17 @@
 Status: measured comparison plus source audit. This document does not promote
 the current runs into a universal product ranking.
 
+## 2026-08-24 RAGZ configuration update
+
+The follow-up large-books matrix tested Q1/Q3/Q5, rerank pools off/10/20/50,
+query-embedding cache cold/warm and all 12 RAG-Triad ranking configurations.
+It selects Q1/no-rerank as the default, keeps MQR off by default, retains P=50
+only as the opt-in rerank pool, and shows 16.96–35.70x warm-cache speedups. The
+complete report is
+`docs/benchmarks/2026-08-24-ragz-mqr-rerank-cache-results.md`. Its large-books
+metrics are not merged into the Open Manuals table below because the corpora,
+qrels and denominators differ.
+
 ## Pinned implementations
 
 | System | Revision | Clean comparison checkout |

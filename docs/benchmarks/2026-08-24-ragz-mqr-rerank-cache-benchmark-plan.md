@@ -1,5 +1,16 @@
 # RAGZ MQR, rerank and embedding-cache benchmark plan
 
+**Execution status (2026-08-24): completed with documented deviations.** The
+executed corpus was `large-books-v1` (three public PDFs, 4,412 pages, 24
+queries/20 answerable/four off-corpus), not the 22-document Open Manuals corpus
+named in Tasks 4–7 below. The retrieval screen used one scored observation per
+query because Cohere's account limit was empirically 9–10 RPM; the independent
+restored-state Triad pass supplied a second fresh retrieval observation for all
+12 ranking configurations. The first screen had one incomplete cell and was
+preserved as invalid; the final provenance-checked resume artifact has 288/288
+zero-error query-condition cells. No frequentist significance claim is made.
+Results: `docs/benchmarks/2026-08-24-ragz-mqr-rerank-cache-results.md`.
+
 **Goal:** Measure RAGZ with one, three and five total query lanes; rerank
 candidate pools `P={10,20,50}`; and query-embedding cache off/cold/warm, with
 atomic latency, retrieval quality, abstention, RAG-Triad, cost and resource

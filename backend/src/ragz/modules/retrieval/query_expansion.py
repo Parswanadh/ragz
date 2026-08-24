@@ -200,7 +200,12 @@ class LiteLLMQueryExpander:
         # that support it, but omit the field for exact known exceptions so an
         # enabled workspace does not silently degrade to one query.
         normalized_model = model.rsplit("/", 1)[-1]
-        if normalized_model not in _PROVIDER_DEFAULT_TEMPERATURE_MODELS:
+        if normalized_model in _PROVIDER_DEFAULT_TEMPERATURE_MODELS:
+            # Query rewriting is a latency-sensitive, bounded extraction task.
+            # Pin low reasoning so hidden reasoning tokens cannot consume the
+            # small structured-output budget before alternatives are emitted.
+            payload["reasoning_effort"] = "low"
+        else:
             payload["temperature"] = 0.0
         try:
             async with httpx.AsyncClient(

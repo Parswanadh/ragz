@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "status": "completed_with_comparability_boundaries",
+  "selected_ragz_default": "q1_rerank-off_cache-off",
+  "selected_opt_in_rerank_pool": 50,
+  "large_books": {
+    "dataset_id": "large-books-v1",
+    "documents": 3,
+    "pages": 4412,
+    "queries": 24,
+    "answerable": 20,
+    "off_corpus": 4,
+    "ragz": {
+      "embedding": "text-embedding-3-large/1024",
+      "exact_page_recall_at_5": 0.6,
+      "exact_page_mrr_at_5": 0.4766666666666667,
+      "exact_page_ndcg_at_5": 0.5074356157188729,
+      "document_recall_at_5": 1.0,
+      "document_mrr_at_5": 1.0,
+      "screen_latency_ms": {
+        "mean": 678.4681958333333,
+        "p50": 720.14555,
+        "p95": 826.96536
+      }
+    },
+    "anythingllm": {
+      "embedding": "text-embedding-3-small/default-width",
+      "exact_page_metrics": "unavailable",
+      "document_recall_at_5": 1.0,
+      "document_mrr_at_5": 1.0,
+      "latency_ms": {
+        "mean": 336.642023875,
+        "p50": 336.855974,
+        "p95": 410.99313815
+      },
+      "directly_model_comparable": false,
+      "native_chat_status": "oom_after_12_of_24",
+      "completed_answer_track": "external_adapter_not_native"
+    },
+    "ragflow": {
+      "status": "not_run_on_large_books",
+      "quality_score_emitted": false
+    },
+    "onyx": {
+      "status": "eligible_not_executed",
+      "version": "v4.6.0",
+      "commit": "b4553eb55ceb2c6a561c57892a528c65bd8626b1",
+      "native_docker_cpus": 22,
+      "native_docker_memory_bytes": 16246620160,
+      "native_free_disk_bytes": 183061700608,
+      "quality_score_emitted": false
+    }
+  },
+  "open_manuals_same_large1024": {
+    "comparability": "same corpus, embedding model/dimension and top five; latency warmup/cache protocols still differ",
+    "ragz": {
+      "recall_at_5": 1.0,
+      "mrr_at_5": 0.9667,
+      "ndcg_at_5": 0.9754,
+      "mean_latency_ms": 403.5,
+      "p50_latency_ms": 409.6,
+      "p95_latency_ms": 522.4
+    },
+    "anythingllm": {
+      "recall_at_5": 1.0,
+      "mrr_at_5": 0.9833,
+      "ndcg_at_5": 0.9877,
+      "mean_latency_ms": 281.2,
+      "p50_latency_ms": 250.8,
+      "p95_latency_ms": 536.7
+    },
+    "ragflow": {
+      "recall_at_5": 0.9833,
+      "mrr_at_5": 0.975,
+      "ndcg_at_5": 0.9772,
+      "mean_latency_ms": 467.2,
+      "p50_latency_ms": 419.9,
+      "p95_latency_ms": 593.8
+    }
+  },
+  "claim_boundaries": [
+    "Large-books AnythingLLM used a different embedding model and exposes no physical-page metric.",
+    "RAGFlow's completed large/1024 score is Open Manuals, not large-books.",
+    "Onyx now passes the native-daemon resource preflight but was not deployed or scored.",
+    "No cross-corpus value is used to name a winner."
+  ]
+}

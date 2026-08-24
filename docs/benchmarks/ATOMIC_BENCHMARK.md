@@ -1,6 +1,6 @@
 # Atomic Benchmark
 
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 This is the canonical short-form record for the networking retrieval, atomic
 latency, answer-model parity, AGNO boundary, and RAGFlow execution status. Raw
@@ -9,6 +9,37 @@ query/document text and credentials are not committed.
 The expanded 70-query/ten-dimension campaign and the actual RAGFlow runtime
 attempt are documented in
 `docs/benchmarks/2026-08-23-professional-embedding-rag-triad-and-ragflow.md`.
+
+## 2026-08-24 MQR/rerank/cache decision
+
+The new large-books campaign evaluated all 12 unique ranking configurations
+from query lanes `{1,3,5}` and rerank candidate pools `{off,10,20,50}`, plus
+three cold/warm query-embedding cache pairs. It used three public PDFs (4,412
+pages), 18,734 chunks, 24 queries (20 answerable/four off-corpus), OpenAI
+`text-embedding-3-large` at 1,024 dimensions, Cohere `rerank-v4.0-fast`, Luna
+answers and a separate GPT-5.4-mini judge.
+
+- Recommended default: one query, reranker off.
+- If reranking is explicitly enabled: retain `P=50` pending a larger repeated
+  evaluation; reranking remains off by default.
+- MQR remains superadmin-only and off by default; three lanes are safer than
+  five when a workspace-specific evaluation justifies it.
+- Retrieval Pareto set: Q1/no-rerank and Q1/P=50. No MQR condition survived.
+- Q1/no-rerank Recall/MRR/nDCG: `0.6000 / 0.4767 / 0.5074` on exact-page qrels.
+- Warm query-embedding cache mean: `19.00 / 42.80 / 54.78 ms` for Q1/Q3/Q5,
+  versus cache-off `678.47 / 940.83 / 928.84 ms`.
+- Low-reasoning Luna expansion mean/p95: `2,814.25 / 3,580.19 ms`, versus
+  provider-default `6,635.31 / 21,559.85 ms`; all 24 expansions completed on
+  the first attempt with zero fallback lanes.
+- Complete RAG-Triad denominator: 288 unique zero-error query-condition rows,
+  288 generation calls and 288 judge calls; answer+judge cost `$0.92281055`.
+- Q1/no-rerank atomic retrieval mean: `839.50 ms`, of which dense embedding was
+  `801.85 ms` (`95.5%`).
+- Q1/P=50 Cohere provider mean: `710.70 ms`; benchmark quota wait is reported
+  separately and is not mislabeled as model latency.
+
+Complete interpretation, competitor boundaries and improvement order:
+`docs/benchmarks/2026-08-24-ragz-mqr-rerank-cache-results.md`.
 
 ## Frozen published retrieval configuration
 

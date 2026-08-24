@@ -71,6 +71,7 @@ async def test_luna_expansion_uses_supported_provider_default_temperature() -> N
     result = await expander.expand("original", model="openai/gpt-5.6-luna")
 
     assert "temperature" not in captured
+    assert captured["reasoning_effort"] == "low"
     assert captured["max_tokens"] == 200
     assert result.queries == ("original", "one alternative", "second alternative")
 
@@ -108,6 +109,7 @@ async def test_five_query_expansion_uses_four_perspectives_and_caps_output() -> 
         "manual evidence phrasing",
     )
     assert "temperature" not in captured
+    assert captured["reasoning_effort"] == "low"
     assert captured["max_tokens"] == 300
     schema = captured["response_format"]["json_schema"]["schema"]
     assert schema["required"] == [

@@ -351,6 +351,7 @@ def main() -> int:
         "model": args.model,
         "llm_top_p": "provider-default-1-not-sent",
         "temperature": "provider-default-not-sent",
+        "reasoning_effort": "low",
         "query_count": len(queries),
         "total_query_lanes": EXPECTED_TOTAL_QUERIES,
         "perspectives": [
