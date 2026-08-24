@@ -379,19 +379,43 @@ class RateLimitedReranker:
         self._lock = asyncio.Lock()
         self._last_started = 0.0
         self.last_search_units = 0
+        self.last_rate_limit_wait_ms = 0.0
+        self.last_provider_latency_ms = 0.0
 
     async def rerank(self, query: str, texts: list[str]) -> list[float]:
         async with self._lock:
             now = time.monotonic()
             wait = self._interval - (now - self._last_started)
+            wait_started = time.perf_counter()
             if wait > 0:
                 await asyncio.sleep(wait)
+            self.last_rate_limit_wait_ms = (
+                time.perf_counter() - wait_started
+            ) * 1000
             self._last_started = time.monotonic()
+            provider_started = time.perf_counter()
             scores = await self._delegate.rerank(query, texts)
+            self.last_provider_latency_ms = (
+                time.perf_counter() - provider_started
+            ) * 1000
             self.last_search_units = int(
                 getattr(self._delegate, "last_search_units", 0) or 0
             )
             return [float(score) for score in scores]
+
+
+def split_benchmark_rerank_timing(
+    timings_ms: dict[str, float], reranker: Any
+) -> None:
+    """Separate account throttling from provider and local rerank latency."""
+    if "rerank" not in timings_ms or not hasattr(reranker, "last_provider_latency_ms"):
+        return
+    total = float(timings_ms.pop("rerank"))
+    wait = min(total, max(0.0, float(reranker.last_rate_limit_wait_ms)))
+    provider = min(total - wait, max(0.0, float(reranker.last_provider_latency_ms)))
+    timings_ms["rerank.rate_limit_wait"] = wait
+    timings_ms["rerank.provider"] = provider
+    timings_ms["rerank.local"] = max(0.0, total - wait - provider)
 
 
 def _install_settings(settings: Any) -> None:
@@ -415,7 +439,7 @@ def _install_settings(settings: Any) -> None:
 
 def _install_benchmark_reranker(
     *, provider: str, api_key: str, model: str, requests_per_minute: int
-) -> None:
+) -> Any:
     import ragz.modules.retrieval.service as retrieval
     from ragz.modules.retrieval.rerank import CohereReranker, LexicalReranker
 
@@ -435,6 +459,7 @@ def _install_benchmark_reranker(
         return reranker
 
     retrieval.get_reranker = controlled_reranker  # type: ignore[attr-defined,assignment]
+    return reranker
 
 
 async def _seed_corpus(

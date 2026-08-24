@@ -21,6 +21,7 @@ from run_multi_query_benchmark import (  # noqa: E402
     resolve_embedding_track,
     retrieval_matrix_conditions,
     safe_query_record,
+    split_benchmark_rerank_timing,
     summarize_stage_timings,
 )
 from seed_networking_comparison_lab import (  # noqa: E402
@@ -100,6 +101,24 @@ async def test_rate_limited_reranker_preserves_scores_and_billed_units() -> None
 
     assert scores == [0.0, 1.0]
     assert reranker.last_search_units == 3
+    assert reranker.last_rate_limit_wait_ms >= 0
+    assert reranker.last_provider_latency_ms >= 0
+
+
+def test_split_benchmark_rerank_timing_preserves_total() -> None:
+    class Observed:
+        last_rate_limit_wait_ms = 60.0
+        last_provider_latency_ms = 35.0
+
+    timings = {"dense_embedding": 5.0, "rerank": 100.0}
+
+    split_benchmark_rerank_timing(timings, Observed())
+
+    assert "rerank" not in timings
+    assert timings["rerank.rate_limit_wait"] == 60.0
+    assert timings["rerank.provider"] == 35.0
+    assert timings["rerank.local"] == 5.0
+    assert sum(value for key, value in timings.items() if key.startswith("rerank")) == 100.0
 
 
 def test_rate_limited_reranker_rejects_nonpositive_rate() -> None:

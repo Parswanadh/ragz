@@ -40,6 +40,7 @@ from run_multi_query_benchmark import (  # noqa: E402
     StaticQueryExpander,
     _install_benchmark_reranker,
     _install_settings,
+    split_benchmark_rerank_timing,
 )
 from run_open_manuals_matrix_cell import (  # noqa: E402
     GENERATION_MODEL,
@@ -516,7 +517,7 @@ async def run(args: argparse.Namespace) -> None:
             model_catalog_url="",
         )
         _install_settings(settings)
-        _install_benchmark_reranker(
+        benchmark_reranker = _install_benchmark_reranker(
             provider="cohere",
             api_key=cohere_key,
             model=RERANK_MODEL,
@@ -579,6 +580,9 @@ async def run(args: argparse.Namespace) -> None:
                             )
                         except Exception as exc:  # noqa: BLE001
                             errors.append(f"retrieval:{safe_error(exc)}")
+                        split_benchmark_rerank_timing(
+                            retrieval_stages, benchmark_reranker
+                        )
                         timings["retrieval_total"] = (
                             time.perf_counter() - retrieval_started
                         ) * 1000
