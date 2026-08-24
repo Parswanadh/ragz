@@ -40,6 +40,7 @@ from run_multi_query_benchmark import (  # noqa: E402
     StaticQueryExpander,
     _install_benchmark_reranker,
     _install_settings,
+    ranking_metrics,
     split_benchmark_rerank_timing,
 )
 from run_open_manuals_matrix_cell import (  # noqa: E402
@@ -188,11 +189,11 @@ def load_source_map(path: Path) -> dict[str, str]:
 
 def load_screen_rankings(
     screen: Path, expected_query_ids: set[str]
-) -> dict[str, dict[str, list[dict[str, object]]]]:
+) -> dict[str, dict[str, list[dict[str, object]] | None]]:
     manifest = json.loads((screen / "manifest.json").read_text(encoding="utf-8"))
     if manifest.get("status") != "completed" or manifest.get("condition_matrix") is not True:
         raise TriadContractError("retrieval screen is not a completed matrix")
-    result: dict[str, dict[str, list[dict[str, object]]]] = {}
+    result: dict[str, dict[str, list[dict[str, object]] | None]] = {}
     for query_count, pool in ranking_conditions():
         key = condition_id(query_count, pool)
         rows_path = screen / key / "per_query.jsonl"
@@ -203,11 +204,14 @@ def load_screen_rankings(
         ]
         if len(rows) != len(expected_query_ids):
             raise TriadContractError(f"{key}: screen denominator mismatch")
-        by_query: dict[str, list[dict[str, object]]] = {}
+        by_query: dict[str, list[dict[str, object]] | None] = {}
         for row in rows:
             query_id = str(row.get("query_id", ""))
-            if query_id in by_query or row.get("error") is not None:
-                raise TriadContractError(f"{key}: duplicate or failed screen row")
+            if query_id in by_query:
+                raise TriadContractError(f"{key}: duplicate screen row")
+            if row.get("error") is not None:
+                by_query[query_id] = None
+                continue
             retrieved = row.get("retrieved")
             if not isinstance(retrieved, list):
                 raise TriadContractError(f"{key}: malformed ranking")
@@ -285,6 +289,7 @@ def citation_metrics(
 def summarize(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     complete = [row for row in rows if not row.get("error_codes")]
     answerable = [row for row in complete if row.get("answerable") is True]
+    retrieval_rows = [row for row in answerable if row.get("retrieval_metrics")]
     triad = {
         name: statistics.fmean(float(row["judge"][name]) for row in answerable)
         if answerable
@@ -331,6 +336,15 @@ def summarize(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         "complete": len(complete),
         "errors": len(rows) - len(complete),
         "answerable": len(answerable),
+        "screen_repairs": sum(bool(row.get("screen_repair")) for row in complete),
+        "retrieval": {
+            name: (
+                statistics.fmean(float(row["retrieval_metrics"][name]) for row in retrieval_rows)
+                if retrieval_rows
+                else None
+            )
+            for name in ("recall_at_k", "reciprocal_rank", "ndcg_at_k")
+        },
         "rag_triad": triad,
         "answer_abstention": {
             "true_positive": tp,
@@ -603,8 +617,13 @@ async def run(args: argparse.Namespace) -> None:
                             for rank, item in enumerate(chunks, 1)
                         ]
                         expected_screen = screen_rankings[key][query_id]
-                        ranking_match = actual_screen == expected_screen
-                        if not ranking_match:
+                        ranking_match = (
+                            actual_screen == expected_screen
+                            if expected_screen is not None
+                            else None
+                        )
+                        screen_repair = expected_screen is None
+                        if ranking_match is False:
                             errors.append("retrieval:RankingDrift")
                         context_started = time.perf_counter()
                         context_text, context_ids = build_context(
@@ -704,6 +723,15 @@ async def run(args: argparse.Namespace) -> None:
                             valid_ids=set(context_ids),
                             relevant_pages=relevant_pages,
                         )
+                        retrieval_quality = (
+                            ranking_metrics(
+                                retrieved=[str(item["screen_id"]) for item in chunks],
+                                relevant=relevant_pages,
+                                k=5,
+                            )
+                            if bool(case["answerable"]) and not errors
+                            else None
+                        )
                         timings["total"] = (time.perf_counter() - total_started) * 1000
                         row = {
                             "schema_version": 1,
@@ -712,6 +740,7 @@ async def run(args: argparse.Namespace) -> None:
                             "answerable": bool(case["answerable"]),
                             "retrieved_ids": [item["screen_id"] for item in chunks],
                             "ranking_match_screen": ranking_match,
+                            "screen_repair": screen_repair,
                             "full_context_sha256": context_hash,
                             "sent_context_sha256": sent_context_hash,
                             "sent_context_chunk_ids": context_ids,
@@ -719,6 +748,7 @@ async def run(args: argparse.Namespace) -> None:
                             "abstained": bool(answer.get("abstained", True)),
                             "judge": judge,
                             "citation": metrics,
+                            "retrieval_metrics": retrieval_quality,
                             "usage": {
                                 "generation": generation_usage,
                                 "judge": judge_usage,

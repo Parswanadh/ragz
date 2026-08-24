@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "status": "invalid_as_complete_matrix",
+  "validated_at_utc": "2026-08-24T08:12:00+00:00",
+  "source_manifest_sha256": "3589d8879b7219309b2366bd4d201254db47d3375c73d5d56c5ebcbe4ee04168",
+  "dataset_identity_correction": {
+    "manifest_value": "networking-pdfs-v1",
+    "correct_value": "large-books-v1",
+    "basis": "the three source PDF IDs/hashes and the authoritative dataset manifest",
+    "authoritative_dataset_manifest_sha256": "b3a0386d93653f1a8a1d541e9314094105ab353d18f40193b7b81cb856595c80"
+  },
+  "complete_condition_count": 14,
+  "invalid_condition": {
+    "condition_id": "q3_rerank-10_cache-off",
+    "expected_queries": 24,
+    "successful_queries": 19,
+    "failed_queries": 5,
+    "error_type": "RerankUnavailable",
+    "failed_query_ids": [
+      "census-003",
+      "census-004",
+      "census-005",
+      "postgres-002",
+      "postgres-003"
+    ],
+    "per_query_sha256": "6dc42a7eb58ca43cdd89154256dbaf809e3173a19972c28f2493667fe04704a2"
+  },
+  "quality_aggregate_eligible": false,
+  "latency_interpretation": {
+    "rerank_stage_includes_account_rate_limit_wait": true,
+    "provider_latency_isolated": false,
+    "eligible_use": "quality screening for the 14 complete conditions; rerank latency only as rate-gated end-to-end evidence"
+  },
+  "harness_findings": [
+    "The runner marked the campaign completed even when a condition contained query errors.",
+    "Rerank usage units in condition summaries were cumulative rather than condition-local.",
+    "The networking-specific manifest helper mislabeled this large-books-v1 corpus."
+  ],
+  "repair_protocol": "Rerun the failed condition from the exact private Postgres/Qdrant snapshot at a safer request rate; require 24/24 success and use the restored-state run as the replacement row."
+}

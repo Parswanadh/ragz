@@ -740,6 +740,14 @@ async def _run_mode(
     )
     effective_warmups = max(1, warmups) if cache_mode == "warm" else warmups
     async with factory() as session:
+        starting_rerank_usage_units = 0
+        if rerank_candidate_pool is not None:
+            starting_rows = (
+                await session.execute(
+                    select(UsageRecord).where(UsageRecord.feature == "rerank")
+                )
+            ).scalars().all()
+            starting_rerank_usage_units = sum(int(row.units) for row in starting_rows)
         workspace = await session.get(Workspace, workspace_id)
         assert workspace is not None
         workspace.multi_query_enabled = condition_query_count > 1
@@ -889,7 +897,10 @@ async def _run_mode(
                     select(UsageRecord).where(UsageRecord.feature == "rerank")
                 )
             ).scalars().all()
-            rerank_usage_units = sum(int(row.units) for row in usage_rows)
+            rerank_usage_units = (
+                sum(int(row.units) for row in usage_rows)
+                - starting_rerank_usage_units
+            )
     with (output / "per_query.jsonl").open("w", encoding="utf-8") as handle:
         for record in records:
             handle.write(json.dumps(record, sort_keys=True) + "\n")
@@ -1258,7 +1269,9 @@ async def run(args: argparse.Namespace) -> None:
         "index_embedding_tokens": progress.index_embedding_tokens,
         "query_embedding_attempts": progress.query_embedding_attempts,
     }
-    manifest["status"] = "completed"
+    query_error_count = sum(int(summary["errors"]) for summary in summaries.values())
+    manifest["status"] = "completed" if query_error_count == 0 else "failed_query_errors"
+    manifest["query_error_count"] = query_error_count
     if args.matrix:
         reranker_model_label = (
             args.cohere_rerank_model
@@ -1303,8 +1316,10 @@ async def run(args: argparse.Namespace) -> None:
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    progress.stage = "completed"
+    progress.stage = "completed" if query_error_count == 0 else "failed_query_errors"
     write_progress(output, progress)
+    if query_error_count:
+        raise RuntimeError("benchmark matrix completed with query errors")
 
 
 def main() -> None:
