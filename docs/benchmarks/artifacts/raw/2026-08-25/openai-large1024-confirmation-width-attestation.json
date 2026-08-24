@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "probe_status": "passed",
+  "model": "text-embedding-3-large",
+  "alias": "ragz-openai-text-embedding-3-large-d1024",
+  "dimension": 1024,
+  "actual_dimension": 1024,
+  "vector_count": 1,
+  "embedding_proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "credentials_persisted": false,
+  "probe_input_persisted": false,
+  "provider_response_persisted": false
+}

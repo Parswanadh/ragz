@@ -306,6 +306,7 @@ def embedding_configuration(
     dimension: int | None = None,
     alias: str | None = None,
     dataset_id: str | None = None,
+    base_path: str = "http://host.docker.internal:54000/v1",
 ) -> tuple[list[str], str, object, object]:
     """Build AnythingLLM environment flags for one embedding track.
 
@@ -342,7 +343,7 @@ def embedding_configuration(
                 "-e",
                 f"EMBEDDING_MODEL_PREF={cell.alias}",
                 "-e",
-                "LITE_LLM_BASE_PATH=http://host.docker.internal:54000/v1",
+                f"LITE_LLM_BASE_PATH={base_path}",
                 "-e",
                 "LITE_LLM_API_KEY",
             ],
@@ -500,7 +501,10 @@ def _dataset_identity(
     }
 
 
-def generation_configuration(model: str = ANSWER_MODEL) -> list[str]:
+def generation_configuration(
+    model: str = ANSWER_MODEL,
+    base_path: str = "http://host.docker.internal:54000/v1",
+) -> list[str]:
     return [
         "--add-host",
         "host.docker.internal:host-gateway",
@@ -511,7 +515,7 @@ def generation_configuration(model: str = ANSWER_MODEL) -> list[str]:
         "-e",
         "LITE_LLM_MODEL_TOKEN_LIMIT=8192",
         "-e",
-        "LITE_LLM_BASE_PATH=http://host.docker.internal:54000/v1",
+        f"LITE_LLM_BASE_PATH={base_path}",
         "-e",
         "LITE_LLM_API_KEY",
     ]
@@ -525,6 +529,17 @@ def workspace_configuration(name: str, candidate_depth: int) -> dict[str, Any]:
         "topN": candidate_depth,
         "openAiTemp": ANSWER_TEMPERATURE,
     }
+
+
+def validate_indexed_vector_count(vector_count: object, document_count: int) -> int:
+    if isinstance(vector_count, bool) or not isinstance(vector_count, int):
+        raise RuntimeError("AnythingLLM vector count response is malformed")
+    if vector_count < document_count:
+        raise RuntimeError(
+            f"AnythingLLM vector count {vector_count} is below input document count "
+            f"{document_count}"
+        )
+    return vector_count
 
 
 async def run(args: argparse.Namespace) -> Path:
@@ -555,6 +570,7 @@ async def run(args: argparse.Namespace) -> Path:
         dimension=embedding_dimension_arg,
         alias=embedding_alias_arg,
         dataset_id=dataset_identity["dataset_id"],
+        base_path=args.litellm_container_base_url,
     )
     embedding_model = (
         DEFAULT_EMBEDDING_MODEL
@@ -608,6 +624,7 @@ async def run(args: argparse.Namespace) -> Path:
     active_query_id: str | None = None
     indexing_started = time.perf_counter()
     indexing_ms: float | None = None
+    vector_count: int | None = None
     docker_env = os.environ.copy()
     if args.embedding_engine == "litellm":
         docker_env["LITE_LLM_API_KEY"] = _required_litellm_api_key(docker_env)
@@ -633,7 +650,14 @@ async def run(args: argparse.Namespace) -> Path:
                 "STORAGE_DIR=/app/server/storage",
                 "-e",
                 "DISABLE_TELEMETRY=true",
-                *generation_configuration(args.answer_model),
+                *(
+                    ["--network", args.docker_network]
+                    if args.docker_network
+                    else []
+                ),
+                *generation_configuration(
+                    args.answer_model, args.litellm_container_base_url
+                ),
                 *embedding_args,
                 "-e",
                 "VECTOR_DB=lancedb",
@@ -704,6 +728,11 @@ async def run(args: argparse.Namespace) -> Path:
                     f"{math.ceil(len(locations) / args.index_batch_size)}",
                     flush=True,
                 )
+            vector_count_response = await client.get("/api/v1/system/vector-count")
+            vector_count_response.raise_for_status()
+            vector_count = validate_indexed_vector_count(
+                vector_count_response.json().get("vectorCount"), len(documents)
+            )
             indexing_ms = (time.perf_counter() - indexing_started) * 1000
             stage = "warmup"
             for _ in range(args.warmups):
@@ -878,6 +907,9 @@ async def run(args: argparse.Namespace) -> Path:
         "repetitions": args.repetitions,
         "retrieval_retries": args.retrieval_retries,
         "index_batch_size": args.index_batch_size,
+        "indexed_vector_count": vector_count,
+        "docker_network": args.docker_network,
+        "litellm_container_base_url": args.litellm_container_base_url,
         "container_limits": {"memory": args.memory_limit, "cpus": args.cpus},
         "provider_calls": provider_calls,
         "hosted_cost_usd": hosted_cost,
@@ -937,6 +969,11 @@ def main() -> None:
         help="Fixed, attested LiteLLM alias for the selected matrix cell",
     )
     parser.add_argument("--answer-model", default=ANSWER_MODEL)
+    parser.add_argument(
+        "--litellm-container-base-url",
+        default="http://host.docker.internal:54000/v1",
+    )
+    parser.add_argument("--docker-network")
     parser.add_argument(
         "--embedding-proxy-fingerprint",
         help="Non-secret SHA-256 identity of the LiteLLM instance/configuration",

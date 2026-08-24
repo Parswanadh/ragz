@@ -21,6 +21,7 @@ from run_networking_anythingllm import (  # noqa: E402
     safe_http_status,
     summarize,
     unique_document_ids,
+    validate_indexed_vector_count,
     validate_storage_path,
     vector_search_with_retries,
     workspace_configuration,
@@ -143,6 +144,17 @@ def test_litellm_configuration_uses_fixed_matrix_alias_and_requested_cell() -> N
     assert "LITE_LLM_API_KEY" in configuration[0]
     assert not any(value.startswith("LITE_LLM_API_KEY=") for value in configuration[0])
     assert configuration[1] == "common-20-page-segments-openai-lancedb"
+
+
+def test_litellm_configuration_accepts_explicit_container_reachable_base_url() -> None:
+    configuration = embedding_configuration(
+        "litellm",
+        model="text-embedding-3-large",
+        dimension=1024,
+        base_path="http://litellm:4000/v1",
+    )
+
+    assert "LITE_LLM_BASE_PATH=http://litellm:4000/v1" in configuration[0]
 
 
 def test_litellm_configuration_rejects_invalid_matrix_cell() -> None:
@@ -318,6 +330,13 @@ def test_generation_configuration_pins_shared_litellm_answer_model() -> None:
     assert "host.docker.internal:host-gateway" in configuration
     assert "LITE_LLM_API_KEY" in configuration
     assert not any(value.startswith("LITE_LLM_API_KEY=") for value in configuration)
+
+
+def test_vector_count_must_cover_every_input_document() -> None:
+    assert validate_indexed_vector_count(5, 5) == 5
+    assert validate_indexed_vector_count(7, 5) == 7
+    with pytest.raises(RuntimeError, match="vector count"):
+        validate_indexed_vector_count(0, 5)
 
 
 def test_litellm_key_is_required_and_read_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:

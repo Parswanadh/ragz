@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "status": "invalid_empty_namespace",
+  "source_status": "completed",
+  "input_documents": 4412,
+  "attempted_index_batches": 276,
+  "scored_rows": 120,
+  "rows_with_results": 0,
+  "errors_reported_by_source_runner": 0,
+  "quality_aggregate_eligible": false,
+  "root_cause": "The container used host.docker.internal for a LiteLLM listener published only on host loopback under the native Docker daemon. The AnythingLLM update-embeddings endpoint returned HTTP 200 while swallowing per-document embedding failures, leaving the vector namespace empty.",
+  "runner_defects_fixed": [
+    "The runner now accepts an explicit Docker network and container-reachable LiteLLM base URL.",
+    "The runner now requires the final vector count to be at least the input document count before warmup or quality scoring."
+  ],
+  "numeric_zero_scores_are_invalid": true,
+  "credentials_persisted": false,
+  "provider_bodies_persisted": false
+}
