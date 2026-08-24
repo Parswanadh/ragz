@@ -54,10 +54,10 @@ def load_query_set(path: Path) -> list[dict[str, Any]]:
             raise ValueError(f"{query_id}: query must be 1-2000 characters")
         if (
             not isinstance(alternatives, list)
-            or len(alternatives) != 2
+            or len(alternatives) not in (2, 4)
             or any(not isinstance(item, str) or not item.strip() for item in alternatives)
         ):
-            raise ValueError(f"{query_id}: exactly two alternatives are required")
+            raise ValueError(f"{query_id}: exactly two or four alternatives are required")
         if not isinstance(answerable, bool):
             raise ValueError(f"{query_id}: answerable must be boolean")
         if not isinstance(relevant, list) or (answerable and not relevant):

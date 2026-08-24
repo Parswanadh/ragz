@@ -18,6 +18,7 @@ from run_multi_query_benchmark import (  # noqa: E402
     percentile,
     ranking_metrics,
     resolve_embedding_track,
+    retrieval_matrix_conditions,
     safe_query_record,
     summarize_stage_timings,
 )
@@ -50,6 +51,40 @@ def test_query_set_requires_original_alternatives_and_page_qrels(tmp_path: Path)
 
     assert loaded[0]["query_id"] == "q01"
     assert loaded[0]["relevant"][0]["pages"] == [10, 11]
+
+
+def test_query_set_accepts_four_perspective_alternatives_for_matrix(tmp_path: Path) -> None:
+    path = tmp_path / "queries.json"
+    path.write_text(
+        json.dumps(
+            [
+                {
+                    "query_id": "q-five",
+                    "query": "How does TCP recover?",
+                    "alternatives": ["exact", "terms", "mechanism", "evidence"],
+                    "relevant": [{"book_id": "book", "pages": [10]}],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    [row] = load_query_set(path)
+    assert row["alternatives"] == ["exact", "terms", "mechanism", "evidence"]
+
+
+def test_frozen_retrieval_matrix_has_15_unique_conditions() -> None:
+    conditions = retrieval_matrix_conditions()
+
+    assert len(conditions) == 15
+    assert len({condition.condition_id for condition in conditions}) == 15
+    assert {condition.query_count for condition in conditions} == {1, 3, 5}
+    assert {condition.rerank_candidate_pool for condition in conditions} == {
+        None,
+        10,
+        20,
+        50,
+    }
 
 
 @pytest.mark.parametrize(
@@ -219,6 +254,8 @@ def test_safe_record_never_contains_query_or_alternatives() -> None:
     assert record["expansion_count"] == 3
     assert record["answerable"] is True
     assert record["no_answer"] is False
+    assert record["embedding_cache_hits"] == 0
+    assert record["embedding_cache_misses"] == 0
     assert record["stage_timings_ms"] == {
         "dense_embedding": 9.8765,
         "vector_search": 2.3457,

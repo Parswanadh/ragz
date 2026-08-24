@@ -59,6 +59,32 @@ class BenchmarkProgress:
     query_embedding_attempts: int = 0
 
 
+@dataclass(frozen=True)
+class MatrixCondition:
+    query_count: int
+    rerank_candidate_pool: int | None
+    cache_mode: str
+
+    @property
+    def condition_id(self) -> str:
+        rerank = self.rerank_candidate_pool or "off"
+        return f"q{self.query_count}_rerank-{rerank}_cache-{self.cache_mode}"
+
+
+def retrieval_matrix_conditions() -> tuple[MatrixCondition, ...]:
+    return tuple(
+        condition
+        for query_count in (1, 3, 5)
+        for condition in (
+            MatrixCondition(query_count, None, "off"),
+            MatrixCondition(query_count, None, "warm"),
+            MatrixCondition(query_count, 10, "off"),
+            MatrixCondition(query_count, 20, "off"),
+            MatrixCondition(query_count, 50, "off"),
+        )
+    )
+
+
 def campaign_code_provenance() -> dict[str, object]:
     """Hash every campaign implementation file, including files untracked at HEAD."""
     backend = Path(__file__).resolve().parents[1]
@@ -208,6 +234,9 @@ def safe_query_record(
     repetition: int = 1,
     answerable: bool = True,
     no_answer: bool | None = False,
+    embedding_cache_hits: int = 0,
+    embedding_cache_misses: int = 0,
+    rerank_candidate_pool: int | None = None,
 ) -> dict[str, Any]:
     return {
         "query_id": query_id,
@@ -223,6 +252,9 @@ def safe_query_record(
         },
         "answerable": answerable,
         "no_answer": no_answer,
+        "embedding_cache_hits": embedding_cache_hits,
+        "embedding_cache_misses": embedding_cache_misses,
+        "rerank_candidate_pool": rerank_candidate_pool,
         "error": error,
     }
 
@@ -353,6 +385,29 @@ def _install_settings(settings: Any) -> None:
     embeddings.get_dense_embedder.cache_clear()
     client.get_qdrant.cache_clear()
     pipeline.get_qdrant = client.get_qdrant  # type: ignore[attr-defined]
+
+
+def _install_benchmark_reranker(
+    *, provider: str, api_key: str, model: str
+) -> None:
+    import ragz.modules.retrieval.service as retrieval
+    from ragz.modules.retrieval.rerank import CohereReranker, LexicalReranker
+
+    if provider == "cohere":
+        if not api_key:
+            raise RuntimeError("COHERE_API_KEY is required for the Cohere rerank matrix")
+        reranker: Any = CohereReranker(
+            base_url="https://api.cohere.com", api_key=api_key, model=model
+        )
+    elif provider == "lexical":
+        reranker = LexicalReranker()
+    else:
+        raise ValueError("reranker provider must be lexical or cohere")
+
+    async def controlled_reranker(_session: Any, _settings: Any) -> Any:
+        return reranker
+
+    retrieval.get_reranker = controlled_reranker  # type: ignore[attr-defined,assignment]
 
 
 async def _seed_corpus(
@@ -608,43 +663,87 @@ async def _run_mode(
     provider_backed_embeddings: bool,
     progress: BenchmarkProgress,
     progress_output: Path,
+    query_count: int | None = None,
+    rerank_candidate_pool: int | None = None,
+    cache_mode: str = "off",
 ) -> dict[str, Any]:
+    from sqlalchemy import select
+
+    from ragz.modules.quotas.models import UsageRecord
+    from ragz.modules.retrieval.embeddings import InMemoryQueryEmbeddingCache
     from ragz.modules.retrieval.service import retrieve
     from ragz.modules.tenancy.models import Workspace
 
     create_output_directory(output)
     records: list[dict[str, Any]] = []
+    warmup_records: list[dict[str, Any]] = []
+    rerank_usage_units = 0
+    condition_query_count = query_count or (3 if mode == "multi" else 1)
+    if condition_query_count not in (1, 3, 5):
+        raise ValueError("query_count must be 1, 3, or 5")
+    if cache_mode not in {"off", "warm"}:
+        raise ValueError("cache_mode must be off or warm")
+    embedding_cache = (
+        InMemoryQueryEmbeddingCache() if cache_mode == "warm" else None
+    )
     async with factory() as session:
         workspace = await session.get(Workspace, workspace_id)
         assert workspace is not None
-        workspace.multi_query_enabled = mode == "multi"
+        workspace.multi_query_enabled = condition_query_count > 1
+        workspace.rerank_enabled = rerank_candidate_pool is not None
         await session.commit()
         progress.stage = f"retrieval:{mode}:warmup"
         write_progress(progress_output, progress)
-        for _ in range(warmups):
+        for warmup_index in range(1, warmups + 1):
             for record in queries:
                 if provider_backed_embeddings:
                     progress.query_embedding_attempts += 1
                     write_progress(progress_output, progress)
-                await retrieve(
+                warmup_timings_ms: dict[str, float] = {}
+                warmup_started = time.perf_counter()
+                warmup_result = await retrieve(
                     session,
                     ctx,
                     workspace_id,
                     record["query"],
                     top_k=top_k,
                     query_expander=(
-                        StaticQueryExpander(record["alternatives"])
-                        if mode == "multi"
+                        StaticQueryExpander(
+                            record["alternatives"][: condition_query_count - 1]
+                        )
+                        if condition_query_count > 1
                         else None
                     ),
+                    multi_query_count_override=condition_query_count,
+                    rerank_candidate_pool_override=rerank_candidate_pool,
+                    query_embedding_cache=embedding_cache,
+                    stage_timings_ms=warmup_timings_ms,
+                )
+                warmup_elapsed_ms = (time.perf_counter() - warmup_started) * 1000
+                warmup_timings_ms["unattributed_runner"] = round(
+                    max(0.0, warmup_elapsed_ms - sum(warmup_timings_ms.values())),
+                    4,
+                )
+                warmup_records.append(
+                    {
+                        "query_id": record["query_id"],
+                        "warmup": warmup_index,
+                        "elapsed_ms": round(warmup_elapsed_ms, 4),
+                        "embedding_cache_hits": warmup_result.embedding_cache_hits,
+                        "embedding_cache_misses": warmup_result.embedding_cache_misses,
+                        "stage_timings_ms": warmup_timings_ms,
+                        "error": None,
+                    }
                 )
         progress.stage = f"retrieval:{mode}:scored"
         write_progress(progress_output, progress)
         for repetition in range(1, repetitions + 1):
             for record in queries:
                 expander = (
-                    StaticQueryExpander(record["alternatives"])
-                    if mode == "multi"
+                    StaticQueryExpander(
+                        record["alternatives"][: condition_query_count - 1]
+                    )
+                    if condition_query_count > 1
                     else None
                 )
                 error: str | None = None
@@ -664,6 +763,9 @@ async def _run_mode(
                         record["query"],
                         top_k=top_k,
                         query_expander=expander,
+                        multi_query_count_override=condition_query_count,
+                        rerank_candidate_pool_override=rerank_candidate_pool,
+                        query_embedding_cache=embedding_cache,
                         stage_timings_ms=stage_timings_ms,
                     )
                 except Exception as exc:  # noqa: BLE001 - typed failure only
@@ -713,10 +815,31 @@ async def _run_mode(
                         no_answer=(
                             bool(result.no_answer) if result is not None else None
                         ),
+                        embedding_cache_hits=(
+                            int(result.embedding_cache_hits)
+                            if result is not None
+                            else 0
+                        ),
+                        embedding_cache_misses=(
+                            int(result.embedding_cache_misses)
+                            if result is not None
+                            else 0
+                        ),
+                        rerank_candidate_pool=rerank_candidate_pool,
                     )
                 )
+        if rerank_candidate_pool is not None:
+            usage_rows = (
+                await session.execute(
+                    select(UsageRecord).where(UsageRecord.feature == "rerank")
+                )
+            ).scalars().all()
+            rerank_usage_units = sum(int(row.units) for row in usage_rows)
     with (output / "per_query.jsonl").open("w", encoding="utf-8") as handle:
         for record in records:
+            handle.write(json.dumps(record, sort_keys=True) + "\n")
+    with (output / "warmups.jsonl").open("w", encoding="utf-8") as handle:
+        for record in warmup_records:
             handle.write(json.dumps(record, sort_keys=True) + "\n")
     latencies = [float(item["elapsed_ms"]) for item in records if item["error"] is None]
     abstention_records = [item for item in records if item["error"] is None]
@@ -759,6 +882,11 @@ async def _run_mode(
     )
     summary: dict[str, Any] = {
         "mode": mode,
+        "condition": {
+            "query_count": condition_query_count,
+            "rerank_candidate_pool": rerank_candidate_pool,
+            "cache_mode": cache_mode,
+        },
         "query_count": len(queries),
         "observations": len(records),
         "quality_observations": len(quality_records),
@@ -768,6 +896,11 @@ async def _run_mode(
         "warmups": warmups,
         "repetitions": repetitions,
         "errors": sum(item["error"] is not None for item in records),
+        "embedding_cache": {
+            "hits": sum(int(item["embedding_cache_hits"]) for item in records),
+            "misses": sum(int(item["embedding_cache_misses"]) for item in records),
+        },
+        "rerank_usage_units_including_warmups": rerank_usage_units,
         "mean_recall_at_k": (
             statistics.mean(
                 float(item["metrics"]["recall_at_k"])
@@ -801,11 +934,13 @@ async def _run_mode(
             "f1": abstention_f1,
         },
         "latency_ms": {
+            "mean": statistics.mean(latencies) if latencies else None,
             "p50": percentile(latencies, 0.5),
             "p95": percentile(latencies, 0.95),
             "p99": percentile(latencies, 0.99),
         },
         "atomic_latency_ms": summarize_stage_timings(records),
+        "warmup_atomic_latency_ms": summarize_stage_timings(warmup_records),
     }
     (output / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -855,6 +990,7 @@ async def run(args: argparse.Namespace) -> None:
         litellm_model_name=args.embedding_litellm_model_name,
     )
     litellm_master_key = os.environ.get("RAGZ_LITELLM_MASTER_KEY", "")
+    cohere_api_key = os.environ.get("COHERE_API_KEY", "")
     if embedding_track.engine == "openai" and not litellm_master_key:
         raise RuntimeError(
             "RAGZ_LITELLM_MASTER_KEY is required for the OpenAI embedding track"
@@ -917,6 +1053,12 @@ async def run(args: argparse.Namespace) -> None:
             "sparse": "fastembed-bm25",
             "fusion": "qdrant-rrf",
             "reranker": "disabled",
+            "reranker_provider": args.reranker_provider,
+            "reranker_model": (
+                args.cohere_rerank_model
+                if args.reranker_provider == "cohere"
+                else "lexical-overlap"
+            ),
             "query_variants": "fixed-two-alternatives",
             "expansion_provider_calls": 0,
             "embedding_provider_calls": embedding_track.provider_calls,
@@ -969,29 +1111,66 @@ async def run(args: argparse.Namespace) -> None:
                 await leaked_engine.dispose()
             raise
         try:
+            _install_benchmark_reranker(
+                provider=args.reranker_provider,
+                api_key=cohere_api_key,
+                model=args.cohere_rerank_model,
+            )
             summaries: dict[str, dict[str, Any]] = {}
-            modes = ("single", "multi") if args.order == "single-first" else ("multi", "single")
-            for mode in modes:
-                summaries[mode] = await _run_mode(
-                    mode=mode,
-                    queries=queries,
-                    factory=factory,
-                    ctx=ctx,
-                    workspace_id=workspace_id,
-                    document_map=document_map,
-                    output=output / mode,
-                    top_k=args.top_k,
-                    warmups=args.warmups,
-                    repetitions=args.repetitions,
-                    provider_backed_embeddings=embedding_track.engine == "openai",
-                    progress=progress,
-                    progress_output=output,
+            if args.matrix:
+                if any(len(record["alternatives"]) != 4 for record in queries):
+                    raise ValueError("matrix runs require four alternatives per query")
+                conditions = list(retrieval_matrix_conditions())
+                if args.matrix_order == "reverse":
+                    conditions.reverse()
+                for condition in conditions:
+                    summaries[condition.condition_id] = await _run_mode(
+                        mode=condition.condition_id,
+                        queries=queries,
+                        factory=factory,
+                        ctx=ctx,
+                        workspace_id=workspace_id,
+                        document_map=document_map,
+                        output=output / condition.condition_id,
+                        top_k=args.top_k,
+                        warmups=args.warmups,
+                        repetitions=args.repetitions,
+                        provider_backed_embeddings=embedding_track.engine == "openai",
+                        progress=progress,
+                        progress_output=output,
+                        query_count=condition.query_count,
+                        rerank_candidate_pool=condition.rerank_candidate_pool,
+                        cache_mode=condition.cache_mode,
+                    )
+            else:
+                modes = (
+                    ("single", "multi")
+                    if args.order == "single-first"
+                    else ("multi", "single")
                 )
+                for mode in modes:
+                    summaries[mode] = await _run_mode(
+                        mode=mode,
+                        queries=queries,
+                        factory=factory,
+                        ctx=ctx,
+                        workspace_id=workspace_id,
+                        document_map=document_map,
+                        output=output / mode,
+                        top_k=args.top_k,
+                        warmups=args.warmups,
+                        repetitions=args.repetitions,
+                        provider_backed_embeddings=embedding_track.engine == "openai",
+                        progress=progress,
+                        progress_output=output,
+                    )
         finally:
             await engine.dispose()
             seed_resources.clear()
     manifest["corpus_stats"] = corpus_stats
-    manifest["condition_order"] = args.order
+    manifest["condition_order"] = (
+        args.matrix_order if args.matrix else args.order
+    )
     manifest["warmups"] = args.warmups
     manifest["repetitions"] = args.repetitions
     manifest["no_answer_threshold"] = {
@@ -1000,30 +1179,64 @@ async def run(args: argparse.Namespace) -> None:
         "calibration": args.threshold_calibration,
     }
     manifest["conditions"] = summaries
+    manifest["condition_matrix"] = args.matrix
+    if args.matrix:
+        manifest["reranker"] = f"{args.reranker_provider}-screen"
+        manifest["query_variants"] = "fixed-four-perspective-alternatives"
+        manifest["matrix_protocol"] = {
+            "query_counts": [1, 3, 5],
+            "rerank_candidate_pools": [None, 10, 20, 50],
+            "cache_modes": ["off", "warm"],
+            "conditions": list(summaries),
+            "llm_top_p": "provider-default-not-a-reranker-control",
+        }
     manifest["provider_progress"] = {
         "index_embedding_calls_completed": progress.index_embedding_calls_completed,
         "index_embedding_tokens": progress.index_embedding_tokens,
         "query_embedding_attempts": progress.query_embedding_attempts,
     }
     manifest["status"] = "completed"
-    paired = paired_summary(output, seed=args.seed)
-    (output / "paired-summary.json").write_text(
-        json.dumps(paired, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
-    (output / "summary.md").write_text(
-        "# RAGZ single-query vs multi-query retrieval benchmark\n\n"
-        f"- Commit: `{git_commit}`\n"
-        f"- Dense embedding: `{embedding_track.dense_label}`\n"
-        f"- Condition order: `{args.order}`\n"
-        f"- Seed: `{args.seed}`\n"
-        f"- No-answer threshold: `{args.min_score}` (maximum dense cosine)\n"
-        f"- Single Recall@{args.top_k}: "
-        f"`{format_metric(summaries['single']['mean_recall_at_k'])}`\n"
-        f"- Multi Recall@{args.top_k}: "
-        f"`{format_metric(summaries['multi']['mean_recall_at_k'])}`\n"
-        "- Live expansion/provider latency: `not measured`\n",
-        encoding="utf-8",
-    )
+    if args.matrix:
+        reranker_model_label = (
+            args.cohere_rerank_model
+            if args.reranker_provider == "cohere"
+            else "lexical-overlap"
+        )
+        (output / "matrix-summary.json").write_text(
+            json.dumps(summaries, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        (output / "summary.md").write_text(
+            "# RAGZ MQR/rerank/cache retrieval matrix\n\n"
+            f"- Commit: `{git_commit}`\n"
+            f"- Conditions: `{len(summaries)}`\n"
+            f"- Condition order: `{args.matrix_order}`\n"
+            f"- Warmups/repetitions: `{args.warmups}` / `{args.repetitions}`\n"
+            "- Reranker: `benchmark-controlled provider seam`\n"
+            f"- Reranker provider/model: `{args.reranker_provider}` / "
+            f"`{reranker_model_label}`\n"
+            "- LLM top_p: `provider default; not varied`\n",
+            encoding="utf-8",
+        )
+    else:
+        paired = paired_summary(output, seed=args.seed)
+        (output / "paired-summary.json").write_text(
+            json.dumps(paired, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        (output / "summary.md").write_text(
+            "# RAGZ single-query vs multi-query retrieval benchmark\n\n"
+            f"- Commit: `{git_commit}`\n"
+            f"- Dense embedding: `{embedding_track.dense_label}`\n"
+            f"- Condition order: `{args.order}`\n"
+            f"- Seed: `{args.seed}`\n"
+            f"- No-answer threshold: `{args.min_score}` (maximum dense cosine)\n"
+            f"- Single Recall@{args.top_k}: "
+            f"`{format_metric(summaries['single']['mean_recall_at_k'])}`\n"
+            f"- Multi Recall@{args.top_k}: "
+            f"`{format_metric(summaries['multi']['mean_recall_at_k'])}`\n"
+            "- Live expansion/provider latency: `not measured`\n",
+            encoding="utf-8",
+        )
     (output / "manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -1040,6 +1253,27 @@ def main() -> None:
     parser.add_argument("--warmups", type=int, default=2)
     parser.add_argument("--repetitions", type=int, default=3)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--matrix",
+        action="store_true",
+        help="run the frozen 15-condition MQR/rerank/cache retrieval screen",
+    )
+    parser.add_argument(
+        "--matrix-order",
+        choices=("forward", "reverse"),
+        default="forward",
+        help="counterbalance the frozen matrix without changing condition definitions",
+    )
+    parser.add_argument(
+        "--reranker-provider",
+        choices=("lexical", "cohere"),
+        default="lexical",
+    )
+    parser.add_argument(
+        "--cohere-rerank-model",
+        choices=("rerank-v4.0-fast", "rerank-v4.0-pro"),
+        default="rerank-v4.0-fast",
+    )
     parser.add_argument(
         "--embedding-engine",
         choices=("hash", "openai"),
