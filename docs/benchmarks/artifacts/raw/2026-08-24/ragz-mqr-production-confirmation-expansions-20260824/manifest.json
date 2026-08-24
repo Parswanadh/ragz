@@ -1,0 +1,39 @@
+{
+  "budget": {
+    "hard_cap_usd": "1.00",
+    "preflight_estimate_usd": "0.01104"
+  },
+  "created_at_utc": "2026-08-24T17:49:53.108389+00:00",
+  "deterministic_fallback_lanes": 0,
+  "errors": 0,
+  "expander_code_sha256": "a4287bdae1bf9cda24c2a23625802ee9646ebf5a55a244f2a2d2d7a4e6efd1b1",
+  "input_queries_sha256": "70de3abdb62be01945a05a0914b360b8a98ae77a9cfb1d8a466a0e22b63ddb12",
+  "llm_top_p": "provider-default-1-not-sent",
+  "model": "gpt-5.6-luna",
+  "perspectives": [
+    "exact_constraints",
+    "terminology",
+    "mechanism_relationships",
+    "evidence_source_phrasing"
+  ],
+  "privacy": {
+    "alternatives_persisted_publicly": false,
+    "credentials_persisted": false,
+    "provider_bodies_persisted": false,
+    "query_text_persisted_publicly": false
+  },
+  "private_output_sha256": "ba760f2fe04a3722b5b34d5972cce1412ab2dfac48efc4e8568b047b7f4b4f53",
+  "provider_calls": 24,
+  "proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "query_count": 24,
+  "reasoning_effort": "low",
+  "schema_version": 1,
+  "status": "completed",
+  "temperature": "provider-default-not-sent",
+  "total_query_lanes": 5,
+  "usage": {
+    "completion_tokens": 3981,
+    "prompt_tokens": 7384,
+    "usage_derived_cost_usd": "0.006254"
+  }
+}

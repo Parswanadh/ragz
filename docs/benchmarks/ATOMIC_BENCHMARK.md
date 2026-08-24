@@ -41,6 +41,25 @@ answers and a separate GPT-5.4-mini judge.
 Complete interpretation, competitor boundaries and improvement order:
 `docs/benchmarks/2026-08-24-ragz-mqr-rerank-cache-results.md`.
 
+### Production-change confirmation
+
+The post-implementation counterbalanced confirmation used one frozen index,
+two warmups and five repetitions in both orders (960 scored rows, zero errors):
+
+| Cell | Recall@5 | MRR@5 | nDCG@5 | Mean | p95 |
+|---|---:|---:|---:|---:|---:|
+| Q1 cache-off | 0.6000 | 0.4517 | 0.4890 | 728.49 ms | 913.52 ms |
+| Q1 cache-warm | 0.6000 | 0.4517 | 0.4890 | **16.93 ms** | **19.68 ms** |
+| Q3 cache-off | 0.6000 | 0.4475 | 0.4855 | 1,385.00 ms | 1,639.51 ms |
+| Q3 cache-warm | 0.6000 | 0.4475 | 0.4855 | **33.76 ms** | **39.33 ms** |
+
+Q3-minus-Q1 Recall was exactly zero across 200 answerable pairs; cache-off
+latency added `656.50 ms` and warm latency added `16.83 ms`. Cache-on quality
+matched cache-off exactly. A separate 24-query live expansion-cache pass had
+warm p50/p95 `0.017/0.047 ms`, 24/24 exact matches and zero provider calls.
+Detailed evidence:
+`docs/benchmarks/2026-08-24-mqr-production-confirmation.md`.
+
 ## Frozen published retrieval configuration
 
 | Field | Value |

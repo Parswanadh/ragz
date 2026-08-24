@@ -219,16 +219,17 @@ cannot forge the PATCH, defaults remain off, and a real enabled workspace return
 **Produces:** Q1/Q3 cache cold/warm, expansion cache cold/warm/timeout, Cohere
 retry, tie determinism and concurrent-probe measurements on the current commit.
 
-- [ ] Freeze code, dataset, provider alias, proxy fingerprint and budget hashes.
-- [ ] Run two warmups plus five repetitions in forward/reverse order for Q1 and
+- [x] Freeze code, dataset, provider alias, proxy fingerprint and budget hashes.
+- [x] Run two warmups plus five repetitions in forward/reverse order for Q1 and
   Q3/no-rerank.
-- [ ] Run a 24-query cold/warm expansion A/B using low reasoning.
-- [ ] Run a deterministic tie replay from the saved Qdrant snapshot.
-- [ ] Run Cohere 429 fault injection locally and one guarded cloud smoke.
-- [ ] Reject any completed aggregate with errors or missing cells.
-- [ ] Compare quality against the published Q1 standard; cache/deadline changes
+- [x] Run a 24-query cold/warm expansion A/B using low reasoning.
+- [x] Run deterministic tie replay through five repetitions in both condition
+  orders on one frozen Qdrant index.
+- [x] Run Cohere 429 fault injection locally and one guarded cloud smoke.
+- [x] Reject any completed aggregate with errors or missing cells.
+- [x] Compare quality against the published Q1 standard; cache/deadline changes
   must not reduce exact-page metrics.
-- [ ] Commit and push `bench: confirm production MQR latency controls`.
+- [x] Commit and push `bench: confirm production MQR latency controls`.
 
 ### Task 8: Normalized open-source comparison
 

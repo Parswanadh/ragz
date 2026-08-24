@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "low",
+  "query_count": 24,
+  "total_query_lanes": 5,
+  "cold_provider_calls": 24,
+  "warm_provider_calls": 0,
+  "exact_warm_matches": 24,
+  "errors": 0,
+  "latency_ms": {
+    "cold": {
+      "mean": 3229.5868125,
+      "p50": 3071.0553,
+      "p95": 4573.668435
+    },
+    "warm": {
+      "mean": 0.0232666667,
+      "p50": 0.0167,
+      "p95": 0.04688
+    }
+  },
+  "usage": {
+    "prompt_tokens": 7384,
+    "completion_tokens": 4149,
+    "warm_provider_tokens": 0
+  },
+  "input_queries_sha256": "70de3abdb62be01945a05a0914b360b8a98ae77a9cfb1d8a466a0e22b63ddb12",
+  "expander_code_sha256": "a4287bdae1bf9cda24c2a23625802ee9646ebf5a55a244f2a2d2d7a4e6efd1b1",
+  "proxy_fingerprint_sha256": "e5a2913bf2fe061ba9811d8c102b740230c33ee549cc34e507aa03639200eb31",
+  "privacy": {
+    "queries_persisted": false,
+    "alternatives_persisted": false,
+    "credentials_persisted": false,
+    "provider_bodies_persisted": false
+  }
+}
