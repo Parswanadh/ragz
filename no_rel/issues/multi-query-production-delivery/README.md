@@ -1,13 +1,15 @@
 # Multi-query retrieval delivery packet
 
-Status: draft only; no issue or pull request has been submitted.
+Status: upstream issue
+[`#10`](https://github.com/marketcalls/ragz/issues/10) was submitted and verified
+on 2026-08-26; the pull request remains a local draft and has not been opened.
 
 This folder is the handoff point for the production MQR proposal. It separates
 the short public-facing drafts from the much larger research branch.
 
 ## Recommended sequence
 
-1. Open the issue from `github-issue-body.md` and allow the maintainer to confirm
+1. Issue #10 is open from `github-issue-body.md`; allow the maintainer to confirm
    the product/configuration direction.
 2. Rebase or merge the production branch only if `upstream/main` has advanced.
 3. Run `review-checklist.md` against that exact commit.

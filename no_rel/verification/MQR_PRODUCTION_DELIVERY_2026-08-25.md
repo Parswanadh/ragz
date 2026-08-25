@@ -6,7 +6,9 @@ Date: 2026-08-25
 
 The requested multi-query retrieval work is implemented, benchmarked,
 independently reviewed, assembled into a clean production branch, fully tested,
-and pushed to the fork. No GitHub issue or pull request was submitted.
+and pushed to the fork. Under a subsequent explicit user instruction, upstream
+issue [#10](https://github.com/marketcalls/ragz/issues/10) was submitted and
+verified on 2026-08-26; no pull request was submitted.
 
 - Product branch: `codex/mqr-production-ready`
 - Verified product commit: `3fac9fb1d02c9327f243418ebbb905466c8bcef5`
@@ -122,7 +124,7 @@ byte-for-byte immutable for provenance. Its adjacent `READ_ME_FIRST.md` and
 - Upstream has no open pull requests.
 - Existing issue #9, “LiteParse silently truncates documents over 1,000 pages,”
   remains open.
-- The proposed MQR issue and PR are drafts only under
+- MQR proposal issue #10 is open; the PR remains a local draft under
   `no_rel/issues/multi-query-production-delivery/`.
 - No RAGZ benchmark/smoke/Testcontainers workloads or test ports remain.
 - Other pre-existing AGNO containers were observed but never modified.

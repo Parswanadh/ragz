@@ -1,6 +1,6 @@
 # Add bounded, superadmin-controlled multi-query retrieval
 
-Closes: `#<accepted-issue-number>`
+Closes #10
 
 ## What this changes
 

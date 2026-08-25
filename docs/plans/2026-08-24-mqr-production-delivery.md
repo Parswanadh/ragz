@@ -298,6 +298,11 @@ system that exposes a valid path.
 
 ## Self-review
 
+Subsequent status: after this no-submission plan completed, the user explicitly
+authorized submitting the issue. Upstream issue
+[#10](https://github.com/marketcalls/ragz/issues/10) was created and verified on
+2026-08-26. The pull request remains unsubmitted.
+
 - Spec coverage: integration, cache, speculative/cached expansion, Cohere
   resilience, deterministic ordering, no-answer overlap, superadmin controls,
   RAGZ confirmation, four-system normalization, issue/PR drafts and cleanup all
