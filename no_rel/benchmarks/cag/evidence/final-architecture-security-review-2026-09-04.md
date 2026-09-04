@@ -30,6 +30,22 @@ claim relies on it.
 | Medium | Synthetic fixture missed same-name, lineage, and identical-text visibility traps; size tiers were descriptors only | Partially fixed: same-name workspaces, shared lineage, and restricted/unrestricted identical text are present; tier descriptors remain non-scored and no private/final run uses them |
 | Low | Schemas missed several cache/provenance states and retrieval aggregation | Partially fixed: schedule schema, malformed/fallback cache states, question-ID/assessor provenance, and retrieval aggregation added; no schema is claimed final for a run that did not occur |
 
+## Remediation follow-up
+
+The same reviewer inspected `ac4291e6..d178df92` and found no remaining
+Critical or High issue and no must-fix issue for the combined-three-book
+`NO_GO`. Two medium harness limitations remain:
+
+- record-to-schedule completeness is enforced, but the validator does not yet
+  prove that an externally authored schedule contains the full
+  `(question, repetition) × variant` Cartesian product; and
+- completed rows do not yet carry a manifest-defined required metric set, so a
+  future scored campaign must add that preflight before aggregation.
+
+The final private campaign did not run and this aggregator contributed no
+metric to the corpus-fit `NO_GO`, so these limitations cannot bias the decision.
+They remain explicit blockers for any future scored benchmark.
+
 ## Residual gates
 
 - No authoritative DB/Qdrant adapter exists for complete snapshot enumeration.
@@ -39,6 +55,8 @@ claim relies on it.
   adapter is wired.
 - No 120-question private set was frozen and no final quality benchmark ran,
   because the target corpus-fit gate had already failed.
+- The harness still needs Cartesian schedule and required-metric-set validation
+  before it may process a future final scored run.
 - The complete repository history has three pre-existing generic-api-key scan
   findings; the CAG commit range is clean.
 

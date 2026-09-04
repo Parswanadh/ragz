@@ -62,7 +62,8 @@ policy, question/history, and output reserves.
 | Citation mapping/parity | Partial | Pure exact marker/version/page/chunk mapping passes; cached/uncached generation parity not run |
 | Final independent architecture/security review | Passed for target `NO_GO` | No critical findings; target fit decision is defensible; prototype completeness claim downgraded and harness pairing corrected |
 | Frozen 120-question set | Not frozen | Private fixture and qrels still required |
-| Representative repeated benchmark | Not run | Correctness gates incomplete |
+| Representative repeated benchmark | Not run | Corpus-fit stop gate fired before question freeze; no numeric rows were created |
+| Benchmark aggregation harness | Partial | Exact record-to-schedule and per-pair checks pass; Cartesian schedule and manifest-required metric-set validation remain before any scored run |
 | AnythingLLM exact run | Not run | Adapter/configuration pending |
 | RAGFlow exact run | `protocol_gated` | Exact three-book adapter absent |
 | Onyx exact run | `protocol_gated` | Exact corpus/model evidence adapter absent |
