@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ragz.example/schemas/cag/stage.schema.json",
+  "title": "Sanitized CAG atomic stage timing",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "trial_id", "attempt", "occurrence", "stage", "status", "duration_ms"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "trial_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "attempt": {"type": "integer", "minimum": 1},
+    "occurrence": {"type": "integer", "minimum": 1},
+    "stage": {
+      "enum": [
+        "request_admission",
+        "quota",
+        "authorization_context",
+        "history",
+        "query_expansion",
+        "dense_embedding",
+        "sparse_embedding",
+        "vector_search",
+        "fusion_dedupe",
+        "authorization_recheck",
+        "no_answer_probe",
+        "rerank_local",
+        "rerank_provider",
+        "rerank_retry_wait",
+        "snapshot_manifest",
+        "snapshot_lookup",
+        "snapshot_build",
+        "snapshot_validation",
+        "snapshot_singleflight_wait",
+        "snapshot_invalidation",
+        "provider_queue_connect",
+        "provider_ttft",
+        "provider_generation",
+        "citation_parse_validation",
+        "usage_persistence",
+        "message_persistence",
+        "sse_serialization",
+        "end_to_end"
+      ]
+    },
+    "status": {"enum": ["completed", "failed", "cancelled", "not_applicable"]},
+    "duration_ms": {"type": ["number", "null"], "minimum": 0}
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ragz.example/schemas/cag/security-gate.schema.json",
+  "title": "Sanitized CAG security gate result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "scenario",
+    "expected_decision",
+    "actual_decision",
+    "passed",
+    "leak_detected",
+    "detail_code",
+    "evidence_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "scenario": {
+      "enum": [
+        "same_user_repeat",
+        "different_user_unrestricted",
+        "different_user_restricted",
+        "cross_org_identical_text",
+        "cross_workspace_identical_text",
+        "mixed_visibility",
+        "acl_update_during_build",
+        "acl_update_during_generation",
+        "group_membership_revocation",
+        "version_promotion",
+        "version_rejection",
+        "document_deletion",
+        "projection_outage",
+        "prompt_change",
+        "model_change",
+        "tokenizer_change",
+        "route_change",
+        "expiry",
+        "duplicate_invalidation",
+        "worker_outage",
+        "provider_rejection",
+        "provider_malformed_usage",
+        "provider_missing_usage",
+        "partial_stream_failure",
+        "client_disconnect",
+        "concurrent_identical_requests",
+        "owner_cancellation",
+        "citation_provenance"
+      ]
+    },
+    "expected_decision": {"enum": ["reuse", "rebuild", "fallback", "reject", "abstain"]},
+    "actual_decision": {"enum": ["reuse", "rebuild", "fallback", "reject", "abstain", "error"]},
+    "passed": {"type": "boolean"},
+    "leak_detected": {"type": "boolean"},
+    "detail_code": {"type": "string", "maxLength": 128},
+    "evidence_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

@@ -5,9 +5,14 @@ import pytest
 
 from ragz.modules.chat.cag import (
     CagSource,
+    PromptCacheRequest,
     SnapshotContext,
     SnapshotPolicy,
+    build_cag_messages,
     build_snapshot,
+    cache_usage_from_provider,
+    may_retry_without_cache,
+    resolve_snapshot_citations,
     validate_snapshot,
 )
 
@@ -121,6 +126,134 @@ def test_cached_rag_prefix_preserves_authoritative_fitted_source_order() -> None
         first_source.document_id,
     ]
     assert [source.marker for source in decision.snapshot.sources] == [1, 2]
+
+
+def test_cag_messages_put_stable_sources_before_dynamic_history_and_question() -> None:
+    decision = build_snapshot(
+        mode="full_snapshot_cag",
+        context=_context(),
+        sources=(_source(1, page=7, text="stable evidence"),),
+        stable_policy_prefix="stable policy",
+        workspace_prompt=None,
+        policy=_policy(),
+        rendered_prefix_token_count=2_000,
+    )
+    assert decision.snapshot is not None
+
+    messages = build_cag_messages(
+        decision.snapshot,
+        history=(("user", "older question"), ("assistant", "older answer")),
+        user_query="current question",
+        summary="earlier summary",
+    )
+
+    assert messages[0] == {"role": "system", "content": "stable policy"}
+    assert messages[1]["role"] == "system"
+    assert "<data id=\"1\"" in str(messages[1]["content"])
+    assert messages[2] == {
+        "role": "system",
+        "content": "[Earlier conversation summary]\nearlier summary",
+    }
+    assert messages[-1] == {"role": "user", "content": "current question"}
+
+
+def test_snapshot_citations_keep_exact_version_page_chunk_and_drop_bogus_markers() -> None:
+    source = replace(
+        _source(1, page=7, text="stable evidence"),
+        version=2,
+        chunk_index=4,
+    )
+    decision = build_snapshot(
+        mode="full_snapshot_cag",
+        context=_context(),
+        sources=(source,),
+        stable_policy_prefix="stable policy",
+        workspace_prompt=None,
+        policy=_policy(),
+        rendered_prefix_token_count=2_000,
+    )
+    assert decision.snapshot is not None
+
+    citations = resolve_snapshot_citations(
+        decision.snapshot,
+        "Supported claim [1]. Forged marker [99]. Duplicate [1].",
+    )
+
+    assert [(c.marker, c.document_id, c.version, c.page, c.chunk_index) for c in citations] == [
+        (1, source.document_id, 2, 7, 4)
+    ]
+
+
+@pytest.mark.parametrize(
+    ("usage", "capability", "expected_outcome", "expected_read", "expected_write"),
+    [
+        (
+            {"prompt_tokens_details": {"cached_tokens": 1900, "cache_write_tokens": 0}},
+            "supported",
+            "hit",
+            1900,
+            0,
+        ),
+        (
+            {"prompt_tokens_details": {"cached_tokens": 0, "cache_write_tokens": 1900}},
+            "supported",
+            "write",
+            0,
+            1900,
+        ),
+        (
+            {"prompt_tokens_details": {"cached_tokens": 0, "cache_write_tokens": 0}},
+            "supported",
+            "miss",
+            0,
+            0,
+        ),
+        ({"prompt_tokens": 2000}, "supported", "unknown", None, None),
+        (None, "unknown", "unknown", None, None),
+        (None, "unsupported", "unsupported", None, None),
+    ],
+)
+def test_provider_cache_usage_never_infers_a_hit_from_latency(
+    usage: dict[str, object] | None,
+    capability: str,
+    expected_outcome: str,
+    expected_read: int | None,
+    expected_write: int | None,
+) -> None:
+    cache_usage = cache_usage_from_provider(
+        usage,
+        request=PromptCacheRequest(snapshot_id="a" * 64),
+        capability=capability,
+    )
+
+    assert cache_usage.outcome == expected_outcome
+    assert cache_usage.read_tokens == expected_read
+    assert cache_usage.write_tokens == expected_write
+
+
+@pytest.mark.parametrize(
+    ("explicit_unsupported", "output_started", "ambiguous", "retry_count", "expected"),
+    [
+        (True, False, False, 0, True),
+        (True, True, False, 0, False),
+        (True, False, True, 0, False),
+        (True, False, False, 1, False),
+        (False, False, False, 0, False),
+    ],
+)
+def test_cache_fallback_never_retries_after_output_or_ambiguous_failure(
+    explicit_unsupported: bool,
+    output_started: bool,
+    ambiguous: bool,
+    retry_count: int,
+    expected: bool,
+) -> None:
+    assert may_retry_without_cache(
+        explicit_unsupported=explicit_unsupported,
+        output_started=output_started,
+        ambiguous_failure=ambiguous,
+        retry_count=retry_count,
+    ) is expected
 
 
 def test_mixed_org_or_workspace_sources_are_rejected_instead_of_filtered() -> None:

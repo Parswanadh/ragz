@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ragz.example/schemas/cag/aggregate.schema.json",
+  "title": "Sanitized failure-inclusive CAG aggregate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "baseline_variant",
+    "bootstrap_samples",
+    "seed",
+    "assigned_n",
+    "variants"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "baseline_variant": {"type": "string", "maxLength": 128},
+    "bootstrap_samples": {"type": "integer", "minimum": 1},
+    "seed": {"type": "integer"},
+    "assigned_n": {"type": "integer", "minimum": 1},
+    "variants": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/variant"}
+    }
+  },
+  "$defs": {
+    "nullable_number": {"type": ["number", "null"]},
+    "count_map": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assigned_n", "observed_n", "failure_inclusive_mean", "completed_observed_mean"],
+      "properties": {
+        "assigned_n": {"type": "integer", "minimum": 1},
+        "observed_n": {"type": "integer", "minimum": 0},
+        "failure_inclusive_mean": {"type": "number"},
+        "completed_observed_mean": {"$ref": "#/$defs/nullable_number"}
+      }
+    },
+    "paired_delta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["query_n", "estimate", "ci95"],
+      "properties": {
+        "query_n": {"type": "integer", "minimum": 1},
+        "estimate": {"type": "number"},
+        "ci95": {
+          "type": "array",
+          "prefixItems": [{"type": "number"}, {"type": "number"}],
+          "items": false
+        }
+      }
+    },
+    "variant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assigned_n",
+        "completed_n",
+        "completion_rate",
+        "status_counts",
+        "failure_counts",
+        "latency_ms",
+        "metrics",
+        "usage",
+        "known_cost_usd",
+        "paired_deltas"
+      ],
+      "properties": {
+        "assigned_n": {"type": "integer", "minimum": 1},
+        "completed_n": {"type": "integer", "minimum": 0},
+        "completion_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "status_counts": {"$ref": "#/$defs/count_map"},
+        "failure_counts": {"$ref": "#/$defs/count_map"},
+        "latency_ms": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["observed_n", "mean", "p50", "p95", "p99"],
+          "properties": {
+            "observed_n": {"type": "integer", "minimum": 0},
+            "mean": {"$ref": "#/$defs/nullable_number"},
+            "p50": {"$ref": "#/$defs/nullable_number"},
+            "p95": {"$ref": "#/$defs/nullable_number"},
+            "p99": {"$ref": "#/$defs/nullable_number"}
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/metric"}
+        },
+        "usage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prompt_tokens",
+            "completion_tokens",
+            "cached_tokens",
+            "cache_write_tokens",
+            "reasoning_tokens",
+            "cache_outcomes"
+          ],
+          "properties": {
+            "prompt_tokens": {"$ref": "#/$defs/usage_count"},
+            "completion_tokens": {"$ref": "#/$defs/usage_count"},
+            "cached_tokens": {"$ref": "#/$defs/usage_count"},
+            "cache_write_tokens": {"$ref": "#/$defs/usage_count"},
+            "reasoning_tokens": {"$ref": "#/$defs/usage_count"},
+            "cache_outcomes": {"$ref": "#/$defs/count_map"}
+          }
+        },
+        "known_cost_usd": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["complete", "known_n", "unknown_n", "total_known", "mean_known"],
+          "properties": {
+            "complete": {"type": "boolean"},
+            "known_n": {"type": "integer", "minimum": 0},
+            "unknown_n": {"type": "integer", "minimum": 0},
+            "total_known": {"type": "number", "minimum": 0},
+            "mean_known": {"type": ["number", "null"], "minimum": 0}
+          }
+        },
+        "paired_deltas": {
+          "type": "object",
+          "additionalProperties": {"$ref": "#/$defs/paired_delta"}
+        }
+      }
+    },
+    "usage_count": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["known_n", "unknown_n", "total", "mean_known"],
+      "properties": {
+        "known_n": {"type": "integer", "minimum": 0},
+        "unknown_n": {"type": "integer", "minimum": 0},
+        "total": {"type": "integer", "minimum": 0},
+        "mean_known": {"type": ["number", "null"], "minimum": 0}
+      }
+    }
+  }
+}

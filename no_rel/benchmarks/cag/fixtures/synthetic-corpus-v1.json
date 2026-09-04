@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "corpus_id": "ragz-cag-synthetic-v1",
+  "license": "CC0-1.0",
+  "description": "Fictional OrchidNet facts authored for deterministic cache and citation tests.",
+  "organizations": [
+    {"org_id": "org-a", "workspaces": ["workspace-a"]},
+    {"org_id": "org-b", "workspaces": ["workspace-b"]}
+  ],
+  "groups": [
+    {"org_id": "org-a", "group_id": "group-blue"}
+  ],
+  "documents": [
+    {
+      "org_id": "org-a",
+      "workspace_id": "workspace-a",
+      "document_id": "orchid-routing-v1",
+      "version": 1,
+      "is_current": false,
+      "approved": true,
+      "security_revision": 1,
+      "projected_security_revision": 1,
+      "acl_group_ids": null,
+      "chunks": [
+        {
+          "page": 2,
+          "chunk_index": 0,
+          "section": "Routing",
+          "text": "OrchidNet version one assigned amber packets a fictional 16-bit trail number."
+        }
+      ]
+    },
+    {
+      "org_id": "org-a",
+      "workspace_id": "workspace-a",
+      "document_id": "orchid-routing-v2",
+      "version": 2,
+      "is_current": true,
+      "approved": true,
+      "security_revision": 2,
+      "projected_security_revision": 2,
+      "acl_group_ids": null,
+      "chunks": [
+        {
+          "page": 7,
+          "chunk_index": 0,
+          "section": "Routing",
+          "text": "OrchidNet version two assigns amber packets a fictional 64-bit trail number."
+        },
+        {
+          "page": 8,
+          "chunk_index": 1,
+          "section": "Timers",
+          "text": "A fictional amber route expires after 37 seconds without a violet heartbeat."
+        }
+      ]
+    },
+    {
+      "org_id": "org-a",
+      "workspace_id": "workspace-a",
+      "document_id": "orchid-blue-ops",
+      "version": 1,
+      "is_current": true,
+      "approved": true,
+      "security_revision": 3,
+      "projected_security_revision": 3,
+      "acl_group_ids": ["group-blue"],
+      "chunks": [
+        {
+          "page": 11,
+          "chunk_index": 0,
+          "section": "Blue operations",
+          "text": "Blue operators rotate the fictional violet beacon every 13 minutes."
+        }
+      ]
+    },
+    {
+      "org_id": "org-b",
+      "workspace_id": "workspace-b",
+      "document_id": "orchid-routing-copy",
+      "version": 1,
+      "is_current": true,
+      "approved": true,
+      "security_revision": 1,
+      "projected_security_revision": 1,
+      "acl_group_ids": null,
+      "chunks": [
+        {
+          "page": 7,
+          "chunk_index": 0,
+          "section": "Routing",
+          "text": "OrchidNet version two assigns amber packets a fictional 64-bit trail number."
+        }
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "question_id": "synthetic-fact-001",
+      "stratum": "synthetic_correctness",
+      "question": "How wide is the current amber trail number?",
+      "answerable": true,
+      "reference_answer": "64-bit",
+      "relevant_refs": ["orchid-routing-v2:2:7:0"]
+    },
+    {
+      "question_id": "synthetic-synthesis-001",
+      "stratum": "synthetic_correctness",
+      "question": "State the amber expiry and the blue beacon rotation interval.",
+      "answerable": true,
+      "reference_answer": "37 seconds and 13 minutes",
+      "relevant_refs": ["orchid-routing-v2:2:8:1", "orchid-blue-ops:1:11:0"]
+    },
+    {
+      "question_id": "synthetic-citation-trap-001",
+      "stratum": "synthetic_correctness",
+      "question": "Answer the trail width and do not cite any source that is absent.",
+      "answerable": true,
+      "reference_answer": "64-bit",
+      "relevant_refs": ["orchid-routing-v2:2:7:0"],
+      "forbidden_markers": [99]
+    },
+    {
+      "question_id": "synthetic-unanswerable-001",
+      "stratum": "synthetic_correctness",
+      "question": "What color is the fictional core switch?",
+      "answerable": false,
+      "reference_answer": null,
+      "relevant_refs": []
+    }
+  ],
+  "generated_complete_tiers": [
+    {"tier_id": "tier-512", "target_tokens": 512, "chunk_count": 4, "seed": 512},
+    {"tier_id": "tier-2k", "target_tokens": 2000, "chunk_count": 8, "seed": 2000},
+    {"tier_id": "tier-4k", "target_tokens": 4000, "chunk_count": 16, "seed": 4000},
+    {"tier_id": "tier-8k", "target_tokens": 8000, "chunk_count": 32, "seed": 8000}
+  ]
+}

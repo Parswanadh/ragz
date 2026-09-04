@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ragz.example/schemas/cag/trial.schema.json",
+  "title": "Sanitized CAG benchmark trial",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "trial_id",
+    "pair_id",
+    "question_id",
+    "stratum",
+    "variant",
+    "repetition",
+    "order_index",
+    "cache_state",
+    "status",
+    "failure_type",
+    "answerable",
+    "answered",
+    "metrics",
+    "usage",
+    "latency_ms",
+    "known_cost_usd"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "trial_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "pair_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "question_id": {"type": "string", "minLength": 1, "maxLength": 128},
+    "stratum": {
+      "enum": [
+        "single_document_fact",
+        "within_document_multihop",
+        "cross_document_synthesis",
+        "terminology_paraphrase_ambiguous",
+        "table_figure_page_sensitive",
+        "low_lexical_overlap",
+        "unanswerable_adversarial",
+        "synthetic_correctness"
+      ]
+    },
+    "variant": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{1,127}$"},
+    "repetition": {"type": "integer", "minimum": 1},
+    "order_index": {"type": "integer", "minimum": 1},
+    "cache_state": {
+      "enum": [
+        "not_requested",
+        "cold",
+        "first_write",
+        "warm_hit",
+        "expired",
+        "invalidated",
+        "unsupported",
+        "unknown"
+      ]
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "failed",
+        "ineligible",
+        "unsupported",
+        "credential_gated",
+        "protocol_gated",
+        "resource_gated"
+      ]
+    },
+    "failure_type": {"type": ["string", "null"], "maxLength": 128},
+    "answerable": {"type": "boolean"},
+    "answered": {"type": "boolean"},
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "recall_at_5": {"$ref": "#/$defs/nullable_score"},
+        "recall_at_10": {"$ref": "#/$defs/nullable_score"},
+        "mrr_at_5": {"$ref": "#/$defs/nullable_score"},
+        "mrr_at_10": {"$ref": "#/$defs/nullable_score"},
+        "ndcg_at_5": {"$ref": "#/$defs/nullable_score"},
+        "ndcg_at_10": {"$ref": "#/$defs/nullable_score"},
+        "context_relevance": {"$ref": "#/$defs/nullable_score"},
+        "groundedness": {"$ref": "#/$defs/nullable_score"},
+        "answer_relevance": {"$ref": "#/$defs/nullable_score"},
+        "citation_precision": {"$ref": "#/$defs/nullable_score"},
+        "citation_coverage": {"$ref": "#/$defs/nullable_score"},
+        "citation_provenance_valid": {"$ref": "#/$defs/nullable_score"},
+        "abstention_correct": {"$ref": "#/$defs/nullable_score"},
+        "exact_match": {"$ref": "#/$defs/nullable_score"},
+        "f1": {"$ref": "#/$defs/nullable_score"}
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prompt_tokens",
+        "completion_tokens",
+        "cached_tokens",
+        "cache_write_tokens",
+        "reasoning_tokens",
+        "cache_outcome"
+      ],
+      "properties": {
+        "prompt_tokens": {"$ref": "#/$defs/nullable_count"},
+        "completion_tokens": {"$ref": "#/$defs/nullable_count"},
+        "cached_tokens": {"$ref": "#/$defs/nullable_count"},
+        "cache_write_tokens": {"$ref": "#/$defs/nullable_count"},
+        "reasoning_tokens": {"$ref": "#/$defs/nullable_count"},
+        "cache_outcome": {
+          "enum": ["hit", "write", "miss", "unsupported", "unknown", "not_requested"]
+        }
+      }
+    },
+    "latency_ms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["end_to_end", "ttft"],
+      "properties": {
+        "end_to_end": {"$ref": "#/$defs/nullable_nonnegative"},
+        "ttft": {"$ref": "#/$defs/nullable_nonnegative"}
+      }
+    },
+    "known_cost_usd": {"$ref": "#/$defs/nullable_nonnegative"}
+  },
+  "$defs": {
+    "nullable_score": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 1
+    },
+    "nullable_count": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "nullable_nonnegative": {
+      "type": ["number", "null"],
+      "minimum": 0
+    }
+  }
+}

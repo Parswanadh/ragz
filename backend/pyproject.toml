@@ -44,6 +44,8 @@ dev = [
     "ruff>=0.4",
     "mypy>=1.10",
     "import-linter>=2.0",
+    "jsonschema>=4.26",
+    "types-jsonschema>=4.26",
     "psycopg2-binary>=2.9",
     "pillow>=10.1",
 ]

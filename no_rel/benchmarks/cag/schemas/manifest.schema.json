@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ragz.example/schemas/cag/manifest.schema.json",
+  "title": "Sanitized CAG benchmark run manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "protocol_version",
+    "run_id",
+    "status",
+    "started_at",
+    "finished_at",
+    "git",
+    "environment",
+    "provider",
+    "corpus",
+    "question_set",
+    "retrieval",
+    "execution",
+    "variants",
+    "exclusions"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "protocol_version": {"const": "ragz-cag-v1"},
+    "run_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{1,127}$"},
+    "status": {
+      "enum": ["planned", "running", "completed", "failed", "stopped_by_gate"]
+    },
+    "started_at": {"type": "string", "format": "date-time"},
+    "finished_at": {"type": ["string", "null"], "format": "date-time"},
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "branch", "commit_sha", "base_sha", "dirty"],
+      "properties": {
+        "repository": {"type": "string", "maxLength": 256},
+        "branch": {"type": "string", "maxLength": 256},
+        "commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "base_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "dirty": {"type": "boolean"}
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["os", "architecture", "cpu_count", "ram_bytes", "timezone", "clock"],
+      "properties": {
+        "os": {"type": "string", "maxLength": 256},
+        "architecture": {"type": "string", "maxLength": 64},
+        "cpu_count": {"type": "integer", "minimum": 1},
+        "ram_bytes": {"type": "integer", "minimum": 1},
+        "timezone": {"type": "string", "maxLength": 64},
+        "clock": {"const": "monotonic"}
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "route_alias",
+        "upstream_model",
+        "gateway_version",
+        "gateway_image_digest",
+        "capability_probe_sha256",
+        "prompt_cache_api",
+        "cache_usage_reported",
+        "minimum_prefix_tokens",
+        "context_window",
+        "max_output_tokens",
+        "price_source",
+        "price_accessed_at"
+      ],
+      "properties": {
+        "route_alias": {"type": "string", "maxLength": 256},
+        "upstream_model": {"type": "string", "maxLength": 256},
+        "gateway_version": {"type": "string", "maxLength": 64},
+        "gateway_image_digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "capability_probe_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "prompt_cache_api": {"enum": ["unknown", "supported", "unsupported"]},
+        "cache_usage_reported": {"type": "boolean"},
+        "minimum_prefix_tokens": {"type": ["integer", "null"], "minimum": 1},
+        "context_window": {"type": ["integer", "null"], "minimum": 1},
+        "max_output_tokens": {"type": ["integer", "null"], "minimum": 1},
+        "price_source": {"type": "string", "format": "uri", "maxLength": 2048},
+        "price_accessed_at": {"type": "string", "format": "date"}
+      }
+    },
+    "corpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["corpus_id", "documents", "total_pages", "total_chunks", "token_estimate"],
+      "properties": {
+        "corpus_id": {"type": "string", "maxLength": 128},
+        "documents": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["document_id", "sha256", "page_count"],
+            "properties": {
+              "document_id": {"type": "string", "maxLength": 128},
+              "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+              "page_count": {"type": "integer", "minimum": 1}
+            }
+          }
+        },
+        "total_pages": {"type": "integer", "minimum": 1},
+        "total_chunks": {"type": ["integer", "null"], "minimum": 0},
+        "token_estimate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["count", "tokenizer", "tokenizer_version", "scope"],
+          "properties": {
+            "count": {"type": "integer", "minimum": 0},
+            "tokenizer": {"type": "string", "maxLength": 128},
+            "tokenizer_version": {"type": "string", "maxLength": 64},
+            "scope": {"enum": ["raw_source_text", "rendered_prefix"]}
+          }
+        }
+      }
+    },
+    "question_set": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["fixture_sha256", "qrels_sha256", "count", "strata", "frozen_at"],
+      "properties": {
+        "fixture_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "qrels_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "count": {"type": "integer", "minimum": 1},
+        "strata": {
+          "type": "object",
+          "additionalProperties": {"type": "integer", "minimum": 0}
+        },
+        "frozen_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "retrieval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "embedding_model",
+        "embedding_dimension",
+        "parser",
+        "parser_version",
+        "chunk_method",
+        "chunk_target_chars",
+        "chunk_overlap_ratio",
+        "top_k",
+        "rerank_enabled",
+        "prompt_sha256"
+      ],
+      "properties": {
+        "embedding_model": {"const": "text-embedding-3-large"},
+        "embedding_dimension": {"const": 1024},
+        "parser": {"const": "liteparse"},
+        "parser_version": {"type": "string", "maxLength": 64},
+        "chunk_method": {"const": "heading"},
+        "chunk_target_chars": {"const": 2000},
+        "chunk_overlap_ratio": {"const": 0.15},
+        "top_k": {"const": 5},
+        "rerank_enabled": {"const": false},
+        "prompt_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "repetitions", "concurrency", "warmups", "failure_policy"],
+      "properties": {
+        "seed": {"type": "integer"},
+        "repetitions": {"type": "integer", "minimum": 3},
+        "concurrency": {"enum": [1, 4, 16]},
+        "warmups": {"type": "integer", "minimum": 0},
+        "failure_policy": {"const": "keep_in_denominator"}
+      }
+    },
+    "variants": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{1,127}$"}
+    },
+    "exclusions": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 256}
+    }
+  }
+}

@@ -6,12 +6,13 @@ immutable values that those boundaries can validate before any generation.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, replace
 from hashlib import sha256
 from typing import Literal
 from uuid import UUID
 
-from ragz.modules.chat.prompting import PromptSource, render_data_blocks
+from ragz.modules.chat.prompting import PromptSource, parse_citation_markers, render_data_blocks
 
 type CagMode = Literal["full_snapshot_cag", "cached_rag_prefix"]
 
@@ -75,6 +76,8 @@ class CagSnapshot:
     org_id: UUID
     workspace_id: UUID
     sources: tuple[CagSource, ...]
+    stable_policy_prefix: str
+    rendered_source_data: str
     rendered_prefix: str
     token_count: int
     visibility_scope: Literal["unrestricted", "principal"]
@@ -95,6 +98,32 @@ class SnapshotDecision:
 class SnapshotValidation:
     valid: bool
     reason: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class PromptCacheRequest:
+    snapshot_id: str
+    mode: Literal["auto", "disabled", "required"] = "auto"
+
+
+@dataclass(frozen=True, slots=True)
+class CacheUsage:
+    requested: bool
+    outcome: Literal[
+        "hit", "write", "miss", "unsupported", "unknown", "not_requested"
+    ]
+    read_tokens: int | None = None
+    write_tokens: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CagCitation:
+    marker: int
+    document_id: UUID
+    version: int
+    page: int
+    chunk_index: int
+    section: str | None
 
 
 type CanonicalValue = (
@@ -329,7 +358,8 @@ def build_snapshot(
         )
         for source in canonical_sources
     )
-    rendered_prefix = f"{stable_policy_prefix}\n\n{render_data_blocks(prompt_sources)}"
+    rendered_source_data = render_data_blocks(prompt_sources)
+    rendered_prefix = f"{stable_policy_prefix}\n\n{rendered_source_data}"
     snapshot_identity: dict[str, object] = {
         "format": "ragz-cag-snapshot-v1",
         "mode": mode,
@@ -346,6 +376,8 @@ def build_snapshot(
         org_id=context.org_id,
         workspace_id=context.workspace_id,
         sources=canonical_sources,
+        stable_policy_prefix=stable_policy_prefix,
+        rendered_source_data=rendered_source_data,
         rendered_prefix=rendered_prefix,
         token_count=rendered_prefix_token_count,
         visibility_scope=visibility_scope,
@@ -355,6 +387,129 @@ def build_snapshot(
         workspace_prompt_hash=workspace_prompt_hash,
     )
     return SnapshotDecision(eligible=True, reason=None, snapshot=snapshot)
+
+
+def build_cag_messages(
+    snapshot: CagSnapshot,
+    *,
+    history: tuple[tuple[str, str], ...],
+    user_query: str,
+    summary: str | None = None,
+) -> list[dict[str, object]]:
+    """Place immutable policy/data before every dynamic conversation value."""
+    messages: list[dict[str, object]] = [
+        {"role": "system", "content": snapshot.stable_policy_prefix},
+        {"role": "system", "content": snapshot.rendered_source_data},
+    ]
+    if summary:
+        messages.append(
+            {"role": "system", "content": f"[Earlier conversation summary]\n{summary}"}
+        )
+    messages.extend({"role": role, "content": content} for role, content in history)
+    messages.append({"role": "user", "content": user_query})
+    return messages
+
+
+def resolve_snapshot_citations(
+    snapshot: CagSnapshot, answer: str
+) -> tuple[CagCitation, ...]:
+    """Resolve only markers present in the immutable authoritative snapshot."""
+    by_marker = {source.marker: source for source in snapshot.sources}
+    return tuple(
+        CagCitation(
+            marker=marker,
+            document_id=by_marker[marker].document_id,
+            version=by_marker[marker].version,
+            page=by_marker[marker].page,
+            chunk_index=by_marker[marker].chunk_index,
+            section=by_marker[marker].section,
+        )
+        for marker in parse_citation_markers(answer, len(snapshot.sources))
+    )
+
+
+def _reported_count(value: object) -> int | None:
+    if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+        return value
+    return None
+
+
+def cache_usage_from_provider(
+    usage: Mapping[str, object] | None,
+    *,
+    request: PromptCacheRequest | None,
+    capability: str,
+) -> CacheUsage:
+    """Classify only provider-reported cache fields; latency is never evidence."""
+    if request is None or request.mode == "disabled":
+        return CacheUsage(requested=False, outcome="not_requested")
+    if capability == "unsupported":
+        return CacheUsage(requested=True, outcome="unsupported")
+    if usage is None:
+        return CacheUsage(requested=True, outcome="unknown")
+
+    details_value = usage.get("prompt_tokens_details")
+    details = details_value if isinstance(details_value, Mapping) else {}
+    if "cached_tokens" in details:
+        raw_read = details["cached_tokens"]
+        read_present = True
+    else:
+        raw_read = usage.get("cache_read_input_tokens")
+        read_present = "cache_read_input_tokens" in usage
+    write_names = ("cache_write_tokens", "cache_creation_tokens")
+    raw_write: object = None
+    write_present = False
+    for name in write_names:
+        if name in details:
+            raw_write = details[name]
+            write_present = True
+            break
+    if not write_present and "cache_creation_input_tokens" in usage:
+        raw_write = usage["cache_creation_input_tokens"]
+        write_present = True
+
+    read_tokens = _reported_count(raw_read) if read_present else None
+    write_tokens = _reported_count(raw_write) if write_present else None
+    if (read_present and read_tokens is None) or (write_present and write_tokens is None):
+        return CacheUsage(requested=True, outcome="unknown")
+    if read_tokens is not None and read_tokens > 0:
+        return CacheUsage(
+            requested=True,
+            outcome="hit",
+            read_tokens=read_tokens,
+            write_tokens=write_tokens,
+        )
+    if write_tokens is not None and write_tokens > 0:
+        return CacheUsage(
+            requested=True,
+            outcome="write",
+            read_tokens=read_tokens,
+            write_tokens=write_tokens,
+        )
+    if read_tokens == 0 and write_tokens == 0:
+        return CacheUsage(
+            requested=True,
+            outcome="miss",
+            read_tokens=0,
+            write_tokens=0,
+        )
+    return CacheUsage(requested=True, outcome="unknown")
+
+
+def may_retry_without_cache(
+    *,
+    explicit_unsupported: bool,
+    output_started: bool,
+    ambiguous_failure: bool,
+    retry_count: int,
+) -> bool:
+    """Allow one retry only for a typed, unambiguous, pre-output rejection."""
+    return (
+        explicit_unsupported
+        and not output_started
+        and not ambiguous_failure
+        and retry_count == 0
+    )
 
 
 def validate_snapshot(

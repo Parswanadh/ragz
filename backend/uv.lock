@@ -4182,6 +4182,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "import-linter" },
+    { name = "jsonschema" },
     { name = "mypy" },
     { name = "pillow" },
     { name = "psycopg2-binary" },
@@ -4191,6 +4192,7 @@ dev = [
     { name = "python-pptx" },
     { name = "ruff" },
     { name = "testcontainers", extra = ["minio", "qdrant", "redis"] },
+    { name = "types-jsonschema" },
 ]
 loadtest = [
     { name = "locust" },
@@ -4235,6 +4237,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "import-linter", specifier = ">=2.0" },
+    { name = "jsonschema", specifier = ">=4.26" },
     { name = "mypy", specifier = ">=1.10" },
     { name = "pillow", specifier = ">=10.1" },
     { name = "psycopg2-binary", specifier = ">=2.9" },
@@ -4244,6 +4247,7 @@ dev = [
     { name = "python-pptx", specifier = ">=1.0" },
     { name = "ruff", specifier = ">=0.4" },
     { name = "testcontainers", extras = ["postgres", "redis", "qdrant", "minio"], specifier = ">=4.5" },
+    { name = "types-jsonschema", specifier = ">=4.26" },
 ]
 loadtest = [{ name = "locust", specifier = ">=2.29" }]
 observability = [{ name = "sentry-sdk", specifier = ">=2.8" }]
@@ -5280,6 +5284,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/83/b8/9ebb531b6c2d377af08ac6746a5df3425b21853a5d2260876919b58a2a4a/typer-0.24.2.tar.gz", hash = "sha256:ec070dcfca1408e85ee203c6365001e818c3b7fffe686fd07ff2d68095ca0480", size = 119849, upload-time = "2026-04-22T17:45:34.413Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/39/d1/9484b497e0a0410b901c12b8251c3e746e1e863f7d28419ffe06f7892fda/typer-0.24.2-py3-none-any.whl", hash = "sha256:b618bc3d721f9a8d30f3e05565be26416d06e9bcc29d49bc491dc26aba674fa8", size = 55977, upload-time = "2026-04-22T17:45:33.055Z" },
+]
+
+[[package]]
+name = "types-jsonschema"
+version = "4.26.0.20260518"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "referencing" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/dd/46/73b6a5d61a61015c4248030a8cb07e5bdddb4041430fae9e585a68692578/types_jsonschema-4.26.0.20260518.tar.gz", hash = "sha256:e1dd53dc97a64f5eccdd6fa9839666e09bb500a8ebba2db6fdaf1789faea81a6", size = 16638, upload-time = "2026-05-18T06:06:44.106Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/d5/134f8a147dcecda10db7f60cfc6af0578a25a5c53c87b3907a64385e0184/types_jsonschema-4.26.0.20260518-py3-none-any.whl", hash = "sha256:30b30a518c7fe335df85c919fcbcc631b69c03d4a4b5b632fa916bea03065307", size = 16072, upload-time = "2026-05-18T06:06:43.264Z" },
 ]
 
 [[package]]
