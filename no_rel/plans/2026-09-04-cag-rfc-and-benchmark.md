@@ -5,6 +5,10 @@
 > Superpowers. Do not modify `/home/parshu/projects/ragz`. This work follows the
 > usage-accounting foundation so cache/token/cost results are not misleading.
 
+> **GitHub freeze:** PRs and issues are read-only for this goal. Do not create,
+> edit, comment on, close, reopen, label, or submit any PR or issue. Local commits
+> and branch pushes are permitted for crash-safe preservation only.
+
 **Goal:** Add a provider-neutral, fail-closed cached-context capability for small
 eligible corpora without weakening RAGZ tenant, ACL, version, citation,
 abstention, or fallback guarantees.
@@ -50,12 +54,48 @@ Production implementation is prohibited until all are true:
 If a gate fails, ship the RFC and benchmark with a `NO_GO` result. Do not quietly
 turn the experiment into a different feature.
 
-## Branch and evidence setup
+## Sole isolated worktree and evidence setup
 
-- [ ] Start only after the accounting work provides reliable provider/cache token
-      detail or explicitly stack the prototype on that branch.
-- [ ] Create `/home/parshu/projects/rag-comparison-sources/ragz-cag-evaluation`
-      on branch `codex/cag-rfc-benchmark` from the exact selected base.
+- [ ] CAG is the only project authorized to create a new Git worktree. Create
+      `/home/parshu/projects/rag-comparison-sources/ragz-cag-benchmark` on branch
+      `codex/cag-rfc-benchmark` from the exact selected base.
+- [ ] Prefer the merged MQR commit on `upstream/main`. If PR #11 is still open,
+      use the exact fork PR head and record that the CAG branch is experimental;
+      do not modify or stack commits onto the PR branch.
+- [ ] From the research checkout, fetch and inspect without altering either
+      existing checkout:
+
+  ```bash
+  git fetch --all --prune
+  git worktree list --porcelain
+  git branch --list codex/cag-rfc-benchmark
+  gh pr view 11 --json state,headRefOid,baseRefOid,mergeCommit,url
+  ```
+
+- [ ] Require the intended worktree path and local branch to be absent. If either
+      already exists, inspect it and stop rather than deleting or overwriting it.
+- [ ] If PR #11 is verified merged and its merge commit is on `upstream/main`, run:
+
+  ```bash
+  git worktree add -b codex/cag-rfc-benchmark \
+    /home/parshu/projects/rag-comparison-sources/ragz-cag-benchmark \
+    upstream/main
+  ```
+
+- [ ] If PR #11 remains open, first require
+      `origin/codex/mqr-production-ready` to equal the PR `headRefOid`, then run:
+
+  ```bash
+  git worktree add -b codex/cag-rfc-benchmark \
+    /home/parshu/projects/rag-comparison-sources/ragz-cag-benchmark \
+    origin/codex/mqr-production-ready
+  ```
+
+- [ ] Record the selected immutable base SHA immediately. If PR/upstream state
+      changes later, do not silently move the benchmark base mid-experiment.
+- [ ] If reliable usage accounting is not merged, make the benchmark harness
+      collect provider response usage directly and label missing data unknown.
+      Never use the current `1.7M` application meter as provider-token evidence.
 - [ ] Keep proprietary book PDFs and raw extracted text outside Git. Store only
       schemas, scripts, hashes, aggregate metrics, redacted examples, and
       environment manifests in version control.
@@ -64,6 +104,29 @@ turn the experiment into a different feature.
       MQR count, prompt version, and commit SHA before every run.
 - [ ] Never print API keys or provider request bodies. Use the existing secret
       injection path and redact request IDs if they encode account information.
+- [ ] GitHub inspection is read-only. Do not run any mutating `gh pr` or
+      `gh issue` command, and do not invoke equivalent web or API mutations.
+
+## Agent and credit policy
+
+- The primary agent counts as one active Sol. At most one additional Sol may be
+  active, so total concurrent Sol agents never exceeds two.
+- Use Luna agents for documentation research, open-source repository surveys,
+  benchmark literature review, configuration mapping, and other high-volume
+  independent analysis.
+- Spawn every worker with `fork_turns="none"`. Do not fork conversation history
+  into agents. Each prompt must be self-contained and include exact paths,
+  versions, questions, evidence format, and a read-only instruction.
+- Luna agents may not edit the CAG worktree. The primary agent is the sole writer
+  and must verify every claim against source/docs before it enters the RFC.
+- Subagents may not spawn children. The primary agent owns scheduling and keeps
+  total active workers within the platform’s available slots.
+- Use the second Sol only for a bounded final architecture/security review after
+  the primary draft exists. Do not use Sol for bulk web research or repetitive
+  repository mapping.
+- Do not run multiple heavy competitor stacks concurrently. Luna can inspect
+  code/configuration in parallel, but the primary starts and benchmarks RAGFlow,
+  AnythingLLM, Onyx, or RAGZ sequentially to protect machine stability.
 
 ## Task 1 — Produce an evidence-backed RFC before code
 
@@ -85,6 +148,11 @@ turn the experiment into a different feature.
 
 **Research:**
 
+- [ ] Dispatch independent Luna workers with standalone, no-history prompts for:
+      provider cache semantics; LiteLLM pass-through behavior; open-source RAG
+      cache/CAG implementations; and evaluation/statistics methodology. Ask each
+      for claims, primary-source links, inspected version/SHA, uncertainty, and
+      contradiction notes—not prose padding.
 - [ ] At execution time, read the current official provider/API documentation
       for prompt caching, minimum prefix size, expiry, supported request shape,
       usage fields, pricing, and streaming restrictions. Cite primary sources.
@@ -504,7 +572,8 @@ private content, or raw provider traces in the product PR.
 - [ ] `git diff --check`; credential/content scan; verify remote SHA after push.
 - [ ] Keep the user’s existing `ragz-mqr-local-test` runtime unchanged unless
       explicitly authorized to deploy the pilot there.
-- [ ] Do not open or merge a CAG PR without explicit user authorization.
+- [ ] Do not open, edit, comment on, or merge a CAG PR or any issue during this
+      goal, even if the implementation and benchmark pass.
 
 The handoff must state which mode was evaluated, which cache mechanism was
 actually measured, whether provider telemetry confirmed hits, every failed gate,

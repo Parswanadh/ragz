@@ -34,7 +34,7 @@ token meter. Missing catalog prices currently render as `$0`, which also confuse
 10. The ledger remains append-only; repairs use explicit compensating records or
     a migration with recorded provenance, not silent mutation after launch.
 
-## Branch and isolation setup
+## Branch and checkout setup
 
 - [ ] Read the master plan and confirm Phase 1 has no unresolved P1/P2.
 - [ ] Fetch both remotes without changing any existing checkout:
@@ -43,12 +43,14 @@ token meter. Missing catalog prices currently render as `$0`, which also confuse
   git -C /home/parshu/projects/rag-comparison-sources/ragz-b91c898 fetch --all --prune
   ```
 
-- [ ] If PR #11 is merged into `upstream/main`, create the meaningful worktree
-      `/home/parshu/projects/rag-comparison-sources/ragz-accurate-usage` on a new
-      `codex/accurate-usage-accounting` branch from that merge.
-- [ ] If #11 is still open, branch from the exact PR head, mark the work stacked,
-      and do not open its PR until #11 merges. Never rebase a published branch
-      without explicit approval.
+- [ ] Do not start this implementation until PR #11 is merged into
+      `upstream/main`.
+- [ ] Reuse `/home/parshu/projects/rag-comparison-sources/ragz-mqr-production-ready`
+      only after confirming it is clean and no session owns it. Only CAG may
+      create a new isolated worktree.
+- [ ] Fetch `upstream/main` and create `codex/accurate-usage-accounting` from the
+      verified MQR merge commit in that existing checkout. Do not stack it on an
+      open PR and never reset or discard unrecognized work.
 - [ ] Record base/head/remotes/dirty status under
       `no_rel/verification/usage-accounting-baseline-2026-09-04.md` on the
       research branch.

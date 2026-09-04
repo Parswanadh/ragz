@@ -10,12 +10,9 @@ migrations, UI, and failure behavior are all backed by reproducible evidence.
 
 **Starting point and target:**
 
-- Read-only reference checkout:
+- Existing dedicated checkout:
   `/home/parshu/projects/rag-comparison-sources/ragz-mqr-production-ready`
-- New worktree to create:
-  `/home/parshu/projects/rag-comparison-sources/ragz-pr11-remediation`
-- New local branch: `codex/pr11-review-remediation`
-- Remote PR branch to fast-forward: `origin/codex/mqr-production-ready`
+- Local and remote PR branch: `codex/mqr-production-ready`
 - Expected head: `3fac9fb1`
 - Base: `upstream/main` at `9d08839f6855967f3b141b731a269a54b76222fb`
 - PR: <https://github.com/marketcalls/ragz/pull/11>
@@ -58,7 +55,7 @@ reproducer may downgrade or dismiss it with evidence.
 | 14 | P2 | Eval UI can retain an ineligible default model | 4 |
 | 15 | P2 | Edited form relabels already submitted comparison results | 9 |
 
-## Task 0 — Freeze provenance, isolate work, and create the review ledger
+## Task 0 — Freeze provenance, prove checkout ownership, and create the ledger
 
 **Files:**
 
@@ -67,7 +64,7 @@ reproducer may downgrade or dismiss it with evidence.
 
 **Steps:**
 
-- [ ] In the read-only reference checkout run:
+- [ ] Before using the existing MQR checkout, verify its status and provenance:
 
   ```bash
   git status --short --branch
@@ -82,25 +79,12 @@ reproducer may downgrade or dismiss it with evidence.
 
 - [ ] Require a clean tree and the expected head. If either differs, inspect the
       extra work and record the new provenance before continuing.
-- [ ] Before creating anything, verify no existing worktree owns the intended
-      path or local branch:
-
-  ```bash
-  git worktree list --porcelain
-  git branch --list codex/pr11-review-remediation
-  ```
-
-- [ ] From the research checkout, create the isolated worktree from the exact
-      remote PR head:
-
-  ```bash
-  git worktree add -b codex/pr11-review-remediation \
-    /home/parshu/projects/rag-comparison-sources/ragz-pr11-remediation \
-    origin/codex/mqr-production-ready
-  ```
-
-- [ ] Perform every product edit and test in that new worktree. Do not checkout,
-      reset, pull, or edit either existing checkout.
+- [ ] Check live agents/processes and any session handoff for ownership of this
+      checkout. The clean Git status alone does not prove it is unowned.
+- [ ] If another session owns it or ownership is uncertain, stop and ask the
+      user. Do not create another worktree: only CAG is authorized to do so.
+- [ ] If it is clean and unowned, perform Phase 1 directly on the existing PR
+      branch. Never reset or discard unrecognized changes.
 - [ ] Create a 15-row disposition ledger with columns: ID, severity, claim,
       reproducer, result, code/test evidence, commit, residual risk.
 - [ ] Copy only reviewer claims into the ledger. Do not present them as confirmed
@@ -448,7 +432,7 @@ browser setup is idempotent; comparison results describe the request actually ru
 
 ## Task 11 — Full local verification
 
-Run commands from the remediation worktree. These mirror the required CI jobs:
+Run commands from the existing MQR checkout. These mirror the required CI jobs:
 
 ```bash
 git diff --check upstream/main...HEAD
@@ -499,7 +483,7 @@ pnpm exec playwright test --list
   ```bash
   git fetch origin codex/mqr-production-ready
   git merge-base --is-ancestor origin/codex/mqr-production-ready HEAD
-  git push origin HEAD:codex/mqr-production-ready
+  git push origin codex/mqr-production-ready
   ```
 
 - [ ] Verify local and remote head equality.

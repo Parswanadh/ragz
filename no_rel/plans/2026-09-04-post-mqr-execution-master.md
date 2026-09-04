@@ -1,9 +1,10 @@
 # Post-MQR Delivery Master Plan
 
 > **For the next Codex session:** The user explicitly prohibited Superpowers.
-> Execute with ordinary repository tools in isolated worktrees. Bounded Luna
-> reviewers may be used for independent, read-only audits, but the primary agent
-> must reproduce every finding and run every required gate itself.
+> Execute with ordinary repository tools in the designated checkouts; only CAG
+> may create a new isolated worktree. Fresh no-history Luna workers should handle
+> volume-heavy research and read-only audits, but the primary agent must verify
+> every material finding and run every required gate itself.
 
 **Goal:** Land PR #11 safely, replace the ambiguous token meter with auditable
 usage semantics, and evaluate CAG without mixing three independent risk domains
@@ -24,13 +25,20 @@ Playwright, Docker, GitHub Actions.
 
 - Never edit `/home/parshu/projects/ragz`; it is a dirty shared checkout owned
   by the user and other agents.
-- Treat the existing PR #11 checkout
-  `/home/parshu/projects/rag-comparison-sources/ragz-mqr-production-ready` as
-  read-only; another session may still own it.
-- Create the purpose-named remediation worktree
-  `/home/parshu/projects/rag-comparison-sources/ragz-pr11-remediation` on a new
-  local branch from the exact fork PR head. Push it only as a verified
-  fast-forward to `origin/codex/mqr-production-ready`.
+- Only CAG may create a new isolated Git worktree. Do not create additional
+  worktrees for PR remediation, usage accounting, research, or competitor code.
+- PR remediation may use the existing dedicated checkout
+  `/home/parshu/projects/rag-comparison-sources/ragz-mqr-production-ready` only
+  after proving it is clean and no other session owns it. If ownership is
+  uncertain, stop instead of interfering.
+- After PR #11 merges, usage accounting may reuse that same dedicated checkout
+  on a new branch from `upstream/main`; it must not start while another session
+  owns the checkout.
+- CAG uses the sole new worktree
+  `/home/parshu/projects/rag-comparison-sources/ragz-cag-benchmark`.
+- During the CAG goal, GitHub PRs and issues are read-only. Do not create, edit,
+  comment on, close, reopen, label, or submit any PR or issue. Local commits and
+  pushes to the dedicated CAG branch are allowed only for crash-safe preservation.
 - Research/evidence checkout:
   `/home/parshu/projects/rag-comparison-sources/ragz-b91c898`.
 - Never force-push, rewrite published commits, merge locally into shared main,
@@ -48,6 +56,12 @@ Playwright, Docker, GitHub Actions.
 - Record incomplete/blocked execution as a typed status; never invent zero
   metrics or claim a workflow passed when GitHub did not run it.
 - Commit and push each independently reviewable task before moving to the next.
+- Count the primary agent toward the Sol concurrency limit. Never have more than
+  two Sol agents active at once.
+- Assign volume-heavy research and repository surveys to Luna agents using
+  standalone prompts and `fork_turns="none"`; do not create inherited-context
+  agent forks. Luna workers are read-only unless a task explicitly assigns a
+  non-overlapping artifact.
 
 ## Current state to verify before doing anything
 
@@ -98,12 +112,10 @@ Only after Phase 1 has no unresolved P1/P2, execute
 
 Branching rule:
 
-- If PR #11 is merged, fetch the new `upstream/main` and create
-  `codex/accurate-usage-accounting` from it in a new isolated worktree.
-- If PR #11 is still open, create the branch from
-  `codex/mqr-production-ready`, clearly mark it stacked on #11, and do not open
-  its PR until #11 merges. After #11 merges, transplant only the accounting
-  commits onto updated main with a normal, reviewable operation.
+- Do not start until PR #11 is merged.
+- After confirming the existing MQR checkout is clean and unowned, fetch the new
+  `upstream/main` there and create `codex/accurate-usage-accounting` from it.
+- Do not create a second worktree or stack usage work on the open PR branch.
 
 Exit criteria:
 
@@ -121,6 +133,12 @@ Exit criteria:
 
 Execute
 [`2026-09-04-cag-rfc-and-benchmark.md`](2026-09-04-cag-rfc-and-benchmark.md).
+
+For a CAG-only session, use the standalone goal in
+[`2026-09-04-cag-goal-prompt.md`](2026-09-04-cag-goal-prompt.md). That goal may
+begin independently in the sole new CAG worktree and must collect raw provider
+usage in the benchmark harness rather than trusting the current application
+token meter.
 
 Do not implement production CAG merely because the RFC is complete. Production
 work begins only if all of these gates pass:
@@ -170,8 +188,8 @@ Use this verbatim in the next session:
 > and every subplan it routes to. Start with Phase 1 only. Do not use
 > Superpowers, do not modify `/home/parshu/projects/ragz`, do not mix token
 > accounting or CAG into PR #11, and do not accept Cubic findings without a
-> failing test or deterministic reproducer. Treat the existing MQR checkout as
-> read-only and create the purpose-named remediation worktree specified in the
-> subplan. Commit and push reviewable fixes, rerun the specified gates, and leave
-> the local `ragz-mqr-local-test` runtime running unless I explicitly ask you to
-> stop it.
+> failing test or deterministic reproducer. Use the existing MQR checkout only
+> after confirming it is clean and not owned by another session; do not create a
+> new worktree for Phase 1. Commit and push reviewable fixes, rerun the specified
+> gates, and leave the local `ragz-mqr-local-test` runtime running unless I
+> explicitly ask you to stop it.
