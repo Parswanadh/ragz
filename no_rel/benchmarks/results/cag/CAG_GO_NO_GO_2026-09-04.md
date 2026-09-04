@@ -60,7 +60,15 @@ provider request body is included.
 | AnythingLLM exact run | Not run | Adapter/configuration pending |
 | RAGFlow exact run | `protocol_gated` | Exact three-book adapter absent |
 | Onyx exact run | `protocol_gated` | Exact corpus/model evidence adapter absent |
-| Full repository CI/migration/OpenAPI/browser | Not run | Delivery is not complete |
+| Backend lint/types/import boundaries | Passed | Ruff; mypy 162 source files; 17/17 import contracts |
+| Backend unit/integration | Passed | 1,696 passed, 2 skipped |
+| Backend tenant/ACL isolation | Passed | 123 passed |
+| Migration head/chain | Passed | One Alembic head; 2 migration tests passed |
+| Frontend lint/types/tests/build | Passed | 106 test files and 709 tests; production build passed |
+| Bundle/browser compile | Passed | 171.7 kB / 200 kB gzip; two Playwright tests discovered |
+| OpenAPI drift | Passed | Exported application schema matches committed client |
+| Credential scan, CAG commit range | Passed | Gitleaks 8.30.1: three commits, no findings |
+| Credential scan, complete history | **Failed (pre-existing)** | Three generic-api-key findings predate the CAG base; no unrelated remediation is authorized here |
 
 ## Runtime and GitHub state
 
