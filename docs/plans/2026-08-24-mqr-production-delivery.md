@@ -301,7 +301,10 @@ system that exposes a valid path.
 Subsequent status: after this no-submission plan completed, the user explicitly
 authorized submitting the issue. Upstream issue
 [#10](https://github.com/marketcalls/ragz/issues/10) was created and verified on
-2026-08-26. The pull request remains unsubmitted.
+2026-08-26. A later explicit instruction authorized the PR if no upstream branch
+contained MQR. All nine upstream branches were audited, no MQR implementation
+was found, the full suite passed again, and ready-for-review PR
+[#11](https://github.com/marketcalls/ragz/pull/11) was opened on 2026-09-04.
 
 - Spec coverage: integration, cache, speculative/cached expansion, Cohere
   resilience, deterministic ordering, no-answer overlap, superadmin controls,

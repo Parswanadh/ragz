@@ -1,8 +1,10 @@
 # Multi-query retrieval delivery packet
 
 Status: upstream issue
-[`#10`](https://github.com/marketcalls/ragz/issues/10) was submitted and verified
-on 2026-08-26; the pull request remains a local draft and has not been opened.
+[`#10`](https://github.com/marketcalls/ragz/issues/10) and ready-for-review pull
+request [`#11`](https://github.com/marketcalls/ragz/pull/11) are open. The PR was
+submitted on 2026-09-04 after every upstream branch was confirmed MQR-free and
+the complete verification suite passed again.
 
 This folder is the handoff point for the production MQR proposal. It separates
 the short public-facing drafts from the much larger research branch.
@@ -11,9 +13,10 @@ the short public-facing drafts from the much larger research branch.
 
 1. Issue #10 is open from `github-issue-body.md`; allow the maintainer to confirm
    the product/configuration direction.
-2. Rebase or merge the production branch only if `upstream/main` has advanced.
-3. Run `review-checklist.md` against that exact commit.
-4. Open the PR from `pull-request-body.md`, linking the accepted issue.
+2. PR #11 targets the unchanged `upstream/main` from the production branch.
+3. The review checklist was rerun against exact head `3fac9fb1`.
+4. An upstream maintainer must approve the forked CI/dependency-audit workflows;
+   then address CI or review feedback without deleting the worktree.
 
 An issue should come first here because this is not a small bug fix: it adds a
 database-backed workspace capability, a superadmin-only policy decision,
