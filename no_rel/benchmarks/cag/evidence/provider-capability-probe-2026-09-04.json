@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "evidence_type": "synthetic_provider_cache_capability_probe",
+  "captured_at_date": "2026-09-04",
+  "sanitized": true,
+  "experimental_base_sha": "3fac9fb1d02c9327f243418ebbb905466c8bcef5",
+  "route": {
+    "ragz_alias": "gpt-5.6-luna",
+    "litellm_model": "openai/gpt-5.6-luna",
+    "litellm_version": "1.96.2",
+    "litellm_image_digest": "sha256:154e23bb5f31b1f10e16392a8ef299bd2cde08de3a64a6849002cfcc25ce3c63",
+    "endpoint_shape": "/v1/chat/completions"
+  },
+  "data_handling": {
+    "synthetic_input_only": true,
+    "tenant_content_sent": false,
+    "request_bodies_retained": false,
+    "model_outputs_retained": false,
+    "provider_request_ids_retained": false,
+    "credentials_retained": false
+  },
+  "non_streaming_observations": [
+    {
+      "label": "implicit_cold",
+      "elapsed_ms": 2433,
+      "prompt_tokens": 7158,
+      "completion_tokens": 5,
+      "cached_tokens": 0,
+      "cache_write_tokens": 7155,
+      "error": null
+    },
+    {
+      "label": "implicit_exact_repeat",
+      "elapsed_ms": 1262,
+      "prompt_tokens": 7158,
+      "completion_tokens": 5,
+      "cached_tokens": 7155,
+      "cache_write_tokens": 0,
+      "error": null
+    },
+    {
+      "label": "implicit_changed_question",
+      "elapsed_ms": 1329,
+      "prompt_tokens": 7158,
+      "completion_tokens": 5,
+      "cached_tokens": 7144,
+      "cache_write_tokens": 11,
+      "error": null
+    },
+    {
+      "label": "explicit_no_breakpoint_first",
+      "elapsed_ms": 1378,
+      "prompt_tokens": 6736,
+      "completion_tokens": 5,
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "error": null
+    },
+    {
+      "label": "explicit_no_breakpoint_changed_question",
+      "elapsed_ms": 1113,
+      "prompt_tokens": 6736,
+      "completion_tokens": 5,
+      "cached_tokens": 0,
+      "cache_write_tokens": 0,
+      "error": null
+    },
+    {
+      "label": "explicit_breakpoint_cold",
+      "elapsed_ms": 1108,
+      "prompt_tokens": 6736,
+      "completion_tokens": 5,
+      "cached_tokens": 0,
+      "cache_write_tokens": 6724,
+      "error": null
+    },
+    {
+      "label": "explicit_breakpoint_changed_question",
+      "elapsed_ms": 909,
+      "prompt_tokens": 6736,
+      "completion_tokens": 5,
+      "cached_tokens": 6724,
+      "cache_write_tokens": 0,
+      "error": null
+    }
+  ],
+  "streaming_observations": [
+    {
+      "label": "explicit_breakpoint_stream_cold",
+      "http_status": 200,
+      "connect_ms": 0.149,
+      "time_to_first_byte_ms": 1670.167,
+      "elapsed_ms": 1670.224,
+      "prompt_tokens": 5895,
+      "completion_tokens": 5,
+      "cached_tokens": 0,
+      "cache_write_tokens": 5884,
+      "reasoning_tokens": 0,
+      "error": null
+    },
+    {
+      "label": "explicit_breakpoint_stream_changed_question",
+      "http_status": 200,
+      "connect_ms": 0.138,
+      "time_to_first_byte_ms": 929.802,
+      "elapsed_ms": 932.197,
+      "prompt_tokens": 5896,
+      "completion_tokens": 5,
+      "cached_tokens": 5884,
+      "cache_write_tokens": 0,
+      "reasoning_tokens": 0,
+      "error": null
+    }
+  ],
+  "conclusions": {
+    "prompt_cache_api": "supported",
+    "explicit_breakpoint": "supported_on_exact_route",
+    "cache_usage_reported": true,
+    "minimum_prefix_tokens_documented": 1024,
+    "streaming_usage_reported": true,
+    "representative_performance_gate": "not_evaluated"
+  }
+}
