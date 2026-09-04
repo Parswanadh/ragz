@@ -231,6 +231,19 @@ def test_provider_cache_usage_never_infers_a_hit_from_latency(
     assert cache_usage.write_tokens == expected_write
 
 
+def test_implicit_provider_cache_telemetry_is_retained_without_explicit_request() -> None:
+    cache_usage = cache_usage_from_provider(
+        {"prompt_tokens_details": {"cached_tokens": 1900, "cache_write_tokens": 0}},
+        request=None,
+        capability="supported",
+    )
+
+    assert cache_usage.requested is False
+    assert cache_usage.outcome == "hit"
+    assert cache_usage.read_tokens == 1900
+    assert cache_usage.write_tokens == 0
+
+
 @pytest.mark.parametrize(
     ("explicit_unsupported", "output_started", "ambiguous", "retry_count", "expected"),
     [
@@ -728,6 +741,24 @@ def test_length_delimited_identity_distinguishes_ambiguous_string_boundaries() -
     assert first.snapshot.snapshot_id != second.snapshot.snapshot_id
 
 
+def test_snapshot_representations_do_not_expose_raw_source_or_policy_text() -> None:
+    source = _source(1, page=1, text="RAW-SOURCE-SENTINEL")
+    decision = build_snapshot(
+        mode="full_snapshot_cag",
+        context=_context(),
+        sources=(source,),
+        stable_policy_prefix="RAW-POLICY-SENTINEL",
+        workspace_prompt=None,
+        policy=_policy(),
+        rendered_prefix_token_count=2_000,
+    )
+    assert decision.snapshot is not None
+
+    assert "RAW-SOURCE-SENTINEL" not in repr(source)
+    assert "RAW-SOURCE-SENTINEL" not in repr(decision.snapshot)
+    assert "RAW-POLICY-SENTINEL" not in repr(decision.snapshot)
+
+
 def test_membership_revocation_invalidates_restricted_snapshot_on_use() -> None:
     restricted = replace(
         _source(1, page=1, text="restricted"),
@@ -747,6 +778,7 @@ def test_membership_revocation_invalidates_restricted_snapshot_on_use() -> None:
 
     validation = validate_snapshot(
         built.snapshot,
+        now_epoch_s=100,
         context=_context(),
         sources=(restricted,),
         stable_policy_prefix="stable policy",
@@ -774,6 +806,7 @@ def test_unchanged_fresh_authoritative_state_validates() -> None:
 
     validation = validate_snapshot(
         built.snapshot,
+        now_epoch_s=100,
         context=_context(),
         sources=(source,),
         stable_policy_prefix="stable policy",
@@ -821,6 +854,7 @@ def test_validation_rejects_fresh_source_or_configuration_drift(change: str) -> 
 
     validation = validate_snapshot(
         built.snapshot,
+        now_epoch_s=100,
         context=_context(),
         sources=current_sources,
         stable_policy_prefix="stable policy",
@@ -831,3 +865,33 @@ def test_validation_rejects_fresh_source_or_configuration_drift(change: str) -> 
 
     assert validation.valid is False
     assert validation.reason == "snapshot_state_changed"
+
+
+def test_snapshot_ttl_is_checked_at_the_exact_expiry_boundary() -> None:
+    source = _source(1, page=1, text="alpha")
+    built = build_snapshot(
+        mode="full_snapshot_cag",
+        context=_context(),
+        sources=(source,),
+        stable_policy_prefix="stable policy",
+        workspace_prompt=None,
+        policy=_policy(),
+        rendered_prefix_token_count=2_000,
+        built_at_epoch_s=100,
+    )
+    assert built.snapshot is not None
+
+    common = {
+        "context": _context(),
+        "sources": (source,),
+        "stable_policy_prefix": "stable policy",
+        "workspace_prompt": None,
+        "policy": _policy(),
+        "rendered_prefix_token_count": 2_000,
+    }
+    before = validate_snapshot(built.snapshot, now_epoch_s=1_899, **common)
+    expired = validate_snapshot(built.snapshot, now_epoch_s=1_900, **common)
+
+    assert before.valid is True
+    assert expired.valid is False
+    assert expired.reason == "snapshot_expired"

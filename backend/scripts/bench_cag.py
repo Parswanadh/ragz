@@ -17,6 +17,14 @@ from jsonschema import Draft202012Validator
 DEFAULT_TRIAL_SCHEMA = (
     Path(__file__).parents[2] / "no_rel" / "benchmarks" / "cag" / "schemas" / "trial.schema.json"
 )
+DEFAULT_SCHEDULE_SCHEMA = (
+    Path(__file__).parents[2]
+    / "no_rel"
+    / "benchmarks"
+    / "cag"
+    / "schemas"
+    / "schedule.schema.json"
+)
 QUALITY_METRICS = (
     "context_relevance",
     "groundedness",
@@ -28,6 +36,15 @@ QUALITY_METRICS = (
     "exact_match",
     "f1",
 )
+RETRIEVAL_METRICS = (
+    "recall_at_5",
+    "recall_at_10",
+    "mrr_at_5",
+    "mrr_at_10",
+    "ndcg_at_5",
+    "ndcg_at_10",
+)
+AGGREGATED_METRICS = QUALITY_METRICS + RETRIEVAL_METRICS
 
 
 def _load_object(path: Path) -> dict[str, Any]:
@@ -242,7 +259,7 @@ def aggregate_trials(
         ]
         metric_names = [
             metric
-            for metric in QUALITY_METRICS
+            for metric in AGGREGATED_METRICS
             if any(metric in row.get("metrics", {}) for row in rows)
         ]
         metric_output: dict[str, Any] = {}
@@ -250,6 +267,7 @@ def aggregate_trials(
             observed = [
                 float(value)
                 for row in rows
+                if row["status"] == "completed"
                 if isinstance((value := row.get("metrics", {}).get(metric)), (int, float))
             ]
             metric_output[metric] = {
@@ -316,23 +334,33 @@ def aggregate_trials(
         if variant != baseline_variant:
             paired_output: dict[str, Any] = variant_output["paired_deltas"]
             for metric in metric_names:
-                candidate_by_question: dict[str, list[float]] = defaultdict(list)
-                baseline_by_question: dict[str, list[float]] = defaultdict(list)
+                candidate_by_pair: dict[str, tuple[str, float]] = {}
+                baseline_by_pair: dict[str, tuple[str, float]] = {}
                 for row in rows:
-                    candidate_by_question[str(row["question_id"])].append(
-                        _failure_inclusive_metric(row, metric)
+                    candidate_by_pair[str(row["pair_id"])] = (
+                        str(row["question_id"]),
+                        _failure_inclusive_metric(row, metric),
                     )
                 for row in baseline_records:
-                    baseline_by_question[str(row["question_id"])].append(
-                        _failure_inclusive_metric(row, metric)
+                    baseline_by_pair[str(row["pair_id"])] = (
+                        str(row["question_id"]),
+                        _failure_inclusive_metric(row, metric),
                     )
-                question_ids = sorted(set(candidate_by_question) & set(baseline_by_question))
-                if not question_ids:
+                pair_ids = sorted(set(candidate_by_pair) & set(baseline_by_pair))
+                if not pair_ids:
                     continue
+                deltas_by_question: dict[str, list[float]] = defaultdict(list)
+                for pair_id in pair_ids:
+                    candidate_question, candidate_value = candidate_by_pair[pair_id]
+                    baseline_question, baseline_value = baseline_by_pair[pair_id]
+                    if candidate_question != baseline_question:
+                        raise ValueError("paired rows disagree on question identity")
+                    deltas_by_question[candidate_question].append(
+                        candidate_value - baseline_value
+                    )
                 deltas = [
-                    fmean(candidate_by_question[question_id])
-                    - fmean(baseline_by_question[question_id])
-                    for question_id in question_ids
+                    fmean(deltas_by_question[question_id])
+                    for question_id in sorted(deltas_by_question)
                 ]
                 metric_seed = int(
                     hashlib.sha256(f"{seed}:{variant}:{metric}".encode()).hexdigest(),
@@ -344,12 +372,52 @@ def aggregate_trials(
                     seed=metric_seed,
                 )
                 paired_output[metric] = {
-                    "query_n": len(question_ids),
+                    "query_n": len(deltas_by_question),
+                    "pair_n": len(pair_ids),
                     "estimate": _rounded(estimate),
                     "ci95": [_rounded(ci95[0]), _rounded(ci95[1])],
                 }
         variants_output[variant] = variant_output
     return output
+
+
+_ASSIGNMENT_FIELDS = (
+    "trial_id",
+    "pair_id",
+    "question_id",
+    "stratum",
+    "repetition",
+    "order_index",
+    "variant",
+)
+
+
+def _validate_schedule_completeness(
+    schedule: dict[str, Any], records: list[dict[str, Any]]
+) -> None:
+    assignments = schedule["assignments"]
+    expected: dict[str, dict[str, Any]] = {}
+    expected_pair_variants: set[tuple[str, str]] = set()
+    for assignment in assignments:
+        trial_id = str(assignment["trial_id"])
+        pair_variant = (str(assignment["pair_id"]), str(assignment["variant"]))
+        if trial_id in expected or pair_variant in expected_pair_variants:
+            raise ValueError("schedule contains duplicate trial or pair/variant")
+        expected[trial_id] = assignment
+        expected_pair_variants.add(pair_variant)
+
+    actual: dict[str, dict[str, Any]] = {}
+    for record in records:
+        trial_id = str(record["trial_id"])
+        if trial_id in actual:
+            raise ValueError("trial data contains duplicate trial_id")
+        actual[trial_id] = record
+    if set(actual) != set(expected):
+        raise ValueError("trial data does not exactly cover the frozen schedule")
+    for trial_id, assignment in expected.items():
+        record = actual[trial_id]
+        if any(record[field] != assignment[field] for field in _ASSIGNMENT_FIELDS):
+            raise ValueError("trial identity disagrees with the frozen schedule")
 
 
 def _aggregate(args: argparse.Namespace) -> None:
@@ -369,6 +437,21 @@ def _aggregate(args: argparse.Namespace) -> None:
             raise SystemExit(safe)
         assert isinstance(record, dict)
         records.append(record)
+    schedule = _load_object(args.schedule)
+    schedule_schema = _load_object(args.schedule_schema)
+    schedule_errors = list(Draft202012Validator(schedule_schema).iter_errors(schedule))
+    if schedule_errors:
+        safe = _safe_validation_error(
+            input_path=args.schedule,
+            record_number=1,
+            error=schedule_errors[0],
+            schema=schedule_schema,
+        )
+        raise SystemExit(safe)
+    try:
+        _validate_schedule_completeness(schedule, records)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     aggregate = aggregate_trials(
         records,
         baseline_variant=args.baseline_variant,
@@ -402,6 +485,8 @@ def _parser() -> argparse.ArgumentParser:
     )
     aggregate.add_argument("--trials", required=True, type=Path)
     aggregate.add_argument("--trial-schema", type=Path, default=DEFAULT_TRIAL_SCHEMA)
+    aggregate.add_argument("--schedule", required=True, type=Path)
+    aggregate.add_argument("--schedule-schema", type=Path, default=DEFAULT_SCHEDULE_SCHEMA)
     aggregate.add_argument("--baseline-variant", required=True)
     aggregate.add_argument("--bootstrap-samples", type=int, default=10_000)
     aggregate.add_argument("--seed", required=True, type=int)

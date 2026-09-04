@@ -2,16 +2,16 @@
 
 **Branch:** `codex/cag-rfc-benchmark`
 **Experimental base:** `3fac9fb1d02c9327f243418ebbb905466c8bcef5`
-**Status:** Preliminary evidence and deterministic prototype; final private
-benchmark not run
+**Status:** Final CAG evaluation for the target corpus; private quality benchmark
+not run because the corpus-fit stop gate failed
 
 ## Decision
 
 | Mode | Current decision | Reason |
 |---|---|---|
 | `full_snapshot_cag`, combined three-book workspace | **NO_GO** | 1,577,342 raw source tokens exceed the 1,050,000-token model window before policy, markers, dynamic input, and output reserve; current RAGZ budget is 8,000 |
-| `full_snapshot_cag`, small complete synthetic corpus | Pending, production **NO_GO** | Provider support passes; full security/citation/quality/performance gates and isolated pilot have not run |
-| `cached_rag_prefix` | Pending; not CAG and production **NO_GO** | Exact route supports prefix caching, but representative quality/performance and fallback gates have not run |
+| `full_snapshot_cag`, small complete synthetic corpus | **NO_GO** | Provider support passes, but authoritative completeness/prompt-envelope integration and quality/performance gates are absent |
+| `cached_rag_prefix` | **NO_GO**; not CAG | Exact route supports prefix caching, but representative quality/performance and fallback gates were stopped before execution |
 
 The three-book failure is a corpus-fit gate. It cannot be repaired by selecting
 top-k chunks and retaining the CAG name; that experiment is
@@ -44,6 +44,11 @@ top-k chunks and retaining the CAG name; that experiment is
 No PDF, filename/title, extracted text, private question, reference answer, or
 provider request body is included.
 
+As a conservative cross-check against chunk overlap, a non-persisting direct
+PDF-text pass measured 1,472,177 `cl100k_base` and 1,465,157 `o200k_base`
+tokens. The lower estimate is still 415,157 tokens over the model window before
+policy, question/history, and output reserves.
+
 ## Gate status
 
 | Gate | Status | Evidence or blocker |
@@ -51,17 +56,18 @@ provider request body is included.
 | Exact provider route/docs | Passed | Official GPT-5.6 Luna docs plus synthetic route probe |
 | Provider-reported telemetry | Passed | Sanitized probe records read/write/reasoning fields |
 | Combined private snapshot fits | **Failed** | Raw source estimate already exceeds model window |
-| Immutable key/eligibility prototype | Passed locally | Pure canonicalization, state binding, budget, visibility, and validation tests |
+| Immutable key/eligibility prototype | Partial | Pure canonicalization, state binding, visibility, TTL, and validation tests pass; an unwired pure function cannot prove authoritative source completeness or independently measure the prompt envelope |
 | Cross-org/workspace/principal deterministic isolation | Passed locally | Synthetic isolation tests |
 | Live DB/Qdrant revocation races | Not run | Integration harness not yet implemented |
 | Citation mapping/parity | Partial | Pure exact marker/version/page/chunk mapping passes; cached/uncached generation parity not run |
+| Final independent architecture/security review | Passed for target `NO_GO` | No critical findings; target fit decision is defensible; prototype completeness claim downgraded and harness pairing corrected |
 | Frozen 120-question set | Not frozen | Private fixture and qrels still required |
 | Representative repeated benchmark | Not run | Correctness gates incomplete |
 | AnythingLLM exact run | Not run | Adapter/configuration pending |
 | RAGFlow exact run | `protocol_gated` | Exact three-book adapter absent |
 | Onyx exact run | `protocol_gated` | Exact corpus/model evidence adapter absent |
 | Backend lint/types/import boundaries | Passed | Ruff; mypy 162 source files; 17/17 import contracts |
-| Backend unit/integration | Passed | 1,696 passed, 2 skipped |
+| Backend unit/integration | Passed | 1,700 passed, 2 skipped after final review fixes |
 | Backend tenant/ACL isolation | Passed | 123 passed |
 | Migration head/chain | Passed | One Alembic head; 2 migration tests passed |
 | Frontend lint/types/tests/build | Passed | 106 test files and 709 tests; production build passed |
@@ -81,7 +87,9 @@ closed, labeled, submitted, or merged.
 
 ## Next gate
 
-Add deterministic hybrid-routing and cancellation tests without wiring product
-behavior, then run the repository correctness gates. Only after those pass may
-the private question set be frozen and the controlled benchmark begin. Product
-configuration/UI remains prohibited.
+No production implementation, pilot, configuration, or UI is authorized by
+this result. A future experiment would need an authoritative document-manifest
+adapter, internally measured prompt/dynamic envelopes, prompt-policy integrity,
+and synthetic/live race tests before it could freeze private questions or run
+quality comparisons. That is new follow-up work, not a reason to relabel the
+failed three-book CAG cell.

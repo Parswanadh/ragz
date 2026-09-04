@@ -52,6 +52,8 @@
         "expired",
         "invalidated",
         "unsupported",
+        "malformed_telemetry",
+        "fallback",
         "unknown"
       ]
     },
@@ -123,6 +125,53 @@
     },
     "known_cost_usd": {"$ref": "#/$defs/nullable_nonnegative"}
   },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "completed"}}},
+      "then": {"properties": {"failure_type": {"type": "null"}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "failed"}}},
+      "then": {
+        "properties": {
+          "failure_type": {"type": "string", "minLength": 1},
+          "metrics": {"maxProperties": 0}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "ineligible",
+              "unsupported",
+              "credential_gated",
+              "protocol_gated",
+              "resource_gated"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "failure_type": {"type": "string", "minLength": 1},
+          "answered": {"const": false},
+          "metrics": {"maxProperties": 0},
+          "usage": {
+            "properties": {
+              "prompt_tokens": {"type": "null"},
+              "completion_tokens": {"type": "null"},
+              "cached_tokens": {"type": "null"},
+              "cache_write_tokens": {"type": "null"},
+              "reasoning_tokens": {"type": "null"}
+            }
+          },
+          "known_cost_usd": {"type": "null"}
+        }
+      }
+    }
+  ],
   "$defs": {
     "nullable_score": {
       "type": ["number", "null"],

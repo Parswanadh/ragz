@@ -90,6 +90,8 @@ The 1,577,342-token combined raw source estimate already exceeds the answer
 model window. The combined `full_snapshot_cag` cell is therefore frozen as
 `ineligible/context_budget` and receives no fabricated numeric metrics.
 RAG/MQR and `cached_rag_prefix` retain the complete three-book corpus.
+An independent no-overlap PDF-text check measured 1,465,157 `o200k_base`
+tokens, still 415,157 over the advertised context window before reserves.
 
 ### Redistributable synthetic correctness corpus
 
@@ -265,6 +267,7 @@ The versioned JSON Schemas under `no_rel/benchmarks/cag/schemas/` will define:
 
 - `manifest.schema.json`: source/config/image/SHA, corpus/question hashes,
   provider capability and price provenance;
+- `schedule.schema.json`: the frozen randomized assignment and exact pair identities;
 - `trial.schema.json`: one assigned query × repetition × variant observation;
 - `stage.schema.json`: monotonic atomic timings attached by trial ID;
 - `security-gate.schema.json`: scenario, expected/actual decision and leak flag;

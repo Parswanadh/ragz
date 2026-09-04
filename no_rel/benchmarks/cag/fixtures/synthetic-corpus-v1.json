@@ -4,8 +4,14 @@
   "license": "CC0-1.0",
   "description": "Fictional OrchidNet facts authored for deterministic cache and citation tests.",
   "organizations": [
-    {"org_id": "org-a", "workspaces": ["workspace-a"]},
-    {"org_id": "org-b", "workspaces": ["workspace-b"]}
+    {
+      "org_id": "org-a",
+      "workspaces": [{"workspace_id": "workspace-a", "name": "Same Name"}]
+    },
+    {
+      "org_id": "org-b",
+      "workspaces": [{"workspace_id": "workspace-b", "name": "Same Name"}]
+    }
   ],
   "groups": [
     {"org_id": "org-a", "group_id": "group-blue"}
@@ -15,6 +21,7 @@
       "org_id": "org-a",
       "workspace_id": "workspace-a",
       "document_id": "orchid-routing-v1",
+      "lineage_id": "orchid-routing",
       "version": 1,
       "is_current": false,
       "approved": true,
@@ -34,6 +41,7 @@
       "org_id": "org-a",
       "workspace_id": "workspace-a",
       "document_id": "orchid-routing-v2",
+      "lineage_id": "orchid-routing",
       "version": 2,
       "is_current": true,
       "approved": true,
@@ -59,6 +67,7 @@
       "org_id": "org-a",
       "workspace_id": "workspace-a",
       "document_id": "orchid-blue-ops",
+      "lineage_id": "orchid-blue-ops",
       "version": 1,
       "is_current": true,
       "approved": true,
@@ -78,6 +87,7 @@
       "org_id": "org-b",
       "workspace_id": "workspace-b",
       "document_id": "orchid-routing-copy",
+      "lineage_id": "orchid-routing-copy",
       "version": 1,
       "is_current": true,
       "approved": true,
@@ -90,6 +100,26 @@
           "chunk_index": 0,
           "section": "Routing",
           "text": "OrchidNet version two assigns amber packets a fictional 64-bit trail number."
+        }
+      ]
+    },
+    {
+      "org_id": "org-b",
+      "workspace_id": "workspace-b",
+      "document_id": "orchid-blue-copy",
+      "lineage_id": "orchid-blue-copy",
+      "version": 1,
+      "is_current": true,
+      "approved": true,
+      "security_revision": 1,
+      "projected_security_revision": 1,
+      "acl_group_ids": null,
+      "chunks": [
+        {
+          "page": 11,
+          "chunk_index": 0,
+          "section": "Blue operations",
+          "text": "Blue operators rotate the fictional violet beacon every 13 minutes."
         }
       ]
     }

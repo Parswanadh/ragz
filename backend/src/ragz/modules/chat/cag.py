@@ -7,8 +7,9 @@ immutable values that those boundaries can validate before any generation.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from hashlib import sha256
+from math import isfinite
 from typing import Literal
 from uuid import UUID
 
@@ -28,7 +29,7 @@ class CagSource:
     chunk_index: int
     filename: str
     section: str | None
-    text: str
+    text: str = field(repr=False)
     marker: int
     acl_group_ids: tuple[UUID, ...] | None
     security_revision: int
@@ -71,15 +72,17 @@ class SnapshotPolicy:
 
 @dataclass(frozen=True, slots=True)
 class CagSnapshot:
-    snapshot_id: str
+    snapshot_id: str = field(repr=False)
     mode: CagMode
     org_id: UUID
     workspace_id: UUID
-    sources: tuple[CagSource, ...]
-    stable_policy_prefix: str
-    rendered_source_data: str
-    rendered_prefix: str
+    sources: tuple[CagSource, ...] = field(repr=False)
+    stable_policy_prefix: str = field(repr=False)
+    rendered_source_data: str = field(repr=False)
+    rendered_prefix: str = field(repr=False)
     token_count: int
+    built_at_epoch_s: float
+    expires_at_epoch_s: float
     visibility_scope: Literal["unrestricted", "principal"]
     authorization_fingerprint: str
     source_manifest_fingerprint: str
@@ -102,7 +105,7 @@ class SnapshotValidation:
 
 @dataclass(frozen=True, slots=True)
 class PromptCacheRequest:
-    snapshot_id: str
+    snapshot_id: str = field(repr=False)
     mode: Literal["auto", "disabled", "required"] = "auto"
 
 
@@ -214,12 +217,19 @@ def build_snapshot(
     workspace_prompt: str | None,
     policy: SnapshotPolicy,
     rendered_prefix_token_count: int,
+    built_at_epoch_s: float = 0.0,
 ) -> SnapshotDecision:
     """Build one canonical immutable snapshot from already-authorized input."""
     if not sources:
         return SnapshotDecision(
             eligible=False,
             reason="empty_snapshot",
+            snapshot=None,
+        )
+    if not isfinite(built_at_epoch_s) or built_at_epoch_s < 0 or policy.ttl_seconds < 1:
+        return SnapshotDecision(
+            eligible=False,
+            reason="invalid_snapshot_lifetime",
             snapshot=None,
         )
     if context.workspace_id not in context.workspace_ids:
@@ -380,6 +390,8 @@ def build_snapshot(
         rendered_source_data=rendered_source_data,
         rendered_prefix=rendered_prefix,
         token_count=rendered_prefix_token_count,
+        built_at_epoch_s=built_at_epoch_s,
+        expires_at_epoch_s=built_at_epoch_s + policy.ttl_seconds,
         visibility_scope=visibility_scope,
         authorization_fingerprint=authorization_fingerprint,
         source_manifest_fingerprint=source_manifest_fingerprint,
@@ -441,12 +453,14 @@ def cache_usage_from_provider(
     capability: str,
 ) -> CacheUsage:
     """Classify only provider-reported cache fields; latency is never evidence."""
-    if request is None or request.mode == "disabled":
-        return CacheUsage(requested=False, outcome="not_requested")
-    if capability == "unsupported":
+    requested = request is not None and request.mode != "disabled"
+    if capability == "unsupported" and requested:
         return CacheUsage(requested=True, outcome="unsupported")
     if usage is None:
-        return CacheUsage(requested=True, outcome="unknown")
+        return CacheUsage(
+            requested=requested,
+            outcome="unknown" if requested else "not_requested",
+        )
 
     details_value = usage.get("prompt_tokens_details")
     details = details_value if isinstance(details_value, Mapping) else {}
@@ -471,29 +485,29 @@ def cache_usage_from_provider(
     read_tokens = _reported_count(raw_read) if read_present else None
     write_tokens = _reported_count(raw_write) if write_present else None
     if (read_present and read_tokens is None) or (write_present and write_tokens is None):
-        return CacheUsage(requested=True, outcome="unknown")
+        return CacheUsage(requested=requested, outcome="unknown")
     if read_tokens is not None and read_tokens > 0:
         return CacheUsage(
-            requested=True,
+            requested=requested,
             outcome="hit",
             read_tokens=read_tokens,
             write_tokens=write_tokens,
         )
     if write_tokens is not None and write_tokens > 0:
         return CacheUsage(
-            requested=True,
+            requested=requested,
             outcome="write",
             read_tokens=read_tokens,
             write_tokens=write_tokens,
         )
     if read_tokens == 0 and write_tokens == 0:
         return CacheUsage(
-            requested=True,
+            requested=requested,
             outcome="miss",
             read_tokens=0,
             write_tokens=0,
         )
-    return CacheUsage(requested=True, outcome="unknown")
+    return CacheUsage(requested=requested, outcome="unknown")
 
 
 def may_retry_without_cache(
@@ -515,6 +529,7 @@ def may_retry_without_cache(
 def validate_snapshot(
     snapshot: CagSnapshot,
     *,
+    now_epoch_s: float,
     context: SnapshotContext,
     sources: tuple[CagSource, ...],
     stable_policy_prefix: str,
@@ -523,6 +538,10 @@ def validate_snapshot(
     rendered_prefix_token_count: int,
 ) -> SnapshotValidation:
     """Rebuild from fresh authoritative state and reject every mismatch."""
+    if not isfinite(now_epoch_s) or now_epoch_s < snapshot.built_at_epoch_s:
+        return SnapshotValidation(valid=False, reason="invalid_validation_time")
+    if now_epoch_s >= snapshot.expires_at_epoch_s:
+        return SnapshotValidation(valid=False, reason="snapshot_expired")
     current = build_snapshot(
         mode=snapshot.mode,
         context=context,
@@ -531,6 +550,7 @@ def validate_snapshot(
         workspace_prompt=workspace_prompt,
         policy=policy,
         rendered_prefix_token_count=rendered_prefix_token_count,
+        built_at_epoch_s=snapshot.built_at_epoch_s,
     )
     if not current.eligible:
         return SnapshotValidation(valid=False, reason=current.reason)

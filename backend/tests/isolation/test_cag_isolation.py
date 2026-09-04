@@ -175,6 +175,7 @@ def test_acl_revision_committed_before_projection_invalidates_snapshot() -> None
 
     validation = validate_snapshot(
         snapshot,
+        now_epoch_s=100,
         context=context,
         sources=(pending_projection,),
         stable_policy_prefix="stable policy",

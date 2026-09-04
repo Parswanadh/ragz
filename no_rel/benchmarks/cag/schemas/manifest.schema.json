@@ -125,16 +125,26 @@
     "question_set": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["fixture_sha256", "qrels_sha256", "count", "strata", "frozen_at"],
+      "required": [
+        "fixture_sha256",
+        "qrels_sha256",
+        "salted_question_id_hash",
+        "count",
+        "strata",
+        "frozen_at",
+        "assessor_protocol_version"
+      ],
       "properties": {
         "fixture_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "qrels_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "salted_question_id_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
         "count": {"type": "integer", "minimum": 1},
         "strata": {
           "type": "object",
           "additionalProperties": {"type": "integer", "minimum": 0}
         },
-        "frozen_at": {"type": "string", "format": "date-time"}
+        "frozen_at": {"type": "string", "format": "date-time"},
+        "assessor_protocol_version": {"type": "string", "maxLength": 128}
       }
     },
     "retrieval": {

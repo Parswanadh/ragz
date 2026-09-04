@@ -35,6 +35,7 @@ uv run python scripts/bench_cag.py validate \
 
 uv run python scripts/bench_cag.py aggregate \
   --trials /private/path/cag-trials.jsonl \
+  --schedule /private/path/cag-schedule.json \
   --baseline-variant ragz_rag_q1 \
   --bootstrap-samples 10000 \
   --seed 20260904 \

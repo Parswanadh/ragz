@@ -5,6 +5,41 @@ from pathlib import Path
 
 SCRIPT = Path(__file__).parents[2] / "scripts" / "bench_cag.py"
 SCHEMA_DIR = Path(__file__).parents[3] / "no_rel" / "benchmarks" / "cag" / "schemas"
+SYNTHETIC_FIXTURE = (
+    Path(__file__).parents[3]
+    / "no_rel"
+    / "benchmarks"
+    / "cag"
+    / "fixtures"
+    / "synthetic-corpus-v1.json"
+)
+
+
+def test_synthetic_fixture_contains_tenant_lineage_and_visibility_collision_traps() -> None:
+    fixture = json.loads(SYNTHETIC_FIXTURE.read_text())
+    workspace_names = {
+        workspace["name"]
+        for org in fixture["organizations"]
+        for workspace in org["workspaces"]
+    }
+    routing_versions = [
+        document
+        for document in fixture["documents"]
+        if document["lineage_id"] == "orchid-routing"
+    ]
+    by_text: dict[str, list[dict[str, object]]] = {}
+    for document in fixture["documents"]:
+        for chunk in document["chunks"]:
+            by_text.setdefault(chunk["text"], []).append(document)
+    collisions = [rows for rows in by_text.values() if len(rows) > 1]
+
+    assert workspace_names == {"Same Name"}
+    assert {document["version"] for document in routing_versions} == {1, 2}
+    assert any(
+        {row["org_id"] for row in rows} == {"org-a", "org-b"}
+        and {row["acl_group_ids"] is None for row in rows} == {True, False}
+        for rows in collisions
+    )
 
 
 def test_schedule_is_deterministic_and_contains_only_opaque_question_identity(
@@ -51,6 +86,18 @@ def test_schedule_is_deterministic_and_contains_only_opaque_question_identity(
     first = json.loads(first_output.read_text())
     second = json.loads(second_output.read_text())
     assert first == second
+    subprocess.run(  # noqa: S603 - fixed interpreter and repository script
+        [
+            sys.executable,
+            str(SCRIPT),
+            "validate",
+            "--schema",
+            str(SCHEMA_DIR / "schedule.schema.json"),
+            "--input",
+            str(first_output),
+        ],
+        check=True,
+    )
     assert len(first["assignments"]) == 4
     assert {row["variant"] for row in first["assignments"]} == {
         "ragz_rag_q1",
@@ -100,8 +147,31 @@ def test_trial_schema_accepts_sanitized_row_and_rejects_raw_question(
     }
     valid = tmp_path / "valid.jsonl"
     invalid = tmp_path / "invalid.jsonl"
+    gated = tmp_path / "gated.jsonl"
+    invalid_gated = tmp_path / "invalid-gated.jsonl"
     valid.write_text(json.dumps(sanitized) + "\n")
     invalid.write_text(json.dumps({**sanitized, "question": "private text"}) + "\n")
+    gated_row = {
+        **sanitized,
+        "status": "ineligible",
+        "failure_type": "context_budget_exceeded",
+        "answered": False,
+        "metrics": {},
+        "usage": {
+            "prompt_tokens": None,
+            "completion_tokens": None,
+            "cached_tokens": None,
+            "cache_write_tokens": None,
+            "reasoning_tokens": None,
+            "cache_outcome": "not_requested",
+        },
+        "latency_ms": {"end_to_end": None, "ttft": None},
+        "known_cost_usd": None,
+    }
+    gated.write_text(json.dumps(gated_row) + "\n")
+    invalid_gated.write_text(
+        json.dumps({**gated_row, "metrics": {"groundedness": 0.0}}) + "\n"
+    )
     command = [
         sys.executable,
         str(SCRIPT),
@@ -114,13 +184,20 @@ def test_trial_schema_accepts_sanitized_row_and_rejects_raw_question(
     subprocess.run(  # noqa: S603 - fixed interpreter and repository script
         [*command, str(valid)], check=True
     )
+    subprocess.run(  # noqa: S603 - fixed interpreter and repository script
+        [*command, str(gated)], check=True
+    )
     rejected = subprocess.run(  # noqa: S603 - fixed interpreter and repository script
         [*command, str(invalid)], capture_output=True, text=True
+    )
+    rejected_gated = subprocess.run(  # noqa: S603 - fixed interpreter and repository script
+        [*command, str(invalid_gated)], capture_output=True, text=True
     )
 
     assert rejected.returncode != 0
     assert "question" in rejected.stderr
     assert "private text" not in rejected.stderr
+    assert rejected_gated.returncode != 0
 
 
 def test_aggregate_keeps_failures_in_quality_and_pair_denominators(tmp_path: Path) -> None:
@@ -148,7 +225,9 @@ def test_aggregate_keeps_failures_in_quality_and_pair_denominators(tmp_path: Pat
             "failure_type": None if status == "completed" else "timeout",
             "answerable": True,
             "answered": status == "completed",
-            "metrics": {"groundedness": groundedness},
+            "metrics": (
+                {"groundedness": groundedness} if status == "completed" else {}
+            ),
             "usage": {
                 "prompt_tokens": 100 if status == "completed" else None,
                 "completion_tokens": 10 if status == "completed" else None,
@@ -170,8 +249,35 @@ def test_aggregate_keeps_failures_in_quality_and_pair_denominators(tmp_path: Pat
         row("c2", "p2", "q2", candidate, status="failed", groundedness=None, latency_ms=200),
     ]
     trial_path = tmp_path / "trials.jsonl"
+    schedule_path = tmp_path / "schedule.json"
     output_path = tmp_path / "aggregate.json"
     trial_path.write_text("".join(json.dumps(trial) + "\n" for trial in trials))
+    schedule_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "fixture_sha256": "a" * 64,
+                "seed": 23,
+                "repetitions": 1,
+                "variants": [baseline, candidate],
+                "assignments": [
+                    {
+                        key: trial[key]
+                        for key in (
+                            "trial_id",
+                            "pair_id",
+                            "question_id",
+                            "stratum",
+                            "repetition",
+                            "order_index",
+                            "variant",
+                        )
+                    }
+                    for trial in trials
+                ],
+            }
+        )
+    )
 
     subprocess.run(  # noqa: S603 - fixed interpreter and repository script
         [
@@ -180,6 +286,8 @@ def test_aggregate_keeps_failures_in_quality_and_pair_denominators(tmp_path: Pat
             "aggregate",
             "--trials",
             str(trial_path),
+            "--schedule",
+            str(schedule_path),
             "--baseline-variant",
             baseline,
             "--bootstrap-samples",
@@ -227,5 +335,34 @@ def test_aggregate_keeps_failures_in_quality_and_pair_denominators(tmp_path: Pat
     }
     delta = candidate_result["paired_deltas"]["groundedness"]
     assert delta["query_n"] == 2
+    assert delta["pair_n"] == 2
     assert delta["estimate"] == -0.5
     assert delta["ci95"] == [-1.0, 0.0]
+
+    missing_trial_path = tmp_path / "missing-trial.jsonl"
+    missing_trial_path.write_text(
+        "".join(json.dumps(trial) + "\n" for trial in trials[:-1])
+    )
+    rejected = subprocess.run(  # noqa: S603 - fixed interpreter and repository script
+        [
+            sys.executable,
+            str(SCRIPT),
+            "aggregate",
+            "--trials",
+            str(missing_trial_path),
+            "--schedule",
+            str(schedule_path),
+            "--baseline-variant",
+            baseline,
+            "--bootstrap-samples",
+            "100",
+            "--seed",
+            "23",
+            "--output",
+            str(tmp_path / "must-not-exist.json"),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert rejected.returncode != 0
+    assert "exactly cover the frozen schedule" in rejected.stderr

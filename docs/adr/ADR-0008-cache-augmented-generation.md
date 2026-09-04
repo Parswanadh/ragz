@@ -131,6 +131,12 @@ output reserve. RAGZ's current application context budget is 8,000 tokens.
 The complete three-book workspace is therefore deterministically ineligible for
 `full_snapshot_cag` under both the application budget and the provider window.
 
+An independent no-overlap check streamed Poppler `pdftotext==24.02.0` output
+directly into local token counters without persisting text. It measured
+1,472,177 `cl100k_base` tokens and 1,465,157 `o200k_base` tokens. Even the lower
+count exceeds the advertised window by 415,157 tokens before any required
+prompt or output reserve, so chunk overlap is not the cause of the `NO_GO`.
+
 ### Open-source comparison
 
 Inspection found no general full-snapshot CAG mode in the pinned comparison

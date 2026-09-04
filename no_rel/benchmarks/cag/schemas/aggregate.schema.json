@@ -44,9 +44,10 @@
     "paired_delta": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["query_n", "estimate", "ci95"],
+      "required": ["query_n", "pair_n", "estimate", "ci95"],
       "properties": {
         "query_n": {"type": "integer", "minimum": 1},
+        "pair_n": {"type": "integer", "minimum": 1},
         "estimate": {"type": "number"},
         "ci95": {
           "type": "array",
