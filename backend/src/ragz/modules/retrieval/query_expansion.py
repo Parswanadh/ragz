@@ -111,14 +111,21 @@ class InMemoryQueryExpansionCache:
         self._lock = asyncio.Lock()
 
     @staticmethod
-    def _key(*, model: str, max_queries: int, query: str) -> str:
-        material = f"{_PROMPT_VERSION}\0{model}\0{max_queries}\0{query}"
+    def _key(
+        *, model: str, max_queries: int, query: str, namespace: str = ""
+    ) -> str:
+        material = f"{namespace}\0{_PROMPT_VERSION}\0{model}\0{max_queries}\0{query}"
         return hashlib.sha256(material.encode()).hexdigest()
 
     async def get(
-        self, *, model: str, max_queries: int, query: str
+        self, *, model: str, max_queries: int, query: str, namespace: str = ""
     ) -> tuple[str, ...] | None:
-        key = self._key(model=model, max_queries=max_queries, query=query)
+        key = self._key(
+            model=model,
+            max_queries=max_queries,
+            query=query,
+            namespace=namespace,
+        )
         async with self._lock:
             entry = self._entries.get(key)
             if entry is None:
@@ -143,8 +150,14 @@ class InMemoryQueryExpansionCache:
         max_queries: int,
         query: str,
         expanded: tuple[str, ...],
+        namespace: str = "",
     ) -> None:
-        key = self._key(model=model, max_queries=max_queries, query=query)
+        key = self._key(
+            model=model,
+            max_queries=max_queries,
+            query=query,
+            namespace=namespace,
+        )
         evicted = 0
         async with self._lock:
             self._entries[key] = _ExpansionCacheEntry(
@@ -161,6 +174,29 @@ class InMemoryQueryExpansionCache:
                 evicted
             )
 
+    async def _publish_owner(
+        self,
+        key: str,
+        future: asyncio.Future[tuple[str, ...]],
+        expanded: ExpandedQueries,
+    ) -> int:
+        evicted = 0
+        async with self._lock:
+            if len(expanded.queries) > 1:
+                self._entries[key] = _ExpansionCacheEntry(
+                    expires_at=self._clock() + self._ttl_seconds,
+                    queries=tuple(expanded.queries),
+                )
+                self._entries.move_to_end(key)
+                while len(self._entries) > self._max_entries:
+                    self._entries.popitem(last=False)
+                    evicted += 1
+            if self._inflight.get(key) is future:
+                self._inflight.pop(key, None)
+            if not future.done():
+                future.set_result(tuple(expanded.queries))
+        return evicted
+
     async def get_or_compute(
         self,
         *,
@@ -168,9 +204,15 @@ class InMemoryQueryExpansionCache:
         max_queries: int,
         query: str,
         compute: Callable[[], Awaitable[ExpandedQueries]],
+        namespace: str = "",
     ) -> ExpandedQueries:
         """Return one provider result for concurrent callers of an exact key."""
-        key = self._key(model=model, max_queries=max_queries, query=query)
+        key = self._key(
+            model=model,
+            max_queries=max_queries,
+            query=query,
+            namespace=namespace,
+        )
         owner = False
         expired = False
         async with self._lock:
@@ -208,6 +250,7 @@ class InMemoryQueryExpansionCache:
                     max_queries=max_queries,
                     query=query,
                     compute=compute,
+                    namespace=namespace,
                 )
             return ExpandedQueries(queries=queries)
 
@@ -225,21 +268,12 @@ class InMemoryQueryExpansionCache:
             await asyncio.gather(future, return_exceptions=True)
             raise
 
-        evicted = 0
-        async with self._lock:
-            if len(expanded.queries) > 1:
-                self._entries[key] = _ExpansionCacheEntry(
-                    expires_at=self._clock() + self._ttl_seconds,
-                    queries=tuple(expanded.queries),
-                )
-                self._entries.move_to_end(key)
-                while len(self._entries) > self._max_entries:
-                    self._entries.popitem(last=False)
-                    evicted += 1
-            if self._inflight.get(key) is future:
-                self._inflight.pop(key, None)
-            if not future.done():
-                future.set_result(tuple(expanded.queries))
+        publication = asyncio.create_task(self._publish_owner(key, future, expanded))
+        try:
+            evicted = await asyncio.shield(publication)
+        except asyncio.CancelledError:
+            publication.add_done_callback(lambda done: done.exception())
+            raise
         if len(expanded.queries) > 1:
             query_expansion_cache_operations_total.labels(outcome="store").inc()
         if evicted:
@@ -272,8 +306,11 @@ def clear_query_expansion_cache() -> None:
     _bounded_query_expansion_cache.cache_clear()
 
 
+_MAX_EXPANSION_INPUT_CHARS = 4_000
+
+
 def _query_message(query: str) -> str:
-    safe = query.replace("</query>", "<\\/query>")
+    safe = query[:_MAX_EXPANSION_INPUT_CHARS].replace("</query>", "<\\/query>")
     return f"<query>\n{safe}\n</query>\n\nGenerate retrieval alternatives for the data above."
 
 
@@ -358,6 +395,7 @@ class LiteLLMQueryExpander:
         limits: httpx.Limits | None = None,
         max_queries: int = _DEFAULT_TOTAL_QUERIES,
         expansion_cache: InMemoryQueryExpansionCache | None = None,
+        cache_namespace: str = "",
     ) -> None:
         if max_queries not in _SUPPORTED_TOTAL_QUERIES:
             raise ValueError("max_queries must be 3 or 5")
@@ -367,6 +405,7 @@ class LiteLLMQueryExpander:
         self._limits = limits if limits is not None else httpx.Limits()
         self._max_queries = max_queries
         self._expansion_cache = expansion_cache
+        self._cache_namespace = cache_namespace
 
     async def expand(self, query: str, *, model: str) -> ExpandedQueries:
         if self._expansion_cache is None:
@@ -376,6 +415,7 @@ class LiteLLMQueryExpander:
             max_queries=self._max_queries,
             query=query,
             compute=lambda: self._expand_uncached(query, model=model),
+            namespace=self._cache_namespace,
         )
 
     async def _expand_uncached(self, query: str, *, model: str) -> ExpandedQueries:
@@ -468,12 +508,14 @@ def build_query_expander(
     *,
     transport: httpx.AsyncBaseTransport | None = None,
     max_queries: int = _DEFAULT_TOTAL_QUERIES,
+    cache_namespace: str = "",
 ) -> QueryExpander:
     return LiteLLMQueryExpander(
         base_url=settings.litellm_url,
         master_key=settings.litellm_master_key,
         transport=transport,
         max_queries=max_queries,
+        cache_namespace=cache_namespace,
         expansion_cache=get_query_expansion_cache(settings),
         limits=httpx.Limits(
             max_connections=settings.httpx_max_connections,

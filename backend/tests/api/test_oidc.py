@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from ragz.api.app import create_app
 from ragz.core.config import Settings, get_settings
 from ragz.core.db import build_session_factory
+from ragz.modules.audit.models import AuditEvent
 from ragz.modules.auth.models import User
 from ragz.modules.tenancy.models import Organization
 
@@ -413,6 +414,16 @@ async def test_issuer_subject_mismatch_for_existing_email_rejected(
         await session.execute(select(User).where(User.email == "new.hire@acme.com"))
     ).scalar_one()
     assert reloaded.oidc_subject == "idp-user-1"
+    denial = (
+        await session.execute(
+            select(AuditEvent).where(AuditEvent.action == "login.oidc_denied")
+        )
+    ).scalar_one()
+    assert denial.result == "denied"
+    assert denial.reason_code == "identity_conflict"
+    assert denial.auth_method == "oidc"
+    assert denial.source_ip == "127.0.0.1"
+    assert denial.target_id == str(user.id)
 
 
 async def test_fresh_identity_under_allowed_domain_does_not_auto_link_existing_password_user(

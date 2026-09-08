@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.api.deps import get_session
 from ragz.api.routes.auth import _set_refresh
+from ragz.core.client_ip import client_ip
 from ragz.core.config import Settings, get_settings
 from ragz.core.errors import (
     AuthenticationError,
@@ -117,6 +118,7 @@ async def callback(
         pair = await auth_service.login_oidc(
             session, email=identity.email, issuer=identity.issuer,
             subject=identity.subject, settings=settings,
+            source_ip=client_ip(request, settings),
         )
     except (
         AuthenticationError, UpstreamError, NotFoundError, SecretsError,

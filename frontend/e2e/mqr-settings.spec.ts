@@ -14,10 +14,13 @@ async function login(page: Page): Promise<void> {
 }
 
 async function ensureWorkspace(page: Page): Promise<void> {
+  await page.goto('/chat');
   await page.getByRole('button', { name: 'Switch workspace' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Loading workspaces…' })).toBeHidden();
+  await expect(page.getByRole('menuitem', { name: 'New workspace' })).toBeVisible();
   const existing = page.getByRole('menuitem', { name: 'MQR Product Smoke' });
-  if (await existing.isVisible().catch(() => false)) {
-    await existing.click();
+  if ((await existing.count()) > 0) {
+    await existing.first().click();
     return;
   }
   await page.getByRole('menuitem', { name: 'New workspace' }).click();

@@ -1,4 +1,5 @@
 import asyncio
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -22,6 +23,7 @@ from ragz.modules.retrieval.service import (
     RetrievedChunk,
     _capture_stage,
     _dedupe_hq,
+    _embed_query_batch,
     _stable_chunk_order,
     _stable_rerank_order,
     delete_document_points,
@@ -68,6 +70,49 @@ def test_equal_score_chunks_and_reranks_have_deterministic_secondary_order() -> 
     assert _stable_rerank_order([0.7, 0.7], chunks) == (
         [0, 1] if second_id == low else [1, 0]
     )
+
+
+async def test_cancelled_embedding_cache_owner_accounts_before_waiter_reuse() -> None:
+    cache = InMemoryQueryEmbeddingCache(max_entries=4)
+    provider_started = asyncio.Event()
+    release_provider = asyncio.Event()
+    usage_recorded = asyncio.Event()
+    recorded: list[int] = []
+
+    class BilledEmbedder:
+        async def embed_with_usage(self, texts: list[str]):  # type: ignore[no-untyped-def]
+            provider_started.set()
+            await release_provider.wait()
+            return [[1.0, 0.0] for _ in texts], 7
+
+    async def record_usage(tokens: int) -> None:
+        recorded.append(tokens)
+        usage_recorded.set()
+
+    async def run() -> object:
+        return await _embed_query_batch(
+            queries=("same query",),
+            dense_embedder=BilledEmbedder(),
+            query_cache=cache,
+            cache_namespace="org-model",
+            expected_dimension=2,
+            stage_timings_ms=None,
+            record_billed_usage=record_usage,
+        )
+
+    owner = asyncio.create_task(run())
+    await provider_started.wait()
+    waiter = asyncio.create_task(run())
+    await cache._lock.acquire()  # noqa: SLF001 - deterministic publication boundary
+    release_provider.set()
+    await usage_recorded.wait()
+    owner.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await owner
+    cache._lock.release()  # noqa: SLF001
+
+    await asyncio.wait_for(waiter, timeout=1)
+    assert recorded == [7]
 
 
 async def seed_workspace(
@@ -399,6 +444,120 @@ async def test_multi_query_provider_failure_degrades_to_original(
     assert expander.calls == [("alpha", "utility-model")]
 
 
+async def test_alternative_embedding_failure_keeps_q1_and_completed_usage(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from sqlalchemy import select
+
+    from ragz.modules.quotas.models import UsageRecord
+
+    ctx, ws = await seed_workspace(
+        session, "mq-alternative-embedding-failure", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+    delegate = get_dense_embedder(**_LOCAL_MODEL_KW)
+    calls = 0
+
+    class FailingAlternativeEmbedder:
+        async def embed_with_usage(self, texts: list[str]):  # type: ignore[no-untyped-def]
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise UpstreamError("alternative embedding failed")
+            return await delegate.embed(texts), 7
+
+    monkeypatch.setattr(
+        retrieval_service,
+        "get_dense_embedder",
+        lambda *args, **kwargs: FailingAlternativeEmbedder(),
+    )
+
+    result = await retrieve(
+        session,
+        ctx,
+        ws.id,
+        "alpha",
+        query_expander=_FakeQueryExpander(("expanded alpha",)),
+        query_embedding_cache_enabled_override=False,
+    )
+
+    assert result.chunks
+    assert result.query_count == 1
+    usage = list(
+        (
+            await session.execute(
+                select(UsageRecord)
+                .where(
+                    UsageRecord.org_id == ctx.org_id,
+                    UsageRecord.feature.in_(("query_expansion", "embedding")),
+                )
+                .order_by(UsageRecord.created_at)
+            )
+        ).scalars()
+    )
+    assert [(row.feature, row.prompt_tokens, row.completion_tokens) for row in usage] == [
+        ("embedding", 7, 0),
+        ("query_expansion", 13, 5),
+    ]
+
+
+async def test_completed_expansion_usage_survives_original_embedding_failure(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from sqlalchemy import select
+
+    from ragz.modules.quotas.models import UsageRecord
+
+    ctx, ws = await seed_workspace(
+        session, "mq-q1-embedding-failure", multi_query_enabled=True
+    )
+    expansion_completed = asyncio.Event()
+
+    class CompletedExpander(_FakeQueryExpander):
+        async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+            result = await super().expand(query, model=model)
+            expansion_completed.set()
+            return result
+
+    class FailingOriginalEmbedder:
+        async def embed_with_usage(self, texts: list[str]):  # type: ignore[no-untyped-def]
+            await expansion_completed.wait()
+            await asyncio.sleep(0)
+            raise UpstreamError("original embedding failed")
+
+    monkeypatch.setattr(
+        retrieval_service,
+        "get_dense_embedder",
+        lambda *args, **kwargs: FailingOriginalEmbedder(),
+    )
+
+    with pytest.raises(UpstreamError, match="original embedding failed"):
+        await retrieve(
+            session,
+            ctx,
+            ws.id,
+            "alpha",
+            query_expander=CompletedExpander(("expanded alpha",)),
+            query_embedding_cache_enabled_override=False,
+        )
+
+    usage = (
+        await session.execute(
+            select(UsageRecord).where(
+                UsageRecord.org_id == ctx.org_id,
+                UsageRecord.feature == "query_expansion",
+            )
+        )
+    ).scalar_one()
+    assert (usage.prompt_tokens, usage.completion_tokens) == (13, 5)
+
+
 async def test_multi_query_releases_db_transaction_before_provider_call(
     session: AsyncSession, qdrant_collection: None, utility_model: object
 ) -> None:
@@ -576,6 +735,153 @@ async def test_multi_query_no_answer_uses_best_variant_dense_score(
 
     assert result.chunks
     assert result.no_answer is False
+
+
+async def test_no_answer_rechecks_scores_after_high_candidate_is_removed(
+    session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ragz.modules.documents import service as documents_service
+
+    ctx, ws = await seed_workspace(
+        session,
+        "post-recheck-grounding",
+        min_score=0.5,
+        multi_query_enabled=False,
+    )
+    removed_id = uuid4()
+    allowed_id = uuid4()
+    probe_calls = 0
+
+    class FakeQdrant:
+        async def query_points(self, collection_name, **kwargs):  # type: ignore[no-untyped-def]
+            nonlocal probe_calls
+            if kwargs.get("prefetch") is not None:
+                return SimpleNamespace(
+                    points=[
+                        SimpleNamespace(
+                            score=0.9,
+                            payload={
+                                "document_id": str(removed_id),
+                                "page": 1,
+                                "chunk_index": 0,
+                                "text": "removed high evidence",
+                            },
+                        ),
+                        SimpleNamespace(
+                            score=0.1,
+                            payload={
+                                "document_id": str(allowed_id),
+                                "page": 2,
+                                "chunk_index": 0,
+                                "text": "allowed weak evidence",
+                            },
+                        ),
+                    ]
+                )
+            probe_calls += 1
+            score = 0.99 if probe_calls == 1 else 0.1
+            return SimpleNamespace(points=[SimpleNamespace(score=score)])
+
+    checks = 0
+
+    async def _unprojected(*args, **kwargs):  # type: ignore[no-untyped-def]
+        nonlocal checks
+        checks += 1
+        return set() if checks == 1 else {removed_id}
+
+    async def _ready(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return None
+
+    monkeypatch.setattr(retrieval_service, "get_qdrant", lambda: FakeQdrant())
+    monkeypatch.setattr(retrieval_service, "ensure_collection", _ready)
+    monkeypatch.setattr(documents_service, "unprojected_document_ids", _unprojected)
+
+    result = await retrieve(session, ctx, ws.id, "question", top_k=5)
+
+    assert [chunk.document_id for chunk in result.chunks] == [allowed_id]
+    assert result.no_answer is True
+    assert probe_calls == 2
+
+
+async def test_no_answer_probe_excludes_revision_mismatched_candidate(
+    session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ragz.modules.documents import service as documents_service
+
+    ctx, ws = await seed_workspace(
+        session,
+        "revision-recheck-grounding",
+        min_score=0.5,
+        multi_query_enabled=False,
+    )
+    removed_id = uuid4()
+    allowed_id = uuid4()
+
+    def _excluded_document_ids(query_filter: models.Filter) -> set[str]:
+        result: set[str] = set()
+        for condition in query_filter.must or []:
+            if not isinstance(condition, models.Filter):
+                continue
+            for denied in condition.must_not or []:
+                if (
+                    isinstance(denied, models.FieldCondition)
+                    and denied.key == "document_id"
+                    and isinstance(denied.match, models.MatchAny)
+                ):
+                    result.update(str(value) for value in denied.match.any)
+        return result
+
+    class FakeQdrant:
+        async def query_points(self, collection_name, **kwargs):  # type: ignore[no-untyped-def]
+            if kwargs.get("prefetch") is not None:
+                return SimpleNamespace(
+                    points=[
+                        SimpleNamespace(
+                            score=0.9,
+                            payload={
+                                "document_id": str(removed_id),
+                                "page": 1,
+                                "chunk_index": 0,
+                                "text": "removed high evidence",
+                                "security_revision": 1,
+                            },
+                        ),
+                        SimpleNamespace(
+                            score=0.1,
+                            payload={
+                                "document_id": str(allowed_id),
+                                "page": 2,
+                                "chunk_index": 0,
+                                "text": "allowed weak evidence",
+                                "security_revision": 1,
+                            },
+                        ),
+                    ]
+                )
+            excluded = _excluded_document_ids(kwargs["query_filter"])
+            score = 0.1 if str(removed_id) in excluded else 0.99
+            return SimpleNamespace(points=[SimpleNamespace(score=score)])
+
+    async def _ready(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return None
+
+    async def _unprojected(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return set()
+
+    async def _authorized(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return {allowed_id: 1}
+
+    monkeypatch.setattr(retrieval_service, "get_qdrant", lambda: FakeQdrant())
+    monkeypatch.setattr(retrieval_service, "ensure_collection", _ready)
+    monkeypatch.setattr(documents_service, "unprojected_document_ids", _unprojected)
+    monkeypatch.setattr(documents_service, "authorized_security_revisions", _authorized)
+
+    result = await retrieve(session, ctx, ws.id, "question", top_k=5)
+
+    assert [chunk.document_id for chunk in result.chunks] == [allowed_id]
+    assert result.no_answer is True
 
 
 async def test_retrieve_uses_workspace_specific_collection(

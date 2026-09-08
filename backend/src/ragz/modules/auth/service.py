@@ -120,16 +120,44 @@ async def _issue_pair(
 
 
 async def login(
-    session: AsyncSession, *, email: str, password: str, settings: Settings
+    session: AsyncSession,
+    *,
+    email: str,
+    password: str,
+    settings: Settings,
+    source_ip: str | None = None,
 ) -> TokenPair:
     user = (await session.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if user is None or not user.active or not verify_password(user.password_hash, password):
-        await record_audit(session, org_id=None, actor_id=None, action="login.failure",
-                           target_type="user", target_id=email)
+        reason_code = (
+            "account_inactive"
+            if user is not None and not user.active
+            else "invalid_credentials"
+        )
+        await record_audit(
+            session,
+            org_id=user.org_id if user is not None else None,
+            actor_id=user.id if user is not None else None,
+            action="login.failure",
+            target_type="user",
+            target_id=str(user.id) if user is not None else "unknown",
+            result="denied",
+            reason_code=reason_code,
+            source_ip=source_ip,
+            auth_method="password",
+        )
         await session.commit()
         raise AuthenticationError("invalid credentials")
-    await record_audit(session, org_id=user.org_id, actor_id=user.id, action="login.success",
-                       target_type="user", target_id=str(user.id))
+    await record_audit(
+        session,
+        org_id=user.org_id,
+        actor_id=user.id,
+        action="login.success",
+        target_type="user",
+        target_id=str(user.id),
+        source_ip=source_ip,
+        auth_method="password",
+    )
     return await _issue_pair(session, user, uuid4(), settings)
 
 
@@ -684,7 +712,13 @@ async def set_user_role(
 
 
 async def login_oidc(
-    session: AsyncSession, *, email: str, issuer: str, subject: str, settings: Settings
+    session: AsyncSession,
+    *,
+    email: str,
+    issuer: str,
+    subject: str,
+    settings: Settings,
+    source_ip: str | None = None,
 ) -> TokenPair:
     """Session issuance for an OIDC-verified identity (AUTH-2 + AUTH-6).
 
@@ -736,9 +770,18 @@ async def login_oidc(
             # sso_error redirect, so this never distinguishes "wrong IdP
             # identity" from "email already registered" to the caller. The
             # real reason is server-side only, via the audit action + log.
-            await record_audit(session, org_id=existing.org_id, actor_id=None,
-                               action="login.oidc_denied", target_type="user",
-                               target_id=email)
+            await record_audit(
+                session,
+                org_id=existing.org_id,
+                actor_id=existing.id,
+                action="login.oidc_denied",
+                target_type="user",
+                target_id=str(existing.id),
+                result="denied",
+                reason_code="identity_conflict",
+                source_ip=source_ip,
+                auth_method="oidc",
+            )
             await session.commit()
             raise AuthenticationError("cannot sign in with this identity provider")
 
@@ -755,9 +798,18 @@ async def login_oidc(
         # denial audit action in every case: the detail must never reveal
         # whether zero or multiple orgs matched (no org enumeration).
         if len(orgs) != 1:
-            await record_audit(session, org_id=None, actor_id=None,
-                               action="login.oidc_denied", target_type="user",
-                               target_id=email)
+            await record_audit(
+                session,
+                org_id=None,
+                actor_id=None,
+                action="login.oidc_denied",
+                target_type="user",
+                target_id="unknown",
+                result="denied",
+                reason_code="domain_unclaimed_or_ambiguous",
+                source_ip=source_ip,
+                auth_method="oidc",
+            )
             await session.commit()
             raise AuthenticationError("no organization accepts this email domain")
         org = orgs[0]
@@ -774,7 +826,28 @@ async def login_oidc(
                            action="user.oidc_provisioned", target_type="user",
                            target_id=str(user.id))
     if not user.active:
+        await record_audit(
+            session,
+            org_id=user.org_id,
+            actor_id=user.id,
+            action="login.oidc_denied",
+            target_type="user",
+            target_id=str(user.id),
+            result="denied",
+            reason_code="account_inactive",
+            source_ip=source_ip,
+            auth_method="oidc",
+        )
+        await session.commit()
         raise AuthenticationError("user inactive")
-    await record_audit(session, org_id=user.org_id, actor_id=user.id,
-                       action="login.oidc", target_type="user", target_id=str(user.id))
+    await record_audit(
+        session,
+        org_id=user.org_id,
+        actor_id=user.id,
+        action="login.oidc",
+        target_type="user",
+        target_id=str(user.id),
+        source_ip=source_ip,
+        auth_method="oidc",
+    )
     return await _issue_pair(session, user, uuid4(), settings)

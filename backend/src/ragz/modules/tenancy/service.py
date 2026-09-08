@@ -27,7 +27,7 @@ from ragz.modules.tenancy.models import (
     Workspace,
     WorkspaceMember,
 )
-from ragz.modules.tenancy.permissions import PERMISSIONS
+from ragz.modules.tenancy.permissions import PERMISSIONS, SENSITIVE_ROLE_PERMISSIONS
 from ragz.modules.tenancy.views import WorkspaceView
 
 
@@ -200,7 +200,9 @@ async def set_default_model(
 ) -> Workspace:
     ws = await get_workspace(session, ctx, workspace_id)
     if model_id is not None:
-        await models_service.get_model(session, model_id)  # NotFoundError if unknown
+        await models_service.resolve_model(
+            session, requested_model_id=model_id, default_model_id=None
+        )
     ws.default_model_id = model_id
     if commit:
         await session.commit()
@@ -680,22 +682,52 @@ async def assign_custom_role(
     EXPLICIT template (e.g. Content Manager) for content-ACL bypass or audit
     access, exactly like a 'user'-tier account needs one for upload/delete.
     Cross-org targets 404 (existence never leaks, matching _org_user)."""
-    user = (
-        await session.execute(
-            select(User).where(User.id == user_id, User.org_id == ctx.org_id)
-        )
-    ).scalar_one_or_none()
+    target_scope = [User.id == user_id]
+    if ctx.role != "superadmin":
+        target_scope.append(User.org_id == ctx.org_id)
+    user = (await session.execute(select(User).where(*target_scope))).scalar_one_or_none()
     if user is None or user.role == "superadmin":
         raise NotFoundError("user not found")
     if role_template_id is not None:
         template = await _get_role_template(session, role_template_id)  # NotFoundError if unknown
         if template.status != "active":
             raise ConflictError("role template is not active")
+        sensitive = bool(set(template.permissions) & SENSITIVE_ROLE_PERMISSIONS)
+        if sensitive and user.id == ctx.user_id:
+            await record_audit(
+                session,
+                org_id=user.org_id,
+                actor_id=ctx.user_id,
+                action="user.custom_role_assign_denied",
+                target_type="user",
+                target_id=str(user_id),
+                result="denied",
+                reason_code="sensitive_self_grant",
+            )
+            await session.commit()
+            raise AuthorizationError("sensitive roles cannot be self-granted")
+        if (
+            sensitive
+            and ctx.role != "superadmin"
+            and "roles.sensitive.assign" not in ctx.permissions
+        ):
+            await record_audit(
+                session,
+                org_id=user.org_id,
+                actor_id=ctx.user_id,
+                action="user.custom_role_assign_denied",
+                target_type="user",
+                target_id=str(user_id),
+                result="denied",
+                reason_code="independent_grantor_required",
+            )
+            await session.commit()
+            raise AuthorizationError("sensitive role grant requires independent authority")
     user.custom_role_id = role_template_id
     action = (
         "user.custom_role_assigned" if role_template_id is not None else "user.custom_role_cleared"
     )
-    await record_audit(session, org_id=ctx.org_id, actor_id=ctx.user_id,
+    await record_audit(session, org_id=user.org_id, actor_id=ctx.user_id,
                        action=action, target_type="user", target_id=str(user_id))
     await session.commit()
     return user

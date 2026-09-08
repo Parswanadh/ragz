@@ -25,13 +25,13 @@ EITHER filter function — `test_tenant_isolation.py`-style tests for
 """
 
 import asyncio
-from collections.abc import Iterator, Sequence
+from collections.abc import Awaitable, Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import date, datetime
 from time import perf_counter
 from typing import Any
-from uuid import UUID, uuid5
+from uuid import UUID, uuid4, uuid5
 
 import structlog
 from qdrant_client import models
@@ -70,6 +70,7 @@ class RetrievedChunk:
     score: float
     section: str | None = None
     version: int = 1
+    security_revision: int | None = None
 
 
 @dataclass(frozen=True)
@@ -119,6 +120,7 @@ async def _embed_query_batch(
     cache_namespace: str,
     expected_dimension: int,
     stage_timings_ms: dict[str, float] | None,
+    record_billed_usage: Callable[[int], Awaitable[None]] | None = None,
 ) -> _EmbeddedQueryBatch:
     async def compute(miss_texts: list[str]) -> tuple[list[list[float]], int]:
         with _capture_stage(stage_timings_ms, "dense_embedding"), observe_stage(
@@ -129,6 +131,11 @@ async def _embed_query_batch(
             raise UpstreamError("dense embedder returned the wrong vector count")
         if any(len(vector) != expected_dimension for vector in computed):
             raise UpstreamError("dense embedder returned the wrong vector width")
+        if billed > 0 and record_billed_usage is not None:
+            # Provider completion and durable accounting form one lifecycle.
+            # This runs before cache publication, so cancelling a single-flight
+            # owner cannot transfer an uncharged result to its waiters.
+            await record_billed_usage(billed)
         return computed, billed
 
     if query_cache is None:
@@ -578,6 +585,11 @@ def _chunk_from_point(point: models.ScoredPoint) -> RetrievedChunk:
         score=float(point.score),
         section=payload.get("section"),
         version=int(payload.get("version", 1)),
+        security_revision=(
+            int(payload["security_revision"])
+            if payload.get("security_revision") is not None
+            else None
+        ),
     )
 
 
@@ -645,6 +657,7 @@ async def retrieve(
         raise ValueError("multi_query_expansion_timeout_ms_override must be positive")
     requested_query_count = multi_query_count_override or 3
     settings = get_settings()
+    usage_operation_id = uuid4().hex
 
     with _capture_stage(stage_timings_ms, "workspace_model_resolution"):
         ws = await get_workspace_checked(session, ctx, workspace_id)
@@ -683,6 +696,7 @@ async def retrieve(
             settings, enabled_override=query_embedding_cache_enabled_override
         )
     cache_namespace = query_embedding_cache_namespace(
+        org_id=ctx.org_id,
         model_id=embedding_model.id,
         provider_kind=embedding_model.provider_kind,
         model=embedding_model.litellm_model_name,
@@ -700,20 +714,54 @@ async def retrieve(
             )
         else:
             expander = query_expander or build_query_expander(
-                settings, max_queries=requested_query_count
+                settings,
+                max_queries=requested_query_count,
+                cache_namespace=str(ctx.org_id),
             )
             timeout_ms = (
                 settings.multi_query_expansion_timeout_ms
                 if multi_query_expansion_timeout_ms_override is None
                 else multi_query_expansion_timeout_ms_override
             )
-            expansion_task = asyncio.create_task(
-                asyncio.wait_for(
+
+            async def _expand_and_account() -> ExpandedQueries:
+                expanded = await asyncio.wait_for(
                     expander.expand(query, model=utility_model.litellm_model_name),
                     timeout=timeout_ms / 1000,
                 )
+                if expanded.prompt_tokens or expanded.completion_tokens:
+                    await quota_service.record_usage_durable(
+                        session,
+                        org_id=ctx.org_id,
+                        user_id=ctx.user_id,
+                        workspace_id=workspace_id,
+                        model_id=utility_model.id,
+                        feature="query_expansion",
+                        prompt_tokens=expanded.prompt_tokens,
+                        completion_tokens=expanded.completion_tokens,
+                        idempotency_key=(
+                            f"retrieval:{usage_operation_id}:query-expansion"
+                        ),
+                    )
+                return expanded
+
+            expansion_task = asyncio.create_task(
+                _expand_and_account()
             )
     try:
+        async def _record_q1_embedding(billed_tokens: int) -> None:
+            await quota_service.record_usage_durable(
+                session,
+                org_id=ctx.org_id,
+                user_id=ctx.user_id,
+                workspace_id=workspace_id,
+                model_id=embedding_model.id,
+                feature="embedding",
+                prompt_tokens=billed_tokens,
+                completion_tokens=0,
+                idempotency_key=f"retrieval:{usage_operation_id}:embedding:q1",
+            )
+
         original_batch = await _embed_query_batch(
             queries=(query,),
             dense_embedder=dense_embedder,
@@ -721,6 +769,7 @@ async def retrieve(
             cache_namespace=cache_namespace,
             expected_dimension=expected_dimension,
             stage_timings_ms=stage_timings_ms,
+            record_billed_usage=_record_q1_embedding,
         )
     except BaseException:
         if expansion_task is not None:
@@ -729,7 +778,6 @@ async def retrieve(
             await asyncio.gather(expansion_task, return_exceptions=True)
         raise
     dense_vecs = list(original_batch.vectors)
-    embed_tokens = original_batch.billed_tokens
     embedding_cache_hits = original_batch.cache_hits
     embedding_cache_misses = original_batch.cache_misses
     if expansion_task is not None:
@@ -753,49 +801,49 @@ async def retrieve(
         else:
             query_expansion_outcomes_total.labels(outcome="success").inc()
             queries = (expanded.queries or (query,))[:requested_query_count]
-            expansion_tokens = expanded.prompt_tokens + expanded.completion_tokens
-            if expansion_tokens > 0:
-                await quota_service.record_usage(
-                    session,
-                    org_id=ctx.org_id,
-                    user_id=ctx.user_id,
-                    workspace_id=workspace_id,
-                    model_id=utility_model.id,
-                    feature="query_expansion",
-                    prompt_tokens=expanded.prompt_tokens,
-                    completion_tokens=expanded.completion_tokens,
-                    commit=False,
-                )
             if len(queries) > 1:
-                alternative_batch = await _embed_query_batch(
-                    queries=queries[1:],
-                    dense_embedder=dense_embedder,
-                    query_cache=active_query_embedding_cache,
-                    cache_namespace=cache_namespace,
-                    expected_dimension=expected_dimension,
-                    stage_timings_ms=stage_timings_ms,
-                )
-                dense_vecs.extend(alternative_batch.vectors)
-                embed_tokens += alternative_batch.billed_tokens
-                embedding_cache_hits += alternative_batch.cache_hits
-                embedding_cache_misses += alternative_batch.cache_misses
+                try:
+                    async def _record_alternative_embedding(
+                        billed_tokens: int,
+                    ) -> None:
+                        await quota_service.record_usage_durable(
+                            session,
+                            org_id=ctx.org_id,
+                            user_id=ctx.user_id,
+                            workspace_id=workspace_id,
+                            model_id=embedding_model.id,
+                            feature="embedding",
+                            prompt_tokens=billed_tokens,
+                            completion_tokens=0,
+                            idempotency_key=(
+                                f"retrieval:{usage_operation_id}:embedding:alternatives"
+                            ),
+                        )
+
+                    alternative_batch = await _embed_query_batch(
+                        queries=queries[1:],
+                        dense_embedder=dense_embedder,
+                        query_cache=active_query_embedding_cache,
+                        cache_namespace=cache_namespace,
+                        expected_dimension=expected_dimension,
+                        stage_timings_ms=stage_timings_ms,
+                        record_billed_usage=_record_alternative_embedding,
+                    )
+                except UpstreamError as exc:
+                    structlog.get_logger().warning(
+                        "multi_query_alternative_embedding_failed",
+                        workspace_id=str(workspace_id),
+                        error=type(exc).__name__,
+                    )
+                    queries = (query,)
+                else:
+                    dense_vecs.extend(alternative_batch.vectors)
+                    embedding_cache_hits += alternative_batch.cache_hits
+                    embedding_cache_misses += alternative_batch.cache_misses
             structlog.get_logger().info(
                 "multi_query_expanded",
                 workspace_id=str(workspace_id),
                 query_count=len(queries),
-            )
-    # Cost reporting (design 2026-08-15 §2): the query embedding's billed tokens
-    # (hosted providers only; self-hosted TEI / the hash test backend report 0).
-    # commit=False stages the row so it rides this turn's end-of-turn commit
-    # (the chat/no-answer/general-knowledge record_usage) rather than adding a
-    # blocking round-trip before the LLM even starts streaming. Zero tokens ->
-    # nothing to bill, skip the row entirely.
-    with _capture_stage(stage_timings_ms, "embedding_usage_record"):
-        if embed_tokens > 0:
-            await quota_service.record_usage(
-                session, org_id=ctx.org_id, user_id=ctx.user_id, workspace_id=workspace_id,
-                model_id=embedding_model.id, feature="embedding",
-                prompt_tokens=embed_tokens, completion_tokens=0, commit=False,
             )
     with _capture_stage(stage_timings_ms, "sparse_embedding"), observe_stage(
         "embed_sparse"
@@ -883,6 +931,45 @@ async def retrieve(
         raise
     with _capture_stage(stage_timings_ms, "candidate_decode"):
         candidates = _stable_chunk_order([_chunk_from_point(p) for p in fused.points])
+    revisioned_ids = {
+        candidate.document_id
+        for candidate in candidates
+        if candidate.security_revision is not None
+    }
+    revision_dropped_ids: set[UUID] = set()
+    if revisioned_ids:
+        authorized_revisions = await documents_service.authorized_security_revisions(
+            session, ctx, workspace_id, revisioned_ids
+        )
+        revision_dropped_ids = {
+            candidate.document_id
+            for candidate in candidates
+            if candidate.security_revision is not None
+            and authorized_revisions.get(candidate.document_id)
+            != candidate.security_revision
+        }
+        candidates = [
+            candidate
+            for candidate in candidates
+            if candidate.document_id not in revision_dropped_ids
+        ]
+        if revision_dropped_ids and no_answer_task is not None:
+            # A projection may have completed after the original vector query.
+            # Re-running now evaluates the grounding score under the current
+            # Qdrant ACL payload rather than the stale response snapshot. The
+            # exact stale document ids are excluded too: a delayed old Qdrant
+            # response must not keep contributing its high score.
+            flt = _tenant_filter(
+                org_id=ctx.org_id,
+                workspace_id=workspace_id,
+                acl_group_ids=_ctx_acl(ctx),
+                current_only=True,
+                metadata_clauses=metadata_clauses,
+                unprojected_document_ids=frozenset(
+                    set(unprojected) | revision_dropped_ids
+                ),
+            )
+            top_dense_results = await run_no_answer_probes()
     # Close the read-then-query window (Cubic P0). The pre-query exclusion above
     # is a SNAPSHOT: an ACL can commit between that read and query_points, and
     # Qdrant would still be serving the pre-change payload for a document the
@@ -902,6 +989,21 @@ async def retrieve(
         newly_unprojected = recheck - unprojected
         if newly_unprojected:
             candidates = [c for c in candidates if c.document_id not in newly_unprojected]
+            if no_answer_task is not None:
+                # The earlier probes used the pre-query authorization snapshot.
+                # Re-run them under the same post-recheck exclusion set that
+                # now defines the candidates generation may consume.
+                flt = _tenant_filter(
+                    org_id=ctx.org_id,
+                    workspace_id=workspace_id,
+                    acl_group_ids=_ctx_acl(ctx),
+                    current_only=True,
+                    metadata_clauses=metadata_clauses,
+                    unprojected_document_ids=frozenset(
+                        set(recheck) | revision_dropped_ids
+                    ),
+                )
+                top_dense_results = await run_no_answer_probes()
             structlog.get_logger().info(
                 "retrieval_dropped_newly_unprojected",
                 workspace_id=str(workspace_id), count=len(newly_unprojected),
@@ -969,12 +1071,17 @@ async def retrieve(
             # reasoning as the query-embedding record above).
             rerank_units = getattr(reranker, "last_search_units", 0)
             if rerank_units > 0:
-                await quota_service.record_usage(
-                    session, org_id=ctx.org_id, user_id=ctx.user_id,
+                await quota_service.record_usage_durable(
+                    session,
+                    org_id=ctx.org_id,
+                    user_id=ctx.user_id,
                     workspace_id=workspace_id,
-                    model_id=None, feature="rerank",
-                    prompt_tokens=0, completion_tokens=0,
-                    units=rerank_units, commit=False,
+                    model_id=None,
+                    feature="rerank",
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    units=rerank_units,
+                    idempotency_key=f"retrieval:{usage_operation_id}:rerank",
                 )
             order = _stable_rerank_order(scores, candidates)
             top = order[:k]
@@ -1187,7 +1294,12 @@ async def delete_workspace_points(
 
 
 async def update_document_acl(
-    org_id: UUID, document_id: UUID, acl_group_ids: list[UUID] | None, *, collection_name: str
+    org_id: UUID,
+    document_id: UUID,
+    acl_group_ids: list[UUID] | None,
+    *,
+    collection_name: str,
+    security_revision: int = 0,
 ) -> None:
     """ACL re-index for already-indexed points (RBAC-5): rewrites the acl_groups
     payload in place via set_payload — no re-embed. Lives here so payload/filter
@@ -1205,7 +1317,10 @@ async def update_document_acl(
         return
     await get_qdrant().set_payload(
         collection_name,
-        payload={"acl_groups": sorted(str(g) for g in (acl_group_ids or []))},
+        payload={
+            "acl_groups": sorted(str(g) for g in (acl_group_ids or [])),
+            "security_revision": security_revision,
+        },
         points=models.FilterSelector(
             # maintenance path: must restamp ALL of the document's points
             filter=_tenant_filter(

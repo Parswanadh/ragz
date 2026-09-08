@@ -72,6 +72,16 @@ async def resolve_model(
         model = await _enabled_model(session, default_model_id)
         if model is not None:
             return model
+        fallback = (
+            await session.execute(
+                select(Model)
+                .where(Model.enabled == true(), Model.modality == "chat")
+                .order_by(Model.created_at, Model.id)
+                .limit(1)
+            )
+        ).scalar_one_or_none()
+        if fallback is not None:
+            return fallback
     raise ConflictError("no model configured for workspace")
 
 

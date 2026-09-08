@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 from collections.abc import Sequence
 from typing import Protocol
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -105,6 +105,7 @@ async def _compare_one(
     retriever: ComparisonRetriever,
     multi_query: bool,
     token_budget: int,
+    usage_operation_id: str,
 ) -> ComparisonVariantOut:
     total_started = time.perf_counter()
     retrieval_started = time.perf_counter()
@@ -117,6 +118,9 @@ async def _compare_one(
         multi_query_enabled_override=multi_query,
     )
     retrieval_ms = (time.perf_counter() - retrieval_started) * 1000
+    # Retrieval owns provider accounting, including legacy seams that stage
+    # with commit=False. Finalize it before any fallible source authorization.
+    await session.commit()
 
     split = split_budget(token_budget)
     source_budget = max(split.sources - count_tokens(question, model_name), 0)
@@ -127,11 +131,6 @@ async def _compare_one(
         source_budget=source_budget,
         model_name=model_name,
     )
-    # Retrieval stages usage rows with commit=False. Make that incurred work
-    # durable before the generation call so a later provider failure cannot
-    # erase expansion/embedding/rerank accounting.
-    await session.commit()
-
     generation_ms = 0.0
     prompt_tokens = 0
     completion_tokens = 0
@@ -152,7 +151,7 @@ async def _compare_one(
         answer = completion.text
         prompt_tokens = completion.usage.prompt_tokens
         completion_tokens = completion.usage.completion_tokens
-        await quota_service.record_usage(
+        await quota_service.record_usage_durable(
             session,
             org_id=ctx.org_id,
             user_id=ctx.user_id,
@@ -161,6 +160,7 @@ async def _compare_one(
             feature="chat",
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
+            idempotency_key=f"comparison:{usage_operation_id}:generation",
         )
 
     return ComparisonVariantOut(
@@ -191,6 +191,7 @@ async def compare_answers(
     token_budget: int,
 ) -> list[ComparisonVariantOut]:
     """Run sequentially on one session; never mutate the workspace toggle."""
+    usage_run_id = uuid4().hex
     single = await _compare_one(
         session,
         ctx,
@@ -202,6 +203,7 @@ async def compare_answers(
         retriever=retriever,
         multi_query=False,
         token_budget=token_budget,
+        usage_operation_id=f"{usage_run_id}:single",
     )
     multi = await _compare_one(
         session,
@@ -214,5 +216,6 @@ async def compare_answers(
         retriever=retriever,
         multi_query=True,
         token_budget=token_budget,
+        usage_operation_id=f"{usage_run_id}:multi",
     )
     return [single, multi]

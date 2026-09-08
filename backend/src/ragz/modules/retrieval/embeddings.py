@@ -76,9 +76,14 @@ class QueryEmbeddingCache(Protocol):
 
 
 def query_embedding_cache_namespace(
-    *, model_id: UUID, provider_kind: str, model: str, dimension: int | None
+    *,
+    org_id: UUID,
+    model_id: UUID,
+    provider_kind: str,
+    model: str,
+    dimension: int | None,
 ) -> str:
-    material = f"{model_id}\0{provider_kind}\0{model}\0{dimension or 0}"
+    material = f"{org_id}\0{model_id}\0{provider_kind}\0{model}\0{dimension or 0}"
     return hashlib.sha256(material.encode()).hexdigest()
 
 
@@ -173,6 +178,29 @@ class InMemoryQueryEmbeddingCache:
         if evicted:
             query_embedding_cache_operations_total.labels(outcome="evicted").inc(evicted)
 
+    async def _publish_owner(
+        self,
+        owner_keys: list[str],
+        normalized: list[tuple[float, ...]],
+        owner_futures: list[asyncio.Future[tuple[float, ...]]],
+    ) -> int:
+        evicted = 0
+        async with self._lock:
+            expires_at = self._clock() + self._ttl_seconds
+            for key, vector, future in zip(
+                owner_keys, normalized, owner_futures, strict=True
+            ):
+                self._entries[key] = _CacheEntry(expires_at=expires_at, vector=vector)
+                self._entries.move_to_end(key)
+                if self._inflight.get(key) is future:
+                    self._inflight.pop(key, None)
+                if not future.done():
+                    future.set_result(vector)
+            while len(self._entries) > self._max_entries:
+                self._entries.popitem(last=False)
+                evicted += 1
+        return evicted
+
     async def get_or_compute(
         self,
         namespace: str,
@@ -259,25 +287,18 @@ class InMemoryQueryEmbeddingCache:
                 await asyncio.gather(*owner_futures, return_exceptions=True)
                 raise
 
-            evicted = 0
             store_started = monotonic()
-            async with self._lock:
-                expires_at = self._clock() + self._ttl_seconds
-                for key, vector, future in zip(
-                    owner_keys, normalized, owner_futures, strict=True
-                ):
-                    self._entries[key] = _CacheEntry(
-                        expires_at=expires_at,
-                        vector=vector,
-                    )
-                    self._entries.move_to_end(key)
-                    if self._inflight.get(key) is future:
-                        self._inflight.pop(key, None)
-                    if not future.done():
-                        future.set_result(vector)
-                while len(self._entries) > self._max_entries:
-                    self._entries.popitem(last=False)
-                    evicted += 1
+            publication = asyncio.create_task(
+                self._publish_owner(owner_keys, normalized, owner_futures)
+            )
+            try:
+                evicted = await asyncio.shield(publication)
+            except asyncio.CancelledError:
+                # The provider already completed. Preserve that paid result and
+                # resolve every waiter even if the request owner disconnects
+                # while publication is waiting for the cache lock.
+                publication.add_done_callback(lambda done: done.exception())
+                raise
             store_ms = (monotonic() - store_started) * 1000
             query_embedding_cache_operations_total.labels(outcome="store").inc(
                 len(owner_texts)
@@ -466,9 +487,8 @@ class LiteLLMEmbedder:
                         headers=headers,
                     )
                     if response.status_code != 200:
-                        body_str = response.text[:200]
                         raise UpstreamError(
-                            f"embedding gateway returned {response.status_code}: {body_str}"
+                            f"embedding gateway returned HTTP {response.status_code}"
                         )
                     try:
                         body = response.json()

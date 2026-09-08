@@ -2,8 +2,11 @@ import hashlib
 import hmac
 
 import httpx
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import Settings
+from ragz.modules.audit.models import AuditEvent
 from ragz.modules.auth.models import User
 from ragz.modules.auth.service import _hash
 
@@ -18,12 +21,22 @@ async def test_login_ok(client: httpx.AsyncClient, seeded_user: User) -> None:
 
 
 async def test_login_bad_password_problem_json(
-    client: httpx.AsyncClient, seeded_user: User
+    client: httpx.AsyncClient, seeded_user: User, session: AsyncSession
 ) -> None:
     r = await client.post("/api/v1/auth/login", json={"email": "a@acme.com", "password": "bad"})
     assert r.status_code == 401
     assert r.headers["content-type"].startswith("application/problem+json")
     assert r.json()["title"] == "Authentication failed"
+    event = (
+        await session.execute(select(AuditEvent).where(AuditEvent.action == "login.failure"))
+    ).scalar_one()
+    assert event.result == "denied"
+    assert event.reason_code == "invalid_credentials"
+    assert event.auth_method == "password"
+    assert event.source_ip == "127.0.0.1"
+    assert event.org_id == seeded_user.org_id
+    assert event.actor_id == seeded_user.id
+    assert event.target_id == str(seeded_user.id)
 
 
 async def test_failed_login_increments_account_failure_counter(

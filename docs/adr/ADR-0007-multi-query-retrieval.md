@@ -28,8 +28,9 @@ When enabled:
    overlong, duplicate, or non-string alternatives are discarded.
 3. Missing utility configuration, provider failure, or malformed output degrades
    to the original query. Retrieval does not fail solely because expansion fails.
-4. Dense embeddings for all variants are produced in one batch; one sparse
-   representation is produced per variant.
+4. The original query (Q1) is embedded first while expansion is in flight. Once
+   alternatives arrive, their dense inputs are embedded with the provider's
+   bounded batcher; one sparse representation is produced per variant.
 5. Every dense and sparse lane uses the same `_tenant_filter`, including current
    document, metadata, ACL-group, and unprojected-security exclusions.
 6. Qdrant RRF fuses all ranked lanes. Raw dense, sparse, and cross-query scores
@@ -42,8 +43,12 @@ When enabled:
    retrieval call.
 9. Generated alternatives are never returned as chunks, sources, or citations.
 
-The total query count is capped at three. Query count and prompts are not exposed
-as additional workspace knobs until paired evaluation demonstrates a need.
+Production requests use a maximum of three total queries (Q1 plus two
+alternatives). The retrieval seam supports bounded internal/evaluation overrides
+of up to five total queries so experiments can compare fan-out sizes; those
+overrides are not production defaults or workspace controls. Query count and
+prompts are not exposed as additional workspace knobs until paired evaluation
+demonstrates a need.
 
 ## Consequences
 

@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toaster';
 import { useAuthorization } from '@/lib/use-authorization';
-import { useClaims } from '@/lib/use-claims';
 
 import { EmbeddingModelSection } from './embedding-model-section';
 import { MembersSection } from './members-section';
@@ -32,17 +31,14 @@ export function WorkspaceSettingsDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const patch = usePatchWorkspace();
-  const isSuperadmin = useClaims()?.role === 'superadmin';
   const { data: authorization } = useAuthorization();
-  const canReadEvals =
-    isSuperadmin || authorization?.permissions.has('evals.read') === true;
-  const canManageEvals =
-    isSuperadmin || authorization?.permissions.has('evals.manage') === true;
+  const isSuperadmin = authorization?.role === 'superadmin';
+  const canReadEvals = isSuperadmin || authorization?.permissions.has('evals.read') === true;
+  const canManageEvals = isSuperadmin || authorization?.permissions.has('evals.manage') === true;
   const canRunEvals = isSuperadmin || authorization?.permissions.has('evals.run') === true;
   const canListDocuments =
     isSuperadmin || authorization?.permissions.has('documents.list') === true;
-  const canReadModels =
-    isSuperadmin || authorization?.permissions.has('models.read') === true;
+  const canReadModels = isSuperadmin || authorization?.permissions.has('models.read') === true;
   const canAccessEvals = canReadEvals || canManageEvals || canRunEvals;
   const [topK, setTopK] = useState(String(workspace.top_k));
   const [minScore, setMinScore] = useState(String(workspace.min_score));

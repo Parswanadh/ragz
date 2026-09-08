@@ -5,6 +5,7 @@ from fastapi import APIRouter, Cookie, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.api.deps import get_session
+from ragz.core.client_ip import client_ip
 from ragz.core.config import Settings, get_settings
 from ragz.core.errors import AuthenticationError
 from ragz.core.ratelimit import peek_rate_limit, rate_limit, record_failure
@@ -75,7 +76,11 @@ async def login(
     await peek_rate_limit(redis, account_key, _LOGIN_ACCOUNT_MAX_FAILURES)
     try:
         pair = await service.login(
-            session, email=body.email, password=body.password, settings=settings
+            session,
+            email=body.email,
+            password=body.password,
+            settings=settings,
+            source_ip=client_ip(request, settings),
         )
     except AuthenticationError:
         # Record the failed attempt against the account, then surface the same

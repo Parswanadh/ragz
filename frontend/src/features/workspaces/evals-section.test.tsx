@@ -37,6 +37,10 @@ const GOLDEN_QUERY = {
 };
 
 const MODEL = { id: '00000000-0000-4000-8000-000000000111', display_name: 'Local model' };
+const MODEL_ALT = {
+  id: '00000000-0000-4000-8000-000000000222',
+  display_name: 'Second model',
+};
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(body === null ? null : JSON.stringify(body), {
@@ -155,7 +159,7 @@ test('renders single and multi-query answers side by side with sources and timin
   let capturedBody: unknown = null;
   const fetchMock = vi.fn(async (req: Request) => {
     const url = req.url;
-    if (url.endsWith('/api/v1/models')) return jsonResponse([MODEL]);
+    if (url.endsWith('/api/v1/models')) return jsonResponse([MODEL, MODEL_ALT]);
     if (url.includes('/documents')) return jsonResponse([DOC]);
     if (url.includes('/golden-queries')) return jsonResponse([]);
     if (url.includes('/evals/compare') && req.method === 'POST') {
@@ -244,6 +248,57 @@ test('renders single and multi-query answers side by side with sources and timin
   expect(within(multiCard as HTMLElement).getByText('policy.pdf')).toBeInTheDocument();
   expect(screen.getByText('12.0 ms total')).toBeInTheDocument();
   expect(screen.getByText('16.0 ms total')).toBeInTheDocument();
+
+  // A completed comparison is a record of the values submitted for that run;
+  // editing the form afterwards must not relabel the existing result.
+  const fixedInput = screen.getByText('Fixed input').closest('aside') as HTMLElement;
+  await user.clear(screen.getByLabelText('Comparison question'));
+  await user.type(screen.getByLabelText('Comparison question'), 'A later question');
+  await user.selectOptions(screen.getByLabelText('Answer model'), MODEL_ALT.id);
+  expect(within(fixedInput).getByText('Why does TCP need a window?')).toBeInTheDocument();
+  expect(within(fixedInput).getByText('Local model')).toBeInTheDocument();
+});
+
+test('falls back to an available chat model when the workspace default is unavailable', async () => {
+  let capturedBody: unknown = null;
+  const fetchMock = vi.fn(async (req: Request) => {
+    if (req.url.endsWith('/api/v1/models')) return jsonResponse([MODEL]);
+    if (req.url.includes('/evals/compare') && req.method === 'POST') {
+      capturedBody = await req.clone().json();
+      return jsonResponse({ variants: [] });
+    }
+    return jsonResponse([]);
+  });
+  const user = userEvent.setup();
+  renderSection(fetchMock, {
+    defaultModelId: '00000000-0000-4000-8000-000000000999',
+    canRead: false,
+    canManage: false,
+    canRun: true,
+  });
+
+  await user.type(screen.getByLabelText('Comparison question'), 'What is relevant?');
+  await user.click(screen.getByRole('button', { name: 'Compare answers' }));
+
+  await waitFor(() =>
+    expect(capturedBody).toEqual({
+      question: 'What is relevant?',
+      model_id: MODEL.id,
+    }),
+  );
+});
+
+test('disables comparison and explains when no enabled chat model is available', async () => {
+  const fetchMock = vi.fn(async (req: Request) => {
+    if (req.url.endsWith('/api/v1/models')) return jsonResponse([]);
+    return jsonResponse([]);
+  });
+  renderSection(fetchMock, { canRead: false, canManage: false, canRun: true });
+
+  expect(
+    await screen.findByRole('option', { name: 'No enabled chat models available' }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Compare answers' })).toBeDisabled();
 });
 
 test('read-only capability lists fixtures without mounting run or manage controls', async () => {
@@ -274,9 +329,7 @@ test('run-only capability mounts comparison without forbidden golden-query reads
   expect(await screen.findByRole('heading', { name: 'Retrieval A/B lab' })).toBeInTheDocument();
   expect(screen.queryByRole('heading', { name: 'Golden queries' })).not.toBeInTheDocument();
   expect(
-    vi.mocked(fetch).mock.calls.some(([req]) =>
-      (req as Request).url.includes('/golden-queries'),
-    ),
+    vi.mocked(fetch).mock.calls.some(([req]) => (req as Request).url.includes('/golden-queries')),
   ).toBe(false);
 });
 

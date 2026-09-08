@@ -20,7 +20,7 @@ from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Protocol
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import structlog
 from redis.asyncio import Redis
@@ -38,6 +38,7 @@ from ragz.modules.chat.web import (
 )
 from ragz.modules.documents.metadata import build_clauses
 from ragz.modules.models.models import Model
+from ragz.modules.quotas import service as quota_service
 from ragz.modules.retrieval.service import MetadataClause, RetrievalResult, RetrievedChunk
 from ragz.modules.tenancy.context import TenantContext
 from ragz.modules.tenancy.views import WorkspaceView
@@ -566,6 +567,7 @@ async def run_agent_gather(
     prompt_tokens = completion_tokens = 0
     grounded = degraded = False
     web_searches_used = 0
+    usage_run_id = uuid4().hex
     for n in range(1, AGENT_MAX_ITERATIONS + 1):
         if n == 1 and force_web_first and web_searcher is not None:
             # Explicit web-search toggle: the user deliberately asked to search
@@ -605,6 +607,18 @@ async def run_agent_gather(
                 completer, model=model, question=question, summaries=summaries,
                 tool_names=tool_names, metadata_field_names=metadata_field_names,
             )
+        if usage.prompt_tokens or usage.completion_tokens:
+            await quota_service.record_usage_durable(
+                session,
+                org_id=ctx.org_id,
+                user_id=ctx.user_id,
+                workspace_id=workspace.id,
+                model_id=model.id,
+                feature="agent_planner",
+                prompt_tokens=usage.prompt_tokens,
+                completion_tokens=usage.completion_tokens,
+                idempotency_key=f"agent:{usage_run_id}:planner:{n}",
+            )
         prompt_tokens += usage.prompt_tokens
         completion_tokens += usage.completion_tokens
         if action.action == "answer":
@@ -622,6 +636,19 @@ async def run_agent_gather(
         )
         if action.action == "web_search" and outcome.error is None:
             web_searches_used += 1
+            if web_searcher is not None and getattr(web_searcher, "billable", False):
+                await quota_service.record_usage_durable(
+                    session,
+                    org_id=ctx.org_id,
+                    user_id=ctx.user_id,
+                    workspace_id=workspace.id,
+                    model_id=None,
+                    feature="web_search",
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    units=1,
+                    idempotency_key=f"agent:{usage_run_id}:web-search:{n}",
+                )
             if outcome.web_results:
                 yield AgentToolResult(
                     n=n, tool="web_search", web_results=list(outcome.web_results)

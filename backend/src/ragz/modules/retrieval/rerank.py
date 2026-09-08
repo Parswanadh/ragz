@@ -16,6 +16,8 @@ import asyncio
 import math
 import re
 from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from time import perf_counter
 from typing import Protocol
 
@@ -157,10 +159,20 @@ class CohereReranker:
     def _retry_delay(self, response: httpx.Response | None, attempt: int) -> float:
         if response is not None:
             raw = response.headers.get("Retry-After")
+            parsed_http_date = False
             try:
                 parsed = float(raw) if raw is not None else -1.0
             except (TypeError, ValueError):
-                parsed = -1.0
+                try:
+                    retry_at = parsedate_to_datetime(raw or "")
+                    if retry_at.tzinfo is None:
+                        retry_at = retry_at.replace(tzinfo=UTC)
+                    parsed = (retry_at - datetime.now(UTC)).total_seconds()
+                    parsed_http_date = True
+                except (TypeError, ValueError, OverflowError):
+                    parsed = -1.0
+            if parsed_http_date and math.isfinite(parsed):
+                return min(30.0, max(0.0, parsed))
             if math.isfinite(parsed) and parsed >= 0:
                 return min(30.0, parsed)
         return float(min(8.0, self._base_backoff_seconds * 2**attempt))

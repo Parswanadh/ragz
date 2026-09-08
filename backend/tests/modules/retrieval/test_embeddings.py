@@ -168,6 +168,45 @@ async def test_query_embedding_waiter_retries_after_owner_cancellation() -> None
     assert calls == 2
 
 
+async def test_query_embedding_publication_cancellation_resolves_all_keys_and_waiters() -> None:
+    cache = InMemoryQueryEmbeddingCache(max_entries=8)
+    compute_started = asyncio.Event()
+    release_compute = asyncio.Event()
+    calls: list[tuple[str, ...]] = []
+
+    async def compute(texts: list[str]) -> tuple[list[list[float]], int]:
+        calls.append(tuple(texts))
+        if "alpha" in texts:
+            compute_started.set()
+            await release_compute.wait()
+        return [[float(index + 1)] for index, _ in enumerate(texts)], 7
+
+    owner = asyncio.create_task(
+        cache.get_or_compute("space", ["alpha", "gamma"], compute)
+    )
+    await compute_started.wait()
+    waiter = asyncio.create_task(
+        cache.get_or_compute("space", ["alpha", "gamma"], compute)
+    )
+    unrelated = await cache.get_or_compute("space", ["beta"], compute)
+    assert unrelated[0] == [[1.0]]
+
+    await cache._lock.acquire()  # noqa: SLF001 - deterministic vulnerable await boundary
+    release_compute.set()
+    await asyncio.sleep(0)
+    owner.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await owner
+    cache._lock.release()  # noqa: SLF001
+
+    recovered = await asyncio.wait_for(waiter, timeout=1)
+    assert recovered[0] == [[1.0], [2.0]]
+    assert calls.count(("alpha", "gamma")) == 1
+    cached = await cache.get_or_compute("space", ["alpha", "gamma"], compute)
+    assert cached[0] == [[1.0], [2.0]]
+    assert cached[1] == 0
+
+
 async def test_query_embedding_cache_rejects_misaligned_batch() -> None:
     cache = InMemoryQueryEmbeddingCache()
     with pytest.raises(ValueError, match="same length"):
@@ -220,22 +259,33 @@ async def test_query_embedding_cache_metrics_use_only_bounded_outcomes() -> None
     assert count("hit") == before["hit"] + 1
 
 
-def test_query_embedding_cache_namespace_binds_model_and_dimension() -> None:
+def test_query_embedding_cache_namespace_binds_tenant_model_and_dimension() -> None:
+    org_id = uuid4()
     model_id = uuid4()
     base = query_embedding_cache_namespace(
+        org_id=org_id,
         model_id=model_id,
         provider_kind="openai",
         model="text-embedding-3-large",
         dimension=1024,
     )
     changed = query_embedding_cache_namespace(
+        org_id=org_id,
         model_id=model_id,
         provider_kind="openai",
         model="text-embedding-3-large",
         dimension=1536,
     )
+    other_org = query_embedding_cache_namespace(
+        org_id=uuid4(),
+        model_id=model_id,
+        provider_kind="openai",
+        model="text-embedding-3-large",
+        dimension=1024,
+    )
     assert len(base) == 64
     assert base != changed
+    assert base != other_org
 
 
 async def test_tei_embedder_batches_and_parses() -> None:
@@ -402,13 +452,15 @@ async def test_self_hosted_embedders_report_zero_tokens() -> None:
 async def test_litellm_embedder_non_200_raises_upstream_error() -> None:
     from ragz.core.errors import UpstreamError
 
-    transport = httpx.MockTransport(lambda r: httpx.Response(500, text="boom"))
+    marker = "provider-secret-response-body"
+    transport = httpx.MockTransport(lambda r: httpx.Response(500, text=marker))
     embedder = LiteLLMEmbedder(
         base_url="http://litellm.test", master_key="sk-master",
         model="text-embedding-3-small", transport=transport,
     )
-    with pytest.raises(UpstreamError):
+    with pytest.raises(UpstreamError) as exc_info:
         await embedder.embed(["hello"])
+    assert marker not in str(exc_info.value)
 
 
 def test_get_dense_embedder_routes_tei_vs_litellm(pristine_env) -> None:

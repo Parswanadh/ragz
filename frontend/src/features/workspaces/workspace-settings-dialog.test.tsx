@@ -33,15 +33,16 @@ const tokenFor = (role: 'superadmin' | 'admin' | 'user') =>
 function stubFetch(
   responseBody: WorkspaceOut,
   permissions: string[] = ['evals.read', 'evals.manage', 'evals.run'],
+  role: 'superadmin' | 'admin' | 'user' = 'user',
 ) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (req: Request) => {
       if (req.url.includes('/me/authorization')) {
-        return new Response(
-          JSON.stringify({ role: 'user', permissions, policy_version: 1 }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
-        );
+        return new Response(JSON.stringify({ role, permissions, policy_version: 1 }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        });
       }
       // MetadataFieldsSection (H-C8 mount point) fetches its own field list
       // on mount — stub it to an empty schema so it doesn't interfere with
@@ -80,8 +81,9 @@ function renderDialog(
   workspace: WorkspaceOut = ws,
   responseBody: WorkspaceOut = ws,
   permissions: string[] = ['evals.read', 'evals.manage', 'evals.run'],
+  role: 'superadmin' | 'admin' | 'user' = 'user',
 ) {
-  stubFetch(responseBody, permissions);
+  stubFetch(responseBody, permissions, role);
   render(
     <QueryClientProvider client={new QueryClient()}>
       <WorkspaceSettingsDialog workspace={workspace} open onOpenChange={vi.fn()} />
@@ -129,8 +131,8 @@ test('shows current values and PATCHes only the edited settings', async () => {
 test('checking multi-query PATCHes only multi_query_enabled', async () => {
   const user = userEvent.setup();
   setAccessToken(tokenFor('superadmin'));
-  renderDialog(ws, { ...ws, multi_query_enabled: true });
-  const toggle = screen.getByLabelText('Expand each question into multiple searches');
+  renderDialog(ws, { ...ws, multi_query_enabled: true }, [], 'superadmin');
+  const toggle = await screen.findByLabelText('Expand each question into multiple searches');
   expect(toggle).not.toBeChecked();
 
   await user.click(toggle);
@@ -145,18 +147,31 @@ test('checking multi-query PATCHes only multi_query_enabled', async () => {
   expect(body).toStrictEqual({ multi_query_enabled: true });
 });
 
-test.each(['admin', 'user'] as const)(
-  'hides the multi-query control from %s users',
-  (role) => {
-    setAccessToken(tokenFor(role));
-    renderDialog();
+test.each(['admin', 'user'] as const)('hides the multi-query control from %s users', (role) => {
+  setAccessToken(tokenFor(role));
+  renderDialog();
 
+  expect(
+    screen.queryByLabelText('Expand each question into multiple searches'),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText(/Superadmin control/)).not.toBeInTheDocument();
+});
+
+test('server authorization hides multi-query after a stale superadmin token is demoted', async () => {
+  setAccessToken(tokenFor('superadmin'));
+  renderDialog(ws, ws, [], 'admin');
+
+  await waitFor(() =>
     expect(
-      screen.queryByLabelText('Expand each question into multiple searches'),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText(/Superadmin control/)).not.toBeInTheDocument();
-  },
-);
+      vi
+        .mocked(fetch)
+        .mock.calls.some(([req]) => (req as Request).url.includes('/me/authorization')),
+    ).toBe(true),
+  );
+  expect(
+    screen.queryByLabelText('Expand each question into multiple searches'),
+  ).not.toBeInTheDocument();
+});
 
 test('hides the evaluations tab without evals.run permission', async () => {
   setAccessToken(tokenFor('user'));
@@ -164,9 +179,9 @@ test('hides the evaluations tab without evals.run permission', async () => {
 
   await waitFor(() =>
     expect(
-      vi.mocked(fetch).mock.calls.some(([req]) =>
-        (req as Request).url.includes('/me/authorization'),
-      ),
+      vi
+        .mocked(fetch)
+        .mock.calls.some(([req]) => (req as Request).url.includes('/me/authorization')),
     ).toBe(true),
   );
   expect(screen.queryByRole('button', { name: 'evals' })).not.toBeInTheDocument();

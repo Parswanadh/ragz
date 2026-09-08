@@ -184,7 +184,13 @@ async def test_cohere_does_not_retry_non_retryable_401() -> None:
 
 @pytest.mark.parametrize(
     ("retry_after", "expected_delay"),
-    [("not-a-number", 0.25), ("999", 30.0), ("-3", 0.25)],
+    [
+        ("not-a-number", 0.25),
+        ("999", 30.0),
+        ("-3", 0.25),
+        ("Wed, 01 Jan 2099 00:00:00 GMT", 30.0),
+        ("Sat, 01 Jan 2000 00:00:00 GMT", 0.0),
+    ],
 )
 async def test_cohere_retry_after_is_validated_and_bounded(
     retry_after: str, expected_delay: float
