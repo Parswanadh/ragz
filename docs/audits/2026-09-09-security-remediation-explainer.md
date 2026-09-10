@@ -858,6 +858,10 @@ The backend virtualenv was created from the frozen lock in the persistent
 remediation checkout. No production service or campaign database was used.
 The final independent rereview returned **ship** with no Critical or Important
 finding remaining in CC-001 through CC-008 or the session-compatibility follow-up.
+PR #11 was updated and all 15 Cubic threads received individual replies and were
+resolved. The upstream GitHub Actions runs remain `action_required`: approving a
+fork run requires `marketcalls/ragz` administrator rights, and both API approval
+attempts returned HTTP 403. This report therefore makes no remote-CI pass claim.
 
 ## Release statement
 

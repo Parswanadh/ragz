@@ -140,10 +140,13 @@ the former 50 MiB ceiling; the migration does not inspect or delete storage.
 | 2026-09-09 | persistent remediation worktree | `ruff`; `mypy src`; `lint-imports` | Passed; 164 source files and 17 contracts. | Static and architecture checks after CC patches. |
 | 2026-09-10 | persistent remediation worktree | Frontend tests/type/lint/build and Playwright preview | **106 files / 725 tests; 3 browser tests; all checks/build passed.** | Vitest 4.1.11; dynamic PDF.js import; valid PDF canvas, active HTML/SVG and literal text. Exact Node 20.19 TypeScript/Vite build passes; one existing large-chunk warning. |
 | 2026-09-10 | independent final rereview | CC-001 through CC-008 and follow-up session compatibility | **Ship; no Critical or Important findings remain.** | Reviewer verified cross-user password/OIDC fencing, same-user sessions, accounting/error boundaries, audit expiry, Node compatibility and grounding identity. |
+| 2026-09-10 | PR #11 publication | Push, PR update, 15 inline replies/resolutions, CI inspection | Head updated; all 15 Cubic threads resolved. CI and dependency workflows are `action_required`. | Attempts to approve both fork workflows returned GitHub `403 Must have admin rights to Repository`; an upstream `marketcalls/ragz` admin must approve the runs. No remote CI pass is claimed. |
 | 2026-09-09 | persistent remediation worktree | Frozen dependency audits | Frontend prod/full: no known vulnerabilities. Backend runtime 218/full 258: no known vulnerabilities, one exact ignored CVE each. | Accelerate CVE has no fixed release and a dated, reachability-reviewed exception; raw inventory is not described as all-clean. |
 
 All confirmed in-scope audit, PR and cross-check application findings are fixed on this remediation branch.
 CC-005 retains the exact no-patched-release Accelerate disposition described above.
+GitHub-hosted CI remains pending the upstream-admin approval described in the
+verification ledger; the completed local verification is not represented as CI.
 The conditional product, deployment and image-assurance limits above remain explicit;
 they are not represented as demonstrated application vulnerabilities. A second broad
 rereview was stopped to conserve model usage after the completed independent review,
