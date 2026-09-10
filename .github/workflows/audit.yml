@@ -79,7 +79,13 @@ jobs:
 
       - name: pip-audit (runtime tree)
         run: |
+          # Reviewed exact exception, review by 2026-10-15. Accelerate 1.14.0
+          # is the newest release and CVE-2026-69112 has no patched version.
+          # Ragz/installed Docling paths do not call the affected explicit
+          # checkpoint loaders or accept tenant checkpoints. Remove on release.
+          test "$(date -u +%s)" -lt "$(date -u -d 2026-10-15 +%s)"
           uvx pip-audit --strict --require-hashes --disable-pip \
+            --ignore-vuln CVE-2026-69112 \
             -r "$RUNNER_TEMP/backend-runtime.txt"
 
       - name: Export frozen build and development inventory
@@ -91,5 +97,7 @@ jobs:
 
       - name: pip-audit (build and development tree)
         run: |
+          test "$(date -u +%s)" -lt "$(date -u -d 2026-10-15 +%s)"
           uvx pip-audit --strict --require-hashes --disable-pip \
+            --ignore-vuln CVE-2026-69112 \
             -r "$RUNNER_TEMP/backend-full.txt"
