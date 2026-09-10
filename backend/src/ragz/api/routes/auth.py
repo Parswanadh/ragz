@@ -69,6 +69,7 @@ def _set_refresh(response: Response, raw: str, settings: Settings) -> None:
 async def login(
     body: LoginRequest, request: Request, response: Response,
     session: SessionDep, settings: SettingsDep,
+    refresh_token: RefreshCookie = None,
 ) -> AccessTokenResponse:
     redis = request.app.state.redis
     account_key = f"rl:login_account:{body.email.strip().lower()}"
@@ -81,6 +82,7 @@ async def login(
             password=body.password,
             settings=settings,
             source_ip=client_ip(request, settings),
+            replace_refresh_token=refresh_token,
         )
     except AuthenticationError:
         # Record the failed attempt against the account, then surface the same

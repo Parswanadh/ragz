@@ -16,7 +16,11 @@ DeleteVectors = Callable[[UUID, UUID], Awaitable[None]]
 
 
 async def schedule_cleanup(
-    session: AsyncSession, attachment: ChatAttachment, *, org_id: UUID
+    session: AsyncSession,
+    attachment: ChatAttachment,
+    *,
+    org_id: UUID,
+    user_id: UUID,
 ) -> AttachmentCleanupJob:
     existing = (
         await session.execute(
@@ -29,9 +33,11 @@ async def schedule_cleanup(
         return existing
     job = AttachmentCleanupJob(
         org_id=org_id,
+        user_id=user_id,
         chat_id=attachment.chat_id,
         attachment_id=attachment.id,
         storage_key=attachment.storage_key,
+        size_bytes=attachment.size_bytes,
     )
     session.add(job)
     return job

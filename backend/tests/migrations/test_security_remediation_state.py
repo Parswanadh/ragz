@@ -89,4 +89,16 @@ async def test_legacy_attachment_size_is_conservatively_backfilled() -> None:
                 {"attachment_id": attachment_id},
             )
             assert size_bytes == _LEGACY_ATTACHMENT_BYTES
+            cleanup_columns = {
+                row["column_name"]
+                for row in (
+                    await session.execute(
+                        sa.text(
+                            "SELECT column_name FROM information_schema.columns "
+                            "WHERE table_name = 'attachment_cleanup_jobs'"
+                        )
+                    )
+                ).mappings()
+            }
+            assert {"org_id", "user_id", "attachment_id", "size_bytes"} <= cleanup_columns
         await engine.dispose()

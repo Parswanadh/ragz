@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 
 import { useDocumentFile } from './document-file';
+import { PdfPreview } from './pdf-preview';
 
 const TEXT_MIMES = new Set(['text/plain', 'text/markdown', 'text/csv']);
 const IMAGE_MIMES = new Set([
@@ -137,14 +138,8 @@ export function DocumentViewerDrawer({
                   Something went wrong loading this document.
                 </p>
               </CenteredMessage>
-            ) : isPdf && pageSrc ? (
-              <iframe
-                title={filename}
-                src={pageSrc}
-                sandbox=""
-                referrerPolicy="no-referrer"
-                className="h-full w-full border-0"
-              />
+            ) : isPdf && objectUrl ? (
+              <PdfPreview objectUrl={objectUrl} filename={filename} page={page} />
             ) : isImage && objectUrl ? (
               <img src={objectUrl} alt={filename} className="h-full w-full object-contain" />
             ) : isText ? (

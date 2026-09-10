@@ -1,7 +1,14 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import BigInteger, ForeignKey, ForeignKeyConstraint, Text, UniqueConstraint
+from sqlalchemy import (
+    BigInteger,
+    CheckConstraint,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -150,14 +157,17 @@ class AttachmentCleanupJob(UUIDPk, Base):
     __tablename__ = "attachment_cleanup_jobs"
     __table_args__ = (
         UniqueConstraint("attachment_id", name="uq_attachment_cleanup_attachment"),
+        CheckConstraint("size_bytes >= 0", name="ck_attachment_cleanup_jobs_size"),
     )
 
     # Intentionally no FKs: the referenced chat/attachment/org rows may be
     # deleted before external storage and vector cleanup succeeds.
     org_id: Mapped[UUID] = mapped_column(index=True)
+    user_id: Mapped[UUID] = mapped_column(index=True)
     chat_id: Mapped[UUID]
     attachment_id: Mapped[UUID]
     storage_key: Mapped[str]
+    size_bytes: Mapped[int] = mapped_column(BigInteger())
     attempts: Mapped[int] = mapped_column(default=0, server_default="0")
     next_attempt_at: Mapped[datetime] = mapped_column(default=naive_utc, index=True)
     last_error: Mapped[str | None] = mapped_column(default=None)

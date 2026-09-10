@@ -7,6 +7,11 @@ const useDocumentFile = vi.fn();
 vi.mock('./document-file', () => ({
   useDocumentFile: (documentId: string | null) => useDocumentFile(documentId),
 }));
+vi.mock('./pdf-preview', () => ({
+  PdfPreview: ({ filename, page }: { filename: string; page: number }) => (
+    <canvas role="img" aria-label={`Page ${page} of ${filename}`} data-pdf-page={page} />
+  ),
+}));
 
 import { DocumentViewerDrawer } from './document-viewer-drawer';
 
@@ -36,12 +41,14 @@ test('shows a loading spinner while the file is fetching', () => {
   expect(screen.getByRole('status')).toBeInTheDocument();
 });
 
-test('renders the file in an iframe with #page={page} for a viewable mime', () => {
+test('renders PDF bytes through the controlled canvas viewer at the cited page', () => {
   mockFile({ status: 'success', objectUrl: 'blob:mock-url', mimeType: 'application/pdf' });
   render(<DocumentViewerDrawer documentId="d1" page={7} filename="report.pdf" onClose={vi.fn()} />);
-  const frame = screen.getByTitle('report.pdf');
-  expect(frame).toHaveAttribute('src', 'blob:mock-url#page=7');
-  expect(frame).toHaveAttribute('sandbox', '');
+  expect(screen.getByRole('img', { name: 'Page 7 of report.pdf' })).toHaveAttribute(
+    'data-pdf-page',
+    '7',
+  );
+  expect(document.querySelector('iframe')).toBeNull();
 });
 
 test('plain text is escaped into a pre element and cannot execute or access the parent', () => {

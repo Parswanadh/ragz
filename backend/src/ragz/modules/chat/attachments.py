@@ -21,6 +21,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import Settings
+from ragz.core.db import committed_row_exists_after_error
 from ragz.core.errors import (
     NotFoundError,
     OrgResourceQuotaExceeded,
@@ -30,7 +31,7 @@ from ragz.core.errors import (
 from ragz.core.storage import build_storage
 from ragz.modules.chat.chats import get_chat
 from ragz.modules.chat.cleanup import schedule_cleanup
-from ragz.modules.chat.models import Chat, ChatAttachment
+from ragz.modules.chat.models import AttachmentCleanupJob, Chat, ChatAttachment
 from ragz.modules.chat.prompting import PromptSource, count_tokens
 from ragz.modules.documents.pipeline import PageBlock, chunk_blocks, embed_batch, parse_bytes
 from ragz.modules.documents.uploads import UploadedContent
@@ -174,7 +175,25 @@ async def _attachment_usage(
             .where(*conditions)
         )
     ).one()
-    return int(count), int(size_bytes), int(pending)
+    cleanup_conditions = [
+        AttachmentCleanupJob.org_id == org_id,
+        AttachmentCleanupJob.completed_at.is_(None),
+    ]
+    if user_id is not None:
+        cleanup_conditions.append(AttachmentCleanupJob.user_id == user_id)
+    cleanup_count, cleanup_bytes = (
+        await session.execute(
+            select(
+                func.count(AttachmentCleanupJob.id),
+                func.coalesce(func.sum(AttachmentCleanupJob.size_bytes), 0),
+            ).where(*cleanup_conditions)
+        )
+    ).one()
+    return (
+        int(count) + int(cleanup_count),
+        int(size_bytes) + int(cleanup_bytes),
+        int(pending),
+    )
 
 
 async def _reserve_attachment(
@@ -265,8 +284,6 @@ async def create_attachment(
         await storage.ensure_bucket()
         await storage.put_stream(attachment.storage_key, content.stream, content_type=mime)
         await resource_admission.remove(session, reservation_id)
-        await session.commit()
-        return attachment
     except BaseException:
         await session.rollback()
         # Delete unconditionally. A cancelled multipart helper can raise after
@@ -282,6 +299,30 @@ async def create_attachment(
             )
         await resource_admission.release(session, reservation_id)
         raise
+    try:
+        await session.commit()
+    except BaseException:
+        persisted = await committed_row_exists_after_error(
+            session, select(ChatAttachment.id).where(ChatAttachment.id == attachment.id)
+        )
+        if persisted is False:
+            try:
+                await storage.delete(attachment.storage_key)
+            except Exception:
+                log.exception(
+                    "attachment_upload_compensation_failed",
+                    attachment_id=str(attachment.id),
+                    storage_key=attachment.storage_key,
+                )
+            await resource_admission.release(session, reservation_id)
+        elif persisted is None:
+            log.error(
+                "attachment_upload_commit_outcome_unknown",
+                attachment_id=str(attachment.id),
+                storage_key=attachment.storage_key,
+            )
+        raise
+    return attachment
 
 
 async def get_attachment_for_chat(
@@ -376,7 +417,12 @@ async def delete_attachment(session: AsyncSession, attachment: ChatAttachment) -
     """Schedule durable external cleanup before deleting the attachment row."""
     chat = await session.get(Chat, attachment.chat_id)
     if chat is not None:
-        await schedule_cleanup(session, attachment, org_id=chat.org_id)
+        await schedule_cleanup(
+            session,
+            attachment,
+            org_id=chat.org_id,
+            user_id=chat.user_id,
+        )
         await session.flush()
     await session.delete(attachment)
     await session.commit()

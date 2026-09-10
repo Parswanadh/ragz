@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
-import { api } from '@/api/client';
+import { api, beginAuthIdentityTransition } from '@/api/client';
 import { clearAuthenticatedQueryState } from '@/lib/auth-query-state';
 import { setAccessToken } from '@/lib/auth-store';
 
@@ -16,6 +16,7 @@ export function useLogin() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (creds: { email: string; password: string }) => {
+      await beginAuthIdentityTransition({ clearAccessToken: true });
       const { data, error } = await api.POST('/api/v1/auth/login', { body: creds });
       if (error) throw new Error(problemDetail(error));
       // A dead backend / proxy error can yield neither data nor a parsed
@@ -35,6 +36,7 @@ export function useLogout() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
+      await beginAuthIdentityTransition();
       await api.POST('/api/v1/auth/logout');
     },
     onSettled: async () => {
@@ -67,6 +69,7 @@ export function useRegister() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (creds: { email: string; password: string }) => {
+      await beginAuthIdentityTransition({ clearAccessToken: true });
       const { data, error } = await api.POST('/api/v1/auth/register', { body: creds });
       if (error) throw new Error(problemDetail(error));
       if (!data) throw new Error('Registration failed: the server did not respond');

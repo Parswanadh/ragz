@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ragz.core.config import Settings
 from ragz.modules.audit.models import AuditEvent
 from ragz.modules.auth.models import User
+from ragz.modules.auth.passwords import hash_password
 from ragz.modules.auth.service import _hash
 
 
@@ -112,6 +113,36 @@ async def test_refresh_and_logout(client: httpx.AsyncClient, seeded_user: User) 
     r3 = await client.post("/api/v1/auth/logout")
     assert r3.status_code == 204
     assert (await client.post("/api/v1/auth/refresh")).status_code == 401
+
+
+async def test_successful_login_revokes_the_refresh_family_presented_by_browser(
+    client: httpx.AsyncClient, seeded_user: User, session: AsyncSession
+) -> None:
+    first = await client.post(
+        "/api/v1/auth/login", json={"email": "a@acme.com", "password": "pw123456"}
+    )
+    assert first.status_code == 200
+    rotated = await client.post("/api/v1/auth/refresh")
+    old_family_cookie = rotated.cookies["refresh_token"]
+
+    replacement = User(
+        org_id=seeded_user.org_id,
+        email="replacement@acme.com",
+        password_hash=hash_password("pw123456"),
+        role="user",
+    )
+    session.add(replacement)
+    await session.commit()
+
+    second = await client.post(
+        "/api/v1/auth/login",
+        json={"email": replacement.email, "password": "pw123456"},
+    )
+    new_family_cookie = second.cookies["refresh_token"]
+    client.cookies.set("refresh_token", old_family_cookie, path="/api/v1/auth")
+    assert (await client.post("/api/v1/auth/refresh")).status_code == 401
+    client.cookies.set("refresh_token", new_family_cookie, path="/api/v1/auth")
+    assert (await client.post("/api/v1/auth/refresh")).status_code == 200
 
 
 async def test_refresh_concurrent_tabs_grace_reissue(

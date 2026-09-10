@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { expect, test, type Page } from '@playwright/test';
 
 const FILE_PATH = /\/api\/v1\/documents\/[^/]+\/file$/;
@@ -46,17 +49,23 @@ test('synthetic script markup in plain text is rendered literally', async ({ pag
   expect(await page.evaluate(() => window.__ragzPreviewExecuted)).toBe(false);
 });
 
-test('PDF preview frame is sandboxed without script or same-origin privileges', async ({
-  page,
-}) => {
+test('a valid PDF renders through the controlled canvas viewer', async ({ page }) => {
   await mountPreview(page, {
     filename: 'manual.pdf',
     contentType: 'application/pdf',
-    body: Buffer.from('%PDF-1.7\n%%EOF\n'),
+    body: fs.readFileSync(path.join(import.meta.dirname, 'fixtures', 'sample.pdf')),
   });
 
-  const frame = page.locator('iframe[title="manual.pdf"]');
-  await expect(frame).toHaveAttribute('sandbox', '');
-  await expect(frame).not.toHaveAttribute('sandbox', /allow-scripts|allow-same-origin/);
+  const canvas = page.getByRole('img', { name: /page 1 of manual\.pdf/i });
+  await expect(canvas).toBeVisible();
+  await expect(canvas).toHaveAttribute('data-pdf-page', '1');
+  expect(
+    await canvas.evaluate((element: HTMLCanvasElement) => {
+      const context = element.getContext('2d');
+      if (!context || element.width === 0 || element.height === 0) return false;
+      return context.getImageData(0, 0, element.width, element.height).data.some((value) => value !== 0);
+    }),
+  ).toBe(true);
+  await expect(page.locator('iframe')).toHaveCount(0);
   expect(await page.evaluate(() => window.__ragzPreviewExecuted)).toBe(false);
 });

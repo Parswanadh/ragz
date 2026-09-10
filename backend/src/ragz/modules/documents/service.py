@@ -7,6 +7,7 @@ from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import get_settings
+from ragz.core.db import committed_row_exists_after_error
 from ragz.core.errors import (
     ConflictError,
     NotFoundError,
@@ -214,8 +215,6 @@ async def _create_reserved_upload(
         )
         if reservation_id is not None:
             await resource_admission.remove(session, reservation_id)
-        await session.commit()
-        return doc
     except BaseException:
         try:
             await storage.delete(doc.storage_key)
@@ -226,6 +225,29 @@ async def _create_reserved_upload(
                 storage_key=doc.storage_key,
             )
         raise
+    try:
+        await session.commit()
+    except BaseException:
+        persisted = await committed_row_exists_after_error(
+            session, select(Document.id).where(Document.id == doc.id)
+        )
+        if persisted is False:
+            try:
+                await storage.delete(doc.storage_key)
+            except Exception:
+                log.exception(
+                    "document_upload_compensation_failed",
+                    document_id=str(doc.id),
+                    storage_key=doc.storage_key,
+                )
+        elif persisted is None:
+            log.error(
+                "document_upload_commit_outcome_unknown",
+                document_id=str(doc.id),
+                storage_key=doc.storage_key,
+            )
+        raise
+    return doc
 
 
 async def list_documents(

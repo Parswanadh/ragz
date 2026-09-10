@@ -329,6 +329,48 @@ async def test_expansion_publication_cancellation_resolves_waiter_and_unrelated_
 
 
 @pytest.mark.asyncio
+async def test_paid_expansion_is_recorded_before_cancelled_cache_publication() -> None:
+    cache = InMemoryQueryExpansionCache(max_entries=4)
+    provider_started = asyncio.Event()
+    release_provider = asyncio.Event()
+    usage_recorded = asyncio.Event()
+    recorded: list[tuple[int, int]] = []
+
+    async def handler(_request: httpx.Request) -> httpx.Response:
+        provider_started.set()
+        await release_provider.wait()
+        return httpx.Response(
+            200,
+            json=_completion('{"queries":["alternative one","alternative two"]}'),
+        )
+
+    async def record_usage(expanded: ExpandedQueries) -> None:
+        recorded.append((expanded.prompt_tokens, expanded.completion_tokens))
+        usage_recorded.set()
+
+    expander = LiteLLMQueryExpander(
+        base_url="http://litellm.test",
+        master_key="sk-test",
+        transport=httpx.MockTransport(handler),
+        expansion_cache=cache,
+        record_usage=record_usage,
+    )
+    owner = asyncio.create_task(expander.expand("original", model="utility"))
+    await provider_started.wait()
+    waiter = asyncio.create_task(expander.expand("original", model="utility"))
+    await cache._lock.acquire()  # noqa: SLF001
+    release_provider.set()
+    await usage_recorded.wait()
+    owner.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await owner
+    cache._lock.release()  # noqa: SLF001
+    result = await asyncio.wait_for(waiter, timeout=1)
+    assert result.queries == ("original", "alternative one", "alternative two")
+    assert recorded == [(11, 7)]
+
+
+@pytest.mark.asyncio
 async def test_expansion_cache_ttl_and_model_namespace() -> None:
     clock = _Clock()
     cache = InMemoryQueryExpansionCache(

@@ -45,6 +45,14 @@ class DenseEmbedder(Protocol):
         ...
 
 
+class BilledEmbeddingUpstreamError(UpstreamError):
+    """Typed provider failure carrying usage completed before the failure."""
+
+    def __init__(self, detail: str, *, billed_tokens: int) -> None:
+        super().__init__(detail)
+        self.billed_tokens = max(0, billed_tokens)
+
+
 class QueryEmbeddingCache(Protocol):
     """Request-independent cache seam for query vectors.
 
@@ -427,8 +435,23 @@ class TeiDenseEmbedder:
                         f"or select a hosted embedding model for this workspace in "
                         f"Admin > Settings > Embedding."
                     ) from exc
-                r.raise_for_status()
-                out.extend(r.json())
+                except httpx.HTTPError as exc:
+                    raise UpstreamError("local embedding service request failed") from exc
+                try:
+                    r.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    raise UpstreamError(
+                        f"local embedding service returned HTTP {r.status_code}"
+                    ) from exc
+                try:
+                    body = r.json()
+                except ValueError as exc:
+                    raise UpstreamError("malformed response from local embedding service") from exc
+                if not isinstance(body, list) or any(
+                    not isinstance(vector, list) for vector in body
+                ):
+                    raise UpstreamError("malformed response from local embedding service")
+                out.extend(body)
         return out
 
     async def embed_with_usage(self, texts: list[str]) -> tuple[list[list[float]], int]:
@@ -487,31 +510,67 @@ class LiteLLMEmbedder:
                         headers=headers,
                     )
                     if response.status_code != 200:
-                        raise UpstreamError(
-                            f"embedding gateway returned HTTP {response.status_code}"
+                        raise BilledEmbeddingUpstreamError(
+                            f"embedding gateway returned HTTP {response.status_code}",
+                            billed_tokens=total_tokens,
                         )
                     try:
                         body = response.json()
                     except ValueError as exc:
-                        raise UpstreamError("malformed embedding response from gateway") from exc
-                    ordered = sorted(body.get("data", []), key=lambda d: d["index"])
+                        raise BilledEmbeddingUpstreamError(
+                            "malformed embedding response from gateway",
+                            billed_tokens=total_tokens,
+                        ) from exc
+                    if not isinstance(body, dict):
+                        raise BilledEmbeddingUpstreamError(
+                            "malformed embedding response from gateway",
+                            billed_tokens=total_tokens,
+                        )
+                    usage = body.get("usage")
+                    if usage is None:
+                        batch_tokens = 0
+                    elif isinstance(usage, dict):
+                        try:
+                            batch_tokens = int(usage.get("total_tokens") or 0)
+                        except (TypeError, ValueError, OverflowError):
+                            batch_tokens = 0
+                    else:
+                        raise BilledEmbeddingUpstreamError(
+                            "malformed embedding response from gateway",
+                            billed_tokens=total_tokens,
+                        )
+                    total_tokens += max(0, batch_tokens)
+                    data = body.get("data")
+                    if not isinstance(data, list) or any(
+                        not isinstance(item, dict)
+                        or not isinstance(item.get("index"), int)
+                        or not isinstance(item.get("embedding"), list)
+                        or any(
+                            isinstance(value, bool)
+                            or not isinstance(value, (int, float))
+                            or not math.isfinite(float(value))
+                            for value in item["embedding"]
+                        )
+                        for item in data
+                    ):
+                        raise BilledEmbeddingUpstreamError(
+                            "malformed embedding response from gateway",
+                            billed_tokens=total_tokens,
+                        )
+                    ordered = sorted(data, key=lambda item: item["index"])
                     for item in ordered:
                         embedding = item["embedding"]
                         if self._dimension is not None and len(embedding) != self._dimension:
-                            raise UpstreamError(
+                            raise BilledEmbeddingUpstreamError(
                                 "embedding gateway returned vector width "
-                                f"{len(embedding)}; expected {self._dimension} dimensions"
+                                f"{len(embedding)}; expected {self._dimension} dimensions",
+                                billed_tokens=total_tokens,
                             )
                         out.append(embedding)
-                    # Hosted providers return billed usage; missing/malformed
-                    # usage degrades to 0 (a cost undercount is never a failure).
-                    usage = body.get("usage") or {}
-                    try:
-                        total_tokens += int(usage.get("total_tokens") or 0)
-                    except (TypeError, ValueError):
-                        pass
         except httpx.HTTPError as exc:
-            raise UpstreamError("embedding gateway unreachable") from exc
+            raise BilledEmbeddingUpstreamError(
+                "embedding gateway unreachable", billed_tokens=total_tokens
+            ) from exc
         return out, total_tokens
 
 

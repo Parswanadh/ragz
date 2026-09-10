@@ -16,7 +16,7 @@ no native-transcript replay, no schema tax on the synthesize call).
 
 import json
 import re
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Protocol
@@ -275,6 +275,7 @@ async def execute_tool(
     redis: Redis | None = None,
     web_search_daily_limit: int = 0,
     web_search_daily_org_limit: int = 0,
+    record_billable_web_usage: Callable[[], Awaitable[None]] | None = None,
 ) -> ToolOutcome:
     """THE tool-execution seam (design §2): all four read-only tools, one
     funnel. Failures come back as ToolOutcome.error — the loop degrades to
@@ -376,6 +377,8 @@ async def execute_tool(
                 )
             _log_web_search_decision(allowed=True, reason="ok", redacted_query=outgoing_query)
             results = await web_searcher(session, outgoing_query)
+            if getattr(web_searcher, "billable", False) and record_billable_web_usage:
+                await record_billable_web_usage()
             # Increment ONLY on an actually-performed search (the call above
             # already succeeded) -- never on a refusal, and never before the
             # call, so a provider error never burns the caller's daily quota.
@@ -624,6 +627,21 @@ async def run_agent_gather(
         if action.action == "answer":
             break
         yield AgentStep(n=n, tool=action.action, query=action.query or action.document_id)
+
+        async def _record_billable_web_usage(iteration: int = n) -> None:
+            await quota_service.record_usage_durable(
+                session,
+                org_id=ctx.org_id,
+                user_id=ctx.user_id,
+                workspace_id=workspace.id,
+                model_id=None,
+                feature="web_search",
+                prompt_tokens=0,
+                completion_tokens=0,
+                units=1,
+                idempotency_key=f"agent:{usage_run_id}:web-search:{iteration}",
+            )
+
         outcome = await execute_tool(
             session, ctx, action, workspace=workspace, retriever=retriever,
             chunk_reader=chunk_reader, web_searcher=web_searcher,
@@ -633,22 +651,10 @@ async def run_agent_gather(
             redis=redis,
             web_search_daily_limit=web_search_daily_limit,
             web_search_daily_org_limit=web_search_daily_org_limit,
+            record_billable_web_usage=_record_billable_web_usage,
         )
         if action.action == "web_search" and outcome.error is None:
             web_searches_used += 1
-            if web_searcher is not None and getattr(web_searcher, "billable", False):
-                await quota_service.record_usage_durable(
-                    session,
-                    org_id=ctx.org_id,
-                    user_id=ctx.user_id,
-                    workspace_id=workspace.id,
-                    model_id=None,
-                    feature="web_search",
-                    prompt_tokens=0,
-                    completion_tokens=0,
-                    units=1,
-                    idempotency_key=f"agent:{usage_run_id}:web-search:{n}",
-                )
             if outcome.web_results:
                 yield AgentToolResult(
                     n=n, tool="web_search", web_results=list(outcome.web_results)

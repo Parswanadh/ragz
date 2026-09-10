@@ -100,7 +100,9 @@ async def delete_chat(session: AsyncSession, ctx: TenantContext, chat_id: UUID) 
         ).scalars()
     )
     for attachment in attachments:
-        await schedule_cleanup(session, attachment, org_id=ctx.org_id)
+        await schedule_cleanup(
+            session, attachment, org_id=ctx.org_id, user_id=chat.user_id
+        )
     # Force durable identifier rows into the transaction before the cascade is
     # issued. The commit below makes the jobs and relational deletion atomic.
     await session.flush()

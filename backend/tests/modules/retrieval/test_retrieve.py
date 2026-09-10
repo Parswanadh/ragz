@@ -115,6 +115,25 @@ async def test_cancelled_embedding_cache_owner_accounts_before_waiter_reuse() ->
     assert recorded == [7]
 
 
+async def test_billed_malformed_embedding_is_accounted_before_local_validation() -> None:
+    recorded: list[int] = []
+
+    class MalformedBilledEmbedder:
+        async def embed_with_usage(self, texts: list[str]):  # type: ignore[no-untyped-def]
+            return [[1.0] for _ in texts], 9
+
+    async def record(tokens: int) -> None:
+        recorded.append(tokens)
+
+    with pytest.raises(UpstreamError, match="wrong vector width"):
+        await _embed_query_batch(
+            queries=("question",), dense_embedder=MalformedBilledEmbedder(),
+            query_cache=None, cache_namespace="org-model", expected_dimension=2,
+            stage_timings_ms=None, record_billed_usage=record,
+        )
+    assert recorded == [9]
+
+
 async def seed_workspace(
     session: AsyncSession, org_name: str, *, role: str = "user", member: bool = True,
     min_score: float = 0.0, top_k: int = 8, rerank_enabled: bool = False,
@@ -425,6 +444,41 @@ async def test_enabled_multi_query_builds_six_filtered_prefetches_and_records_us
         )
     ).scalar_one()
     assert (usage.prompt_tokens, usage.completion_tokens) == (13, 5)
+
+
+async def test_default_expander_records_provider_usage_once(
+    session: AsyncSession,
+    qdrant_collection: None,
+    utility_model: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ctx, ws = await seed_workspace(
+        session, "mq-provider-accounting-once", multi_query_enabled=True
+    )
+    await upsert_texts(ctx, ws, ["alpha report"])
+    recorded_features: list[str] = []
+
+    class ProviderAccountedExpander:
+        def __init__(self, record_usage):  # type: ignore[no-untyped-def]
+            self.record_usage = record_usage
+
+        async def expand(self, query: str, *, model: str) -> ExpandedQueries:
+            expanded = ExpandedQueries((query, "alpha report"), 13, 5)
+            await self.record_usage(expanded)
+            return expanded
+
+    def build(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return ProviderAccountedExpander(kwargs["record_usage"])
+
+    async def record(*args, **kwargs):  # type: ignore[no-untyped-def]
+        recorded_features.append(kwargs["feature"])
+
+    monkeypatch.setattr(retrieval_service, "build_query_expander", build)
+    monkeypatch.setattr(retrieval_service.quota_service, "record_usage_durable", record)
+    result = await retrieve(session, ctx, ws.id, "alpha")
+
+    assert result.chunks
+    assert recorded_features.count("query_expansion") == 1
 
 
 async def test_multi_query_provider_failure_degrades_to_original(
@@ -880,6 +934,51 @@ async def test_no_answer_probe_excludes_revision_mismatched_candidate(
 
     result = await retrieve(session, ctx, ws.id, "question", top_k=5)
 
+    assert [chunk.document_id for chunk in result.chunks] == [allowed_id]
+    assert result.no_answer is True
+
+
+async def test_probe_only_document_cannot_supply_grounding_score(
+    session: AsyncSession,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from ragz.modules.documents import service as documents_service
+
+    ctx, ws = await seed_workspace(
+        session, "probe-only-grounding", min_score=0.5, multi_query_enabled=False
+    )
+    probe_only_id = uuid4()
+    allowed_id = uuid4()
+
+    class FakeQdrant:
+        async def query_points(self, collection_name, **kwargs):  # type: ignore[no-untyped-def]
+            if kwargs.get("prefetch") is not None:
+                return SimpleNamespace(points=[SimpleNamespace(
+                    score=0.1,
+                    payload={"document_id": str(allowed_id), "page": 2,
+                             "chunk_index": 0, "text": "allowed weak evidence",
+                             "security_revision": 1},
+                )])
+            return SimpleNamespace(points=[SimpleNamespace(
+                score=0.99,
+                payload={"document_id": str(probe_only_id), "page": 1,
+                         "chunk_index": 0, "security_revision": 1},
+            )])
+
+    async def ready(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return None
+
+    async def unprojected(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return set()
+
+    async def authorized(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return {allowed_id: 1}
+
+    monkeypatch.setattr(retrieval_service, "get_qdrant", lambda: FakeQdrant())
+    monkeypatch.setattr(retrieval_service, "ensure_collection", ready)
+    monkeypatch.setattr(documents_service, "unprojected_document_ids", unprojected)
+    monkeypatch.setattr(documents_service, "authorized_security_revisions", authorized)
+    result = await retrieve(session, ctx, ws.id, "question", top_k=5)
     assert [chunk.document_id for chunk in result.chunks] == [allowed_id]
     assert result.no_answer is True
 

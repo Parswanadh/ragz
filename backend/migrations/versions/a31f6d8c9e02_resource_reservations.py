@@ -74,9 +74,11 @@ def upgrade() -> None:
     op.create_table(
         "attachment_cleanup_jobs",
         sa.Column("org_id", sa.Uuid(), nullable=False),
+        sa.Column("user_id", sa.Uuid(), nullable=False),
         sa.Column("chat_id", sa.Uuid(), nullable=False),
         sa.Column("attachment_id", sa.Uuid(), nullable=False),
         sa.Column("storage_key", sa.String(), nullable=False),
+        sa.Column("size_bytes", sa.BigInteger(), nullable=False),
         sa.Column("attempts", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("next_attempt_at", sa.DateTime(), nullable=False),
         sa.Column("last_error", sa.String(), nullable=True),
@@ -84,6 +86,7 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
+        sa.CheckConstraint("size_bytes >= 0", name="ck_attachment_cleanup_jobs_size"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("attachment_id", name="uq_attachment_cleanup_attachment"),
     )
@@ -91,6 +94,11 @@ def upgrade() -> None:
         "ix_attachment_cleanup_jobs_org_id",
         "attachment_cleanup_jobs",
         ["org_id"],
+    )
+    op.create_index(
+        "ix_attachment_cleanup_jobs_user_id",
+        "attachment_cleanup_jobs",
+        ["user_id"],
     )
     op.create_index(
         "ix_attachment_cleanup_jobs_next_attempt_at",
@@ -127,6 +135,9 @@ def downgrade() -> None:
     )
     op.drop_index(
         "ix_attachment_cleanup_jobs_org_id", table_name="attachment_cleanup_jobs"
+    )
+    op.drop_index(
+        "ix_attachment_cleanup_jobs_user_id", table_name="attachment_cleanup_jobs"
     )
     op.drop_table("attachment_cleanup_jobs")
     op.drop_index("uq_usage_records_idempotency_key", table_name="usage_records")

@@ -345,6 +345,42 @@ async def test_completed_billable_web_usage_is_durable_before_aggregate(
     assert rows[0].units == 1
 
 
+async def test_billable_web_usage_survives_daily_counter_failure(
+    session, chat_env, ctx, flagged_model, monkeypatch
+) -> None:  # type: ignore[no-untyped-def]
+    from sqlalchemy import select
+
+    async def allow(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return True
+
+    async def fail_counter(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise RuntimeError("synthetic Redis counter failure")
+
+    monkeypatch.setattr("ragz.modules.chat.agent.peek_daily_cap", allow)
+    monkeypatch.setattr("ragz.modules.chat.agent.record_daily_usage", fail_counter)
+    gather = run_agent_gather(
+        session, ctx, workspace=chat_env["workspace"], question="current standard",
+        model=flagged_model, completer=FakeCompleter([]),
+        retriever=FakeRetriever(chat_env["document"].id),
+        chunk_reader=FakeChunkReader(), web_searcher=FakeWebSearcher(billable=True),
+        metadata_field_names=[], collection_name=COLLECTION,
+        web_search_consented=True, force_web_first=True,
+        redis=object(), web_search_daily_limit=1,  # type: ignore[arg-type]
+    )
+    assert isinstance(await anext(gather), AgentStep)
+    with pytest.raises(RuntimeError, match="counter failure"):
+        await anext(gather)
+    rows = list(
+        (
+            await session.execute(
+                select(UsageRecord).where(UsageRecord.feature == "web_search")
+            )
+        ).scalars()
+    )
+    assert len(rows) == 1
+    assert rows[0].units == 1
+
+
 async def test_native_protocol_uses_tool_calls(session, chat_env, ctx, plain_model) -> None:  # type: ignore[no-untyped-def]
     # plain_model: tools_unreliable=False.
     completer = FakeCompleter([

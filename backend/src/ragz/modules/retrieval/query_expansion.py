@@ -396,6 +396,7 @@ class LiteLLMQueryExpander:
         max_queries: int = _DEFAULT_TOTAL_QUERIES,
         expansion_cache: InMemoryQueryExpansionCache | None = None,
         cache_namespace: str = "",
+        record_usage: Callable[[ExpandedQueries], Awaitable[None]] | None = None,
     ) -> None:
         if max_queries not in _SUPPORTED_TOTAL_QUERIES:
             raise ValueError("max_queries must be 3 or 5")
@@ -406,6 +407,7 @@ class LiteLLMQueryExpander:
         self._max_queries = max_queries
         self._expansion_cache = expansion_cache
         self._cache_namespace = cache_namespace
+        self._record_usage = record_usage
 
     async def expand(self, query: str, *, model: str) -> ExpandedQueries:
         if self._expansion_cache is None:
@@ -500,6 +502,10 @@ class LiteLLMQueryExpander:
             prompt_tokens=_usage_tokens(usage_dict.get("prompt_tokens")),
             completion_tokens=_usage_tokens(usage_dict.get("completion_tokens")),
         )
+        if self._record_usage is not None and (
+            expanded.prompt_tokens or expanded.completion_tokens
+        ):
+            await self._record_usage(expanded)
         return expanded
 
 
@@ -509,6 +515,7 @@ def build_query_expander(
     transport: httpx.AsyncBaseTransport | None = None,
     max_queries: int = _DEFAULT_TOTAL_QUERIES,
     cache_namespace: str = "",
+    record_usage: Callable[[ExpandedQueries], Awaitable[None]] | None = None,
 ) -> QueryExpander:
     return LiteLLMQueryExpander(
         base_url=settings.litellm_url,
@@ -516,6 +523,7 @@ def build_query_expander(
         transport=transport,
         max_queries=max_queries,
         cache_namespace=cache_namespace,
+        record_usage=record_usage,
         expansion_cache=get_query_expansion_cache(settings),
         limits=httpx.Limits(
             max_connections=settings.httpx_max_connections,

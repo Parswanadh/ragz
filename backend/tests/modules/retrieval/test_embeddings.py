@@ -449,6 +449,141 @@ async def test_self_hosted_embedders_report_zero_tokens() -> None:
     assert hash_tokens == 0
 
 
+@pytest.mark.parametrize(
+    "response",
+    [httpx.Response(503, text="unavailable"), httpx.Response(200, content=b"not-json")],
+)
+async def test_tei_provider_failures_are_normalized_for_q1_fallback(
+    response: httpx.Response,
+) -> None:
+    embedder = TeiDenseEmbedder(
+        "http://tei.test", transport=httpx.MockTransport(lambda _request: response)
+    )
+    with pytest.raises(UpstreamError):
+        await embedder.embed(["alternative"])
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        [],
+        {"data": [{"embedding": [0.1]}]},
+        {"data": [{"index": 0}]},
+        {"data": "bad"},
+        {"data": [{"index": 0, "embedding": ["not-a-number"]}]},
+    ],
+)
+async def test_litellm_response_shape_failures_are_normalized_for_q1_fallback(
+    body: object,
+) -> None:
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master",
+        model="text-embedding-3-small",
+        transport=httpx.MockTransport(lambda _request: httpx.Response(200, json=body)),
+    )
+    with pytest.raises(UpstreamError, match="malformed embedding response"):
+        await embedder.embed(["alternative"])
+
+
+async def test_litellm_nonfinite_embedding_is_normalized() -> None:
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master",
+        model="text-embedding-3-small",
+        transport=httpx.MockTransport(
+            lambda _request: httpx.Response(
+                200,
+                content=b'{"data":[{"index":0,"embedding":[NaN]}]}',
+                headers={"content-type": "application/json"},
+            )
+        ),
+    )
+    with pytest.raises(UpstreamError, match="malformed embedding response"):
+        await embedder.embed(["alternative"])
+
+
+async def test_real_litellm_width_failure_preserves_reported_usage() -> None:
+    from ragz.modules.retrieval.service import _embed_query_batch
+
+    transport = httpx.MockTransport(
+        lambda _request: httpx.Response(
+            200,
+            json={
+                "data": [{"index": 0, "embedding": [0.1, 0.2]}],
+                "usage": {"total_tokens": 17},
+            },
+        )
+    )
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master",
+        model="text-embedding-3-small", dimension=3, transport=transport,
+    )
+    recorded: list[int] = []
+
+    async def record(tokens: int) -> None:
+        recorded.append(tokens)
+
+    with pytest.raises(UpstreamError, match="expected 3 dimensions"):
+        await _embed_query_batch(
+            queries=("alternative",), dense_embedder=embedder, query_cache=None,
+            cache_namespace="org-model", expected_dimension=3,
+            stage_timings_ms=None, record_billed_usage=record,
+        )
+    assert recorded == [17]
+
+
+async def test_real_litellm_later_batch_failure_preserves_earlier_usage() -> None:
+    from ragz.modules.retrieval.service import _embed_query_batch
+
+    calls = 0
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(
+                200,
+                json={
+                    "data": [{"index": 0, "embedding": [0.1, 0.2]}],
+                    "usage": {"total_tokens": 5},
+                },
+            )
+        return httpx.Response(503, text="unavailable")
+
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master",
+        model="text-embedding-3-small", dimension=2,
+        transport=httpx.MockTransport(handler), batch_size=1,
+    )
+    recorded: list[int] = []
+
+    async def record(tokens: int) -> None:
+        recorded.append(tokens)
+
+    with pytest.raises(UpstreamError, match="HTTP 503"):
+        await _embed_query_batch(
+            queries=("one", "two"), dense_embedder=embedder, query_cache=None,
+            cache_namespace="org-model", expected_dimension=2,
+            stage_timings_ms=None, record_billed_usage=record,
+        )
+    assert recorded == [5]
+
+
+@pytest.mark.parametrize("usage", ["bad", [1]])
+async def test_litellm_malformed_usage_is_normalized(usage: object) -> None:
+    embedder = LiteLLMEmbedder(
+        base_url="http://litellm.test", master_key="sk-master",
+        model="text-embedding-3-small",
+        transport=httpx.MockTransport(
+            lambda _request: httpx.Response(
+                200,
+                json={"data": [{"index": 0, "embedding": [0.1]}], "usage": usage},
+            )
+        ),
+    )
+    with pytest.raises(UpstreamError, match="malformed embedding response"):
+        await embedder.embed_with_usage(["alternative"])
+
+
 async def test_litellm_embedder_non_200_raises_upstream_error() -> None:
     from ragz.core.errors import UpstreamError
 

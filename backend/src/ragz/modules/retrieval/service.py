@@ -126,16 +126,19 @@ async def _embed_query_batch(
         with _capture_stage(stage_timings_ms, "dense_embedding"), observe_stage(
             "embed_dense"
         ):
-            computed, billed = await dense_embedder.embed_with_usage(miss_texts)
+            try:
+                computed, billed = await dense_embedder.embed_with_usage(miss_texts)
+            except UpstreamError as exc:
+                billed = int(getattr(exc, "billed_tokens", 0))
+                if billed > 0 and record_billed_usage is not None:
+                    await record_billed_usage(billed)
+                raise
+        if billed > 0 and record_billed_usage is not None:
+            await record_billed_usage(billed)
         if len(computed) != len(miss_texts):
             raise UpstreamError("dense embedder returned the wrong vector count")
         if any(len(vector) != expected_dimension for vector in computed):
             raise UpstreamError("dense embedder returned the wrong vector width")
-        if billed > 0 and record_billed_usage is not None:
-            # Provider completion and durable accounting form one lifecycle.
-            # This runs before cache publication, so cancelling a single-flight
-            # owner cannot transfer an uncharged result to its waiters.
-            await record_billed_usage(billed)
         return computed, billed
 
     if query_cache is None:
@@ -593,6 +596,36 @@ def _chunk_from_point(point: models.ScoredPoint) -> RetrievedChunk:
     )
 
 
+def _best_eligible_dense_score(
+    results: Sequence[Any], chunks: Sequence[RetrievedChunk]
+) -> float:
+    """Use dense scores only for exact candidates authorized for generation."""
+
+    eligible = {
+        (str(chunk.document_id), chunk.page, chunk.chunk_index, chunk.security_revision)
+        for chunk in chunks
+    }
+    scores: list[float] = []
+    for result in results:
+        for point in result.points:
+            raw_payload = getattr(point, "payload", None)
+            payload = raw_payload if isinstance(raw_payload, dict) else {}
+            try:
+                identity = (
+                    str(UUID(str(payload["document_id"]))),
+                    int(payload["page"]),
+                    int(payload["chunk_index"]),
+                    int(payload["security_revision"])
+                    if payload.get("security_revision") is not None
+                    else None,
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+            if identity in eligible:
+                scores.append(float(point.score))
+    return max(scores, default=0.0)
+
+
 async def retrieve(
     session: AsyncSession,
     ctx: TenantContext,
@@ -713,36 +746,44 @@ async def retrieve(
                 workspace_id=str(workspace_id),
             )
         else:
-            expander = query_expander or build_query_expander(
-                settings,
-                max_queries=requested_query_count,
-                cache_namespace=str(ctx.org_id),
-            )
+            expander = query_expander
             timeout_ms = (
                 settings.multi_query_expansion_timeout_ms
                 if multi_query_expansion_timeout_ms_override is None
                 else multi_query_expansion_timeout_ms_override
             )
 
+            async def _record_expansion(expanded: ExpandedQueries) -> None:
+                await quota_service.record_usage_durable(
+                    session,
+                    org_id=ctx.org_id,
+                    user_id=ctx.user_id,
+                    workspace_id=workspace_id,
+                    model_id=utility_model.id,
+                    feature="query_expansion",
+                    prompt_tokens=expanded.prompt_tokens,
+                    completion_tokens=expanded.completion_tokens,
+                    idempotency_key=f"retrieval:{usage_operation_id}:query-expansion",
+                )
+
+            if query_expander is None:
+                expander = build_query_expander(
+                    settings,
+                    max_queries=requested_query_count,
+                    cache_namespace=str(ctx.org_id),
+                    record_usage=_record_expansion,
+                )
+            assert expander is not None
+
             async def _expand_and_account() -> ExpandedQueries:
                 expanded = await asyncio.wait_for(
                     expander.expand(query, model=utility_model.litellm_model_name),
                     timeout=timeout_ms / 1000,
                 )
-                if expanded.prompt_tokens or expanded.completion_tokens:
-                    await quota_service.record_usage_durable(
-                        session,
-                        org_id=ctx.org_id,
-                        user_id=ctx.user_id,
-                        workspace_id=workspace_id,
-                        model_id=utility_model.id,
-                        feature="query_expansion",
-                        prompt_tokens=expanded.prompt_tokens,
-                        completion_tokens=expanded.completion_tokens,
-                        idempotency_key=(
-                            f"retrieval:{usage_operation_id}:query-expansion"
-                        ),
-                    )
+                if query_expander is not None and (
+                    expanded.prompt_tokens or expanded.completion_tokens
+                ):
+                    await _record_expansion(expanded)
                 return expanded
 
             expansion_task = asyncio.create_task(
@@ -899,7 +940,12 @@ async def retrieve(
                         using="dense",
                         query_filter=flt,
                         limit=1,
-                        with_payload=False,
+                        with_payload=[
+                            "document_id",
+                            "page",
+                            "chunk_index",
+                            "security_revision",
+                        ],
                     )
                     for dense_vec in dense_vecs
                 )
@@ -1096,14 +1142,7 @@ async def retrieve(
 
     chunks = candidates[:k]
     assert top_dense_results is not None
-    best_cosine = max(
-        (
-            float(result.points[0].score)
-            for result in top_dense_results
-            if result.points
-        ),
-        default=0.0,
-    )
+    best_cosine = _best_eligible_dense_score(top_dense_results, chunks)
     return RetrievalResult(
         chunks=chunks,
         no_answer=best_cosine < ws.min_score,

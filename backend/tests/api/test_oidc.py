@@ -18,6 +18,7 @@ from ragz.core.config import Settings, get_settings
 from ragz.core.db import build_session_factory
 from ragz.modules.audit.models import AuditEvent
 from ragz.modules.auth.models import User
+from ragz.modules.auth.passwords import hash_password
 from ragz.modules.tenancy.models import Organization
 
 ISSUER = "https://idp.example.com"
@@ -125,6 +126,35 @@ async def test_full_flow_jit_provisions_and_sets_refresh_cookie(
     r3 = await sso_client.post("/api/v1/auth/refresh",
                                cookies={"refresh_token": r2.cookies["refresh_token"]})
     assert r3.status_code == 200 and r3.json()["access_token"]
+
+
+async def test_successful_oidc_login_revokes_browser_previous_refresh_family(
+    sso_client: httpx.AsyncClient, session: AsyncSession
+) -> None:
+    org = (await session.execute(select(Organization))).scalar_one()
+    prior_user = User(
+        org_id=org.id,
+        email="prior-browser-user@acme.com",
+        password_hash=hash_password("pw123456"),
+        role="user",
+    )
+    session.add(prior_user)
+    await session.commit()
+    first = await sso_client.post(
+        "/api/v1/auth/login",
+        json={"email": prior_user.email, "password": "pw123456"},
+    )
+    old_cookie = first.cookies["refresh_token"]
+
+    state2, _ = await _begin(sso_client)
+    second = await sso_client.get(
+        f"/api/v1/auth/oidc/callback?code=abc&state={state2}", follow_redirects=False
+    )
+    new_cookie = second.cookies["refresh_token"]
+    sso_client.cookies.set("refresh_token", old_cookie, path="/api/v1/auth")
+    assert (await sso_client.post("/api/v1/auth/refresh")).status_code == 401
+    sso_client.cookies.set("refresh_token", new_cookie, path="/api/v1/auth")
+    assert (await sso_client.post("/api/v1/auth/refresh")).status_code == 200
 
 
 def _assert_sso_error_redirect(r: httpx.Response, test_settings: Settings) -> None:
