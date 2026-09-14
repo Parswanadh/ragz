@@ -59,7 +59,7 @@ successful tests do not establish access for a real account.
 
 ## Catalog maintenance
 
-The backend SDK and deployed gateway are pinned to LiteLLM **1.100.0**. Discovery
+The backend SDK and deployed gateway are pinned to LiteLLM **1.100.1**. Discovery
 reads the installed package's provider/model dictionaries, not a generated frontend
 list or the older database pricing cache. Unknown prices/capabilities remain unknown.
 Pricing-group aliases are normalized to transport provider IDs; reporting keeps
