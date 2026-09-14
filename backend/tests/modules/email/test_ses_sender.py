@@ -35,7 +35,7 @@ class _FakeSession:
         self.client_service_names: list[str] = []
         self.last_client: _FakeSesClient | None = None
 
-    def client(self, service_name: str, **kwargs: Any) -> _FakeSesClient:
+    def create_client(self, service_name: str, **kwargs: Any) -> _FakeSesClient:
         self.client_service_names.append(service_name)
         self.client_calls.append(kwargs)
         fake_client = _FakeSesClient(fail=self.fail)
@@ -50,7 +50,7 @@ def fake_session(monkeypatch: pytest.MonkeyPatch) -> _FakeSession:
     def _session_factory(*args: object, **kwargs: object) -> _FakeSession:
         return session
 
-    monkeypatch.setattr("ragz.modules.email.ses_sender.aioboto3.Session", _session_factory)
+    monkeypatch.setattr("ragz.modules.email.ses_sender.get_session", _session_factory)
     return session
 
 
@@ -134,7 +134,7 @@ async def test_client_error_surfaces_as_email_error(
 ) -> None:
     failing_session = _FakeSession(fail=True)
     monkeypatch.setattr(
-        "ragz.modules.email.ses_sender.aioboto3.Session",
+        "ragz.modules.email.ses_sender.get_session",
         lambda *a, **k: failing_session,
     )
     sender = SesSender(

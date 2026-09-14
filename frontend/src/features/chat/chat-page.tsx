@@ -14,7 +14,7 @@ import { useWorkspace } from '@/features/workspaces/workspace-context';
 import { AssistantMessage } from './assistant-message';
 import { ChatInput } from './chat-input';
 import { EditMessageForm } from './edit-message-form';
-import { EffortSelector, type ReasoningEffort } from './effort-selector';
+import type { ReasoningEffort } from './effort-selector';
 import { MessageActions } from './message-actions';
 import { ModelSelector } from './model-selector';
 import { PendingAttachments } from './pending-attachments';
@@ -43,7 +43,7 @@ export function ChatPage() {
   const clearFeedback = useClearMessageFeedback(chatId);
   const { path, select } = useTreeSelection(chatQuery.data?.messages);
   const [modelId, setModelId] = useState<string | null>(null);
-  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort>('off');
+  const [reasoningEffort, setReasoningEffort] = useState<ReasoningEffort | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   // Composer web-search toggle (fail-closed default). Only meaningful when the
   // workspace has web_search_enabled; sticky within the chat (ChatGPT pattern).
@@ -105,12 +105,9 @@ export function ChatPage() {
   // workspace without a default shows a selected model but sends none (409, found by E2E).
   const effectiveModelId = modelId ?? workspaceDefault ?? models?.[0]?.id ?? null;
 
-  const selectedModel = models?.find((m) => m.id === effectiveModelId) ?? null;
-
   const onModelChange = (id: string): void => {
     setModelId(id);
-    const next = models?.find((m) => m.id === id);
-    setReasoningEffort((next?.default_reasoning_effort as ReasoningEffort | undefined) ?? 'off');
+    setReasoningEffort(null);
   };
 
   // DEVIATION (Task 10, carry-forward from the Task 8 review): useChatStream's
@@ -159,9 +156,11 @@ export function ChatPage() {
   // New-chat handoff: /chat → create (+ upload) → navigate with
   // initialMessage/initialAttachmentIds → auto-send once.
   const initialSentRef = useRef(false);
-  const handoffState = location.state as
-    | { initialMessage?: string; initialAttachmentIds?: string[]; initialWebSearch?: boolean }
-    | null;
+  const handoffState = location.state as {
+    initialMessage?: string;
+    initialAttachmentIds?: string[];
+    initialWebSearch?: boolean;
+  } | null;
   const initialMessage = handoffState?.initialMessage;
   const initialAttachmentIds = handoffState?.initialAttachmentIds ?? [];
   const initialWebSearch = handoffState?.initialWebSearch ?? false;
@@ -216,15 +215,7 @@ export function ChatPage() {
       <TopBar
         title={chatQuery.data?.title || 'New chat'}
         caption={chatQuery.data?.has_summary ? 'Earlier turns summarized for context' : undefined}
-        actions={
-          <>
-            <UsageMeter />
-            <ModelSelector models={models ?? []} value={effectiveModelId} onChange={onModelChange} />
-            {selectedModel?.supports_reasoning ? (
-              <EffortSelector value={reasoningEffort} onChange={setReasoningEffort} />
-            ) : null}
-          </>
-        }
+        actions={<UsageMeter />}
       />
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-thread space-y-5 px-4 py-6">
@@ -293,7 +284,11 @@ export function ChatPage() {
             );
           })}
           {showStreamBlock ? (
-            <StreamingMessage stream={stream} onFormSubmit={onFormSubmit} onFollowUp={onFormSubmit} />
+            <StreamingMessage
+              stream={stream}
+              onFormSubmit={onFormSubmit}
+              onFollowUp={onFormSubmit}
+            />
           ) : null}
           {!chatId && path.length === 0 && stream.status === 'idle' ? (
             <p className="pt-16 text-center text-[15px] text-secondary">
@@ -318,6 +313,16 @@ export function ChatPage() {
         webSearchAvailable={webSearchAvailable}
         webSearch={webSearch}
         onToggleWebSearch={() => setWebSearch((v) => !v)}
+        controls={
+          <ModelSelector
+            models={models ?? []}
+            value={effectiveModelId}
+            onChange={onModelChange}
+            effort={reasoningEffort}
+            onEffortChange={setReasoningEffort}
+            disabled={busy || sendMessage.sending}
+          />
+        }
       />
       {viewerTarget ? (
         <DocumentViewerDrawer

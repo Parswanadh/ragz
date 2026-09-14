@@ -43,6 +43,8 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: '/chat', element: <ChatPage /> },
+          { path: '/agent', element: <ChatPage /> },
+          { path: '/agent/:chatId', element: <ChatPage /> },
           { path: '/chat/:chatId', element: <ChatPage /> },
           { path: '/documents', element: <DocumentsPage /> },
           { path: '/usage', element: <UsagePage /> },
@@ -61,6 +63,7 @@ export const router = createBrowserRouter([
             element: <RequireRole role="superadmin" />,
             children: [
               { path: '/admin/models', element: <ModelsPage /> },
+              { path: '/agent/config', element: <ModelsPage /> },
               { path: '/admin/organizations', element: <OrganizationsPage /> },
               { path: '/admin/settings', element: <SettingsPage /> },
               { path: '/admin/api-keys', element: <ApiKeysPage /> },

@@ -137,7 +137,24 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
 # same one audit_route_policy reads), which keeps the {param} placeholder but
 # strips Starlette path-converter syntax (e.g. a route declared with
 # "{name:path}" appears here, and in ROUTE_POLICY, as "{name}").
+_AGENT_ADMIN_ROUTES: dict[tuple[str, str], str] = {
+    ("GET", "/api/v1/admin/models/catalog/providers"): "models.read",
+    ("GET", "/api/v1/admin/models/catalog/models"): "models.read",
+    ("POST", "/api/v1/admin/models/{model_id}/test"): "models.manage",
+    ("GET", "/api/v1/admin/models/chatgpt"): "models.read",
+    ("POST", "/api/v1/admin/models/chatgpt/login"): "models.manage",
+    ("POST", "/api/v1/admin/models/chatgpt/poll"): "models.manage",
+    ("DELETE", "/api/v1/admin/models/chatgpt/login"): "models.manage",
+    ("DELETE", "/api/v1/admin/models/chatgpt"): "models.manage",
+    ("GET", "/api/v1/admin/web-search"): "settings.manage",
+    ("PATCH", "/api/v1/admin/web-search"): "settings.manage",
+    ("PUT", "/api/v1/admin/web-search/keys/{provider}"): "settings.manage",
+    ("DELETE", "/api/v1/admin/web-search/keys/{provider}"): "settings.manage",
+    ("POST", "/api/v1/admin/web-search/test/{provider}"): "settings.manage",
+}
+
 ROUTE_POLICY: dict[tuple[str, str], str] = {
+    **_AGENT_ADMIN_ROUTES,
     # auth
     ("POST", "/api/v1/auth/invitations"): "users.invite",
     # users
@@ -396,6 +413,8 @@ _ENFORCEMENT_EXCEPTIONS: frozenset[tuple[str, str]] = frozenset({
 # this from the live dependency graph and fails if it ever drifts from what's
 # written here.
 _ROLE_ONLY_ENFORCEMENT: dict[tuple[str, str], str] = {
+    **{route: "Installation-wide model credentials and web providers are superadmin-only."
+       for route in _AGENT_ADMIN_ROUTES},
     # invitations
     ("POST", "/api/v1/auth/invitations"):
         "admin+superadmin (require_role('admin')) -- org user invitations",

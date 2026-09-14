@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select';
 import { toast } from '@/components/ui/toaster';
+import type { ReasoningEffort } from '@/features/chat/effort-selector';
+
+import type { RuntimeModel, RuntimeProvider } from './agent-api';
 
 import {
   PartialSyncError,
@@ -21,6 +24,15 @@ type ProviderKind = ModelCreate['provider_kind'];
 
 const NEEDS_BASE_URL: ProviderKind[] = ['ollama', 'openai_compatible'];
 const NEEDS_KEY: ProviderKind[] = ['openai', 'openai_compatible', 'litellm'];
+const EFFORT_LABELS: Record<ReasoningEffort, string> = {
+  off: 'Off',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+  xhigh: 'Extra high',
+  max: 'Max',
+  ultra: 'Ultra',
+};
 
 /** Sentinel provider value for the manual (non-catalog) path. */
 const CUSTOM = '__custom__';
@@ -162,34 +174,51 @@ export function ModelFormDialog({
   open,
   onOpenChange,
   model = null,
+  preset,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Present → edit an existing model (provider/model id become read-only, key stays write-only-and-blank). Absent → add a new model. */
   model?: ModelOut | null;
+  preset?: { provider: RuntimeProvider; model?: RuntimeModel; modality: 'chat' | 'embedding' };
 }) {
   const isEdit = model != null;
   const create = useCreateModel();
   const patch = usePatchModel();
   // Catalog feeds the add-mode picker only; edit mode never needs it.
-  const catalog = useCatalog(open && !isEdit);
+  const catalog = useCatalog(open && !isEdit && !preset);
 
-  const [displayName, setDisplayName] = useState(model?.display_name ?? '');
+  const [displayName, setDisplayName] = useState(
+    model?.display_name ??
+      (preset?.model
+        ? `${preset.model.display_name}${preset.model.billing_mode === 'subscription' ? ' (ChatGPT)' : ''}`
+        : ''),
+  );
   // Add mode: the selected CATALOG provider ('' = none yet, CUSTOM = manual path).
   const [catalogProvider, setCatalogProvider] = useState('');
   // Manual provider_kind, used only on the custom/self-hosted path.
   const [manualKind, setManualKind] = useState<ProviderKind>('openai');
-  const [modelId, setModelId] = useState(model?.litellm_model_name ?? '');
-  const [baseUrl, setBaseUrl] = useState(model?.base_url ?? '');
+  const [modelId, setModelId] = useState(model?.litellm_model_name ?? preset?.model?.name ?? '');
+  const [baseUrl, setBaseUrl] = useState(
+    model?.base_url ?? preset?.provider.default_base_url ?? '',
+  );
   const [apiKey, setApiKey] = useState(''); // write-only: always starts blank, even editing
-  const [toolsUnreliable, setToolsUnreliable] = useState(model?.tools_unreliable ?? false);
-  const [supportsReasoning, setSupportsReasoning] = useState(model?.supports_reasoning ?? false);
-  const [defaultEffort, setDefaultEffort] = useState<'off' | 'low' | 'medium' | 'high'>(
+  const [toolsUnreliable, setToolsUnreliable] = useState(
+    model?.tools_unreliable ?? preset?.model?.supports_function_calling === false,
+  );
+  const [supportsReasoning, setSupportsReasoning] = useState(
+    model?.supports_reasoning ?? preset?.model?.supports_reasoning ?? false,
+  );
+  const [defaultEffort, setDefaultEffort] = useState<ReasoningEffort>(
     model?.default_reasoning_effort ?? 'off',
   );
-  const [supportsVision, setSupportsVision] = useState(model?.supports_vision ?? false);
-  const [modality, setModality] = useState<'chat' | 'embedding'>('chat');
-  const [dimension, setDimension] = useState('1536');
+  const [supportsVision, setSupportsVision] = useState(
+    model?.supports_vision ?? preset?.model?.supports_vision ?? false,
+  );
+  const [modality, setModality] = useState<'chat' | 'embedding'>(
+    model?.modality ?? preset?.modality ?? 'chat',
+  );
+  const [dimension, setDimension] = useState(String(preset?.model?.dimension ?? ''));
 
   const isCustom = catalogProvider === CUSTOM;
   // null until a provider is chosen in add mode — downstream fields stay hidden.
@@ -201,11 +230,25 @@ export function ModelFormDialog({
     ? model.provider_kind === 'tei'
       ? null
       : model.provider_kind
-    : isCustom
-      ? manualKind
-      : catalogProvider
-        ? deriveProviderKind(catalogProvider)
-        : null;
+    : preset
+      ? preset.provider.provider_kind === 'tei'
+        ? null
+        : preset.provider.provider_kind
+      : isCustom
+        ? manualKind
+        : catalogProvider
+          ? deriveProviderKind(catalogProvider)
+          : null;
+  const subscription =
+    modelId.startsWith('chatgpt/') || preset?.provider.auth_mode === 'subscription';
+  const needsBaseUrl =
+    kind !== null &&
+    (NEEDS_BASE_URL.includes(kind) || preset?.provider.needs_base_url || !!model?.base_url);
+  const supportedEfforts = preset?.model?.supported_reasoning_efforts ??
+    model?.supported_reasoning_efforts ?? ['low', 'medium', 'high'];
+  const effortOptions = (Object.keys(EFFORT_LABELS) as ReasoningEffort[]).filter(
+    (effort) => effort === 'off' || supportedEfforts.includes(effort),
+  );
 
   const providerOptions = useMemo((): ComboOption[] => {
     const distinct = [
@@ -259,7 +302,7 @@ export function ModelFormDialog({
       setDefaultEffort(model?.default_reasoning_effort ?? 'off');
       setSupportsVision(model?.supports_vision ?? false);
       setModality('chat');
-      setDimension('1536');
+      setDimension(String(preset?.model?.dimension ?? ''));
       create.reset();
       patch.reset();
     }
@@ -308,10 +351,10 @@ export function ModelFormDialog({
     if (isEdit && model) {
       const body: ModelPatchInput = {};
       if (displayName !== model.display_name) body.display_name = displayName;
-      if (NEEDS_BASE_URL.includes(kind) && baseUrl !== (model.base_url ?? '')) {
+      if (needsBaseUrl && baseUrl !== (model.base_url ?? '')) {
         body.base_url = baseUrl;
       }
-      if (apiKey) body.api_key = apiKey;
+      if (apiKey && !subscription) body.api_key = apiKey;
       if (toolsUnreliable !== (model.tools_unreliable ?? false)) {
         body.tools_unreliable = toolsUnreliable;
       }
@@ -332,8 +375,8 @@ export function ModelFormDialog({
       display_name: displayName,
       litellm_model_name: modelId, // verbatim catalog name (or manual id)
       provider_kind: kind,
-      ...(NEEDS_BASE_URL.includes(kind) && baseUrl ? { base_url: baseUrl } : {}),
-      ...(NEEDS_KEY.includes(kind) && apiKey ? { api_key: apiKey } : {}),
+      ...(needsBaseUrl && baseUrl ? { base_url: baseUrl } : {}),
+      ...(NEEDS_KEY.includes(kind) && apiKey && !subscription ? { api_key: apiKey } : {}),
       tools_unreliable: toolsUnreliable,
       supports_reasoning: supportsReasoning,
       default_reasoning_effort: defaultEffort,
@@ -349,18 +392,35 @@ export function ModelFormDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent
         title={isEdit ? 'Edit model' : 'Add model'}
-        description="Synced to the LiteLLM gateway on save."
+        description={
+          subscription
+            ? 'Runs through your connected ChatGPT plan.'
+            : 'Model credentials are encrypted. Test the model after saving.'
+        }
       >
         <form onSubmit={onSubmit} className="space-y-3">
-          {isEdit ? (
+          {isEdit || preset ? (
             <>
               <div>
                 <Label htmlFor="model-provider">Provider</Label>
-                <Input id="model-provider" disabled value={model.provider_kind} />
+                <Input
+                  id="model-provider"
+                  disabled
+                  value={preset?.provider.name ?? model?.provider_kind}
+                />
               </div>
               <div>
                 <Label htmlFor="model-id">Model id</Label>
-                <Input id="model-id" disabled value={modelId} />
+                <Input
+                  id="model-id"
+                  required
+                  disabled={isEdit}
+                  value={modelId}
+                  onChange={(e) => {
+                    setModelId(e.target.value);
+                    if (!displayName) setDisplayName(prettifyModelName(e.target.value));
+                  }}
+                />
               </div>
             </>
           ) : (
@@ -398,6 +458,7 @@ export function ModelFormDialog({
                       <option value="openai">OpenAI</option>
                       <option value="ollama">Ollama</option>
                       <option value="openai_compatible">OpenAI-compatible URL</option>
+                      <option value="litellm">Other provider (include provider prefix)</option>
                     </NativeSelect>
                   </div>
                   <div>
@@ -425,7 +486,7 @@ export function ModelFormDialog({
               ) : null}
             </>
           )}
-          {isEdit || isCustom || modelId !== '' ? (
+          {isEdit || preset || isCustom || modelId !== '' ? (
             <div>
               <Label htmlFor="model-display">Display name</Label>
               <Input
@@ -449,7 +510,7 @@ export function ModelFormDialog({
               />
             </div>
           ) : null}
-          {kind !== null && NEEDS_BASE_URL.includes(kind) ? (
+          {needsBaseUrl ? (
             <div>
               <Label htmlFor="model-base-url">Base URL</Label>
               <Input
@@ -462,7 +523,10 @@ export function ModelFormDialog({
               />
             </div>
           ) : null}
-          {kind !== null && NEEDS_KEY.includes(kind) ? (
+          {kind !== null &&
+          NEEDS_KEY.includes(kind) &&
+          !subscription &&
+          (!preset || preset.provider.needs_key) ? (
             <div>
               <Label htmlFor="model-api-key">API key</Label>
               <Input
@@ -508,14 +572,13 @@ export function ModelFormDialog({
                     id="model-default-effort"
                     aria-label="Default reasoning effort"
                     value={defaultEffort}
-                    onChange={(e) =>
-                      setDefaultEffort(e.target.value as 'off' | 'low' | 'medium' | 'high')
-                    }
+                    onChange={(e) => setDefaultEffort(e.target.value as ReasoningEffort)}
                   >
-                    <option value="off">Off</option>
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
+                    {effortOptions.map((effort) => (
+                      <option key={effort} value={effort}>
+                        {EFFORT_LABELS[effort]}
+                      </option>
+                    ))}
                   </NativeSelect>
                 </div>
               ) : null}

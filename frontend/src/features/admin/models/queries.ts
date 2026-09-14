@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { api } from '@/api/client';
 import type { CatalogOut, ModelCreateWire, ModelOut } from '@/api/types';
+import type { ReasoningEffort } from '@/features/chat/effort-selector';
 
 export interface ModelCreate {
   display_name: string;
@@ -18,7 +19,7 @@ export interface ModelCreate {
   // caller states it explicitly.
   tools_unreliable: boolean;
   supports_reasoning: boolean;
-  default_reasoning_effort: 'off' | 'low' | 'medium' | 'high';
+  default_reasoning_effort: ReasoningEffort;
   supports_vision: boolean;
   // DOC-10: 'chat' (default, omitted by every pre-DOC-10 call site since the
   // backend defaults it) or 'embedding' -- dimension required only then.
@@ -36,7 +37,7 @@ export interface ModelPatchInput {
   api_key?: string; // write-only: sent, never read back
   tools_unreliable?: boolean;
   supports_reasoning?: boolean;
-  default_reasoning_effort?: 'off' | 'low' | 'medium' | 'high';
+  default_reasoning_effort?: ReasoningEffort;
   supports_vision?: boolean;
   // Phase 3 Plan J (D5/§4): setting true designates this model as THE utility
   // model, clearing every other row's flag server-side in the same
@@ -73,6 +74,7 @@ function useInvalidateModels() {
   return () => {
     void queryClient.invalidateQueries({ queryKey: ['admin-models'] });
     void queryClient.invalidateQueries({ queryKey: ['models'] });
+    void queryClient.invalidateQueries({ queryKey: ['agent-catalog'] });
   };
 }
 

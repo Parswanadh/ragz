@@ -1,6 +1,6 @@
 import { NativeSelect } from '@/components/ui/select';
 
-export type ReasoningEffort = 'off' | 'low' | 'medium' | 'high';
+export type ReasoningEffort = 'off' | 'low' | 'medium' | 'high' | 'xhigh' | 'max' | 'ultra';
 
 const OPTIONS: { value: ReasoningEffort; label: string }[] = [
   { value: 'off', label: 'Off' },

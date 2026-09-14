@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from ragz.modules.chat.blocks import Block
+from ragz.modules.models.schemas import ReasoningEffort
 
 
 class MessageSend(BaseModel):
@@ -24,7 +25,7 @@ class MessageSend(BaseModel):
     content: str = Field(min_length=1, max_length=32000)
     parent_message_id: UUID | None = None
     model_id: UUID | None = None
-    reasoning_effort: Literal["off", "low", "medium", "high"] | None = None
+    reasoning_effort: ReasoningEffort | None = None
     attachment_ids: list[UUID] | None = Field(default=None, max_length=50)
     # RAGZ-PUB-08 item 2: explicit per-turn user consent to let the agent run
     # an EXTERNAL web search (the redacted, user-question-derived query leaves
@@ -38,7 +39,7 @@ class RegenerateRequest(BaseModel):
     """Optional body of POST /messages/{id}/regenerate."""
 
     model_id: UUID | None = None
-    reasoning_effort: Literal["off", "low", "medium", "high"] | None = None
+    reasoning_effort: ReasoningEffort | None = None
     # RAGZ-PUB-08 item 2: same explicit external-web-search consent as
     # MessageSend; fail-closed default means a regenerate never issues a new
     # external search unless the caller re-consents.

@@ -1,4 +1,4 @@
-import { BarChart3, FileText, Gauge, ShieldCheck } from 'lucide-react';
+import { BarChart3, FileText, Gauge, Settings2, ShieldCheck } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 import { Logo } from '@/components/logo';
@@ -30,7 +30,8 @@ function SideLink({ to, label, icon }: { to: string; label: string; icon: React.
 export function Sidebar() {
   const claims = useClaims();
   const { data: auth } = useAuthorization();
-  const can = (action: string) => auth?.role === 'superadmin' || auth?.permissions.has(action) === true;
+  const can = (action: string) =>
+    auth?.role === 'superadmin' || auth?.permissions.has(action) === true;
   const isSuperadmin = claims?.role === 'superadmin';
   const canSeeAdmin =
     isSuperadmin ||
@@ -50,11 +51,30 @@ export function Sidebar() {
       </div>
       <SidebarChatList />
       <nav aria-label="Sections" className="space-y-0.5 border-t border-line-faint px-1 py-2">
-        <SideLink to="/documents" label="Documents" icon={<FileText className="h-4 w-4" aria-hidden />} />
+        <SideLink
+          to="/documents"
+          label="Documents"
+          icon={<FileText className="h-4 w-4" aria-hidden />}
+        />
         <SideLink to="/usage" label="My Usage" icon={<Gauge className="h-4 w-4" aria-hidden />} />
-        <SideLink to="/reports" label="Reports" icon={<BarChart3 className="h-4 w-4" aria-hidden />} />
+        <SideLink
+          to="/reports"
+          label="Reports"
+          icon={<BarChart3 className="h-4 w-4" aria-hidden />}
+        />
+        {isSuperadmin ? (
+          <SideLink
+            to="/agent/config"
+            label="Agent configuration"
+            icon={<Settings2 className="h-4 w-4" aria-hidden />}
+          />
+        ) : null}
         {canSeeAdmin ? (
-          <SideLink to="/admin" label="Admin" icon={<ShieldCheck className="h-4 w-4" aria-hidden />} />
+          <SideLink
+            to="/admin"
+            label="Admin"
+            icon={<ShieldCheck className="h-4 w-4" aria-hidden />}
+          />
         ) : null}
       </nav>
       <UserFooter />

@@ -1364,6 +1364,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/models/chatgpt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status */
+        get: operations["status_api_v1_admin_models_chatgpt_get"];
+        put?: never;
+        post?: never;
+        /** Disconnect */
+        delete: operations["disconnect_api_v1_admin_models_chatgpt_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/models/chatgpt/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login */
+        post: operations["login_api_v1_admin_models_chatgpt_login_post"];
+        /** Cancel */
+        delete: operations["cancel_api_v1_admin_models_chatgpt_login_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/models/chatgpt/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Poll */
+        post: operations["poll_api_v1_admin_models_chatgpt_poll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/web-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Config */
+        get: operations["get_config_api_v1_admin_web_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Config */
+        patch: operations["patch_config_api_v1_admin_web_search_patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/web-search/keys/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Key */
+        put: operations["put_key_api_v1_admin_web_search_keys__provider__put"];
+        post?: never;
+        /** Delete Key */
+        delete: operations["delete_key_api_v1_admin_web_search_keys__provider__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/web-search/test/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Provider */
+        post: operations["test_provider_api_v1_admin_web_search_test__provider__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/models": {
         parameters: {
             query?: never;
@@ -1422,11 +1528,7 @@ export interface paths {
         };
         /**
          * Get Catalog
-         * @description MODEL-10/G7: LiteLLM's pricing/context-window catalog, cross-referenced
-         *     against the registry so the admin UI can flag models not yet added.
-         *
-         *     Ordered (provider ASC, position DESC): the add-model picker groups by
-         *     provider and shows the newest models first within each provider.
+         * @description Legacy response shape, now backed by the same current runtime catalog.
          */
         get: operations["get_catalog_api_v1_admin_models_catalog_get"];
         put?: never;
@@ -1448,6 +1550,57 @@ export interface paths {
         put?: never;
         /** Force Refresh Catalog */
         post: operations["force_refresh_catalog_api_v1_admin_models_catalog_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/models/catalog/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalog Providers */
+        get: operations["catalog_providers_api_v1_admin_models_catalog_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/models/catalog/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Catalog Models */
+        get: operations["catalog_models_api_v1_admin_models_catalog_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/models/{model_id}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Model */
+        post: operations["test_model_api_v1_admin_models__model_id__test_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2344,12 +2497,106 @@ export interface components {
             /** Registered */
             registered: boolean;
         };
+        /** CatalogModel */
+        CatalogModel: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Provider */
+            provider: string;
+            /** Mode */
+            mode: string | null;
+            /** Display Name */
+            display_name: string;
+            /** Max Input Tokens */
+            max_input_tokens: number | null;
+            /** Max Output Tokens */
+            max_output_tokens: number | null;
+            /** Input Cost Per 1M */
+            input_cost_per_1m: number | null;
+            /** Output Cost Per 1M */
+            output_cost_per_1m: number | null;
+            /** Supports Reasoning */
+            supports_reasoning: boolean | null;
+            /** Supports Vision */
+            supports_vision: boolean | null;
+            /** Supports Function Calling */
+            supports_function_calling: boolean | null;
+            /** Supported Reasoning Efforts */
+            supported_reasoning_efforts?: string[];
+            /**
+             * Registered
+             * @default false
+             */
+            registered: boolean;
+            /**
+             * Billing Mode
+             * @default metered
+             * @enum {string}
+             */
+            billing_mode: "metered" | "subscription";
+            /** Dimension */
+            dimension?: number | null;
+        };
+        /** CatalogModelsOut */
+        CatalogModelsOut: {
+            /** Available */
+            available: boolean;
+            /** Litellm Version */
+            litellm_version: string;
+            /** Models */
+            models: components["schemas"]["CatalogModel"][];
+        };
         /** CatalogOut */
         CatalogOut: {
             /** Entries */
             entries: components["schemas"]["CatalogEntryOut"][];
             /** New Available */
             new_available: number;
+        };
+        /** CatalogProvider */
+        CatalogProvider: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Icon */
+            icon: string;
+            /** Model Count */
+            model_count: number;
+            /** Needs Key */
+            needs_key: boolean;
+            /** Needs Base Url */
+            needs_base_url: boolean;
+            /**
+             * Provider Kind
+             * @enum {string}
+             */
+            provider_kind: "openai" | "ollama" | "openai_compatible" | "litellm" | "tei";
+            /** Default Base Url */
+            default_base_url: string | null;
+            /**
+             * Auth Mode
+             * @enum {string}
+             */
+            auth_mode: "api_key" | "subscription" | "none";
+            /**
+             * Supported
+             * @default true
+             */
+            supported: boolean;
+            /** Configuration Note */
+            configuration_note?: string | null;
+        };
+        /** CatalogProvidersOut */
+        CatalogProvidersOut: {
+            /** Available */
+            available: boolean;
+            /** Litellm Version */
+            litellm_version: string;
+            /** Providers */
+            providers: components["schemas"]["CatalogProvider"][];
         };
         /** ChangePasswordRequest */
         ChangePasswordRequest: {
@@ -2394,6 +2641,57 @@ export interface components {
             workspace_id: string;
             /** Title */
             title?: string | null;
+        };
+        /** ChatGPTLogin */
+        ChatGPTLogin: {
+            /** Login Id */
+            login_id?: string | null;
+            /**
+             * State
+             * @default idle
+             * @enum {string}
+             */
+            state: "idle" | "pending" | "authorised" | "cancelled" | "expired" | "failed";
+            /** Verification Url */
+            verification_url?: string | null;
+            /** User Code */
+            user_code?: string | null;
+            /** Expires At */
+            expires_at?: number | null;
+            /**
+             * Interval
+             * @default 5
+             */
+            interval: number;
+            /** Error */
+            error?: string | null;
+        };
+        /** ChatGPTPoll */
+        ChatGPTPoll: {
+            /** Login Id */
+            login_id: string;
+        };
+        /** ChatGPTStatus */
+        ChatGPTStatus: {
+            /**
+             * Available
+             * @default true
+             */
+            available: boolean;
+            /**
+             * Connected
+             * @default false
+             */
+            connected: boolean;
+            /** Account Id */
+            account_id?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Plan Type */
+            plan_type?: string | null;
+            /** Expires At */
+            expires_at?: number | null;
+            login?: components["schemas"]["ChatGPTLogin"];
         };
         /** ChatOut */
         ChatOut: {
@@ -3293,7 +3591,7 @@ export interface components {
             /** Model Id */
             model_id?: string | null;
             /** Reasoning Effort */
-            reasoning_effort?: ("off" | "low" | "medium" | "high") | null;
+            reasoning_effort?: ("off" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra") | null;
             /** Attachment Ids */
             attachment_ids?: string[] | null;
             /**
@@ -3376,7 +3674,7 @@ export interface components {
              * @default off
              * @enum {string}
              */
-            default_reasoning_effort: "off" | "low" | "medium" | "high";
+            default_reasoning_effort: "off" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
             /**
              * Supports Vision
              * @default false
@@ -3443,7 +3741,7 @@ export interface components {
              * Default Reasoning Effort
              * @enum {string}
              */
-            default_reasoning_effort: "off" | "low" | "medium" | "high";
+            default_reasoning_effort: "off" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
             /** Supports Vision */
             supports_vision: boolean;
             /** Is Utility */
@@ -3457,6 +3755,14 @@ export interface components {
             dimension: number | null;
             /** Collection Name */
             collection_name: string | null;
+            /**
+             * Billing Mode
+             * @default metered
+             * @enum {string}
+             */
+            billing_mode: "metered" | "subscription";
+            /** Supported Reasoning Efforts */
+            supported_reasoning_efforts?: string[];
         };
         /** ModelPatch */
         ModelPatch: {
@@ -3475,7 +3781,7 @@ export interface components {
             /** Supports Reasoning */
             supports_reasoning?: boolean | null;
             /** Default Reasoning Effort */
-            default_reasoning_effort?: ("off" | "low" | "medium" | "high") | null;
+            default_reasoning_effort?: ("off" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra") | null;
             /** Supports Vision */
             supports_vision?: boolean | null;
             /** Is Utility */
@@ -3500,9 +3806,36 @@ export interface components {
              * Default Reasoning Effort
              * @enum {string}
              */
-            default_reasoning_effort: "off" | "low" | "medium" | "high";
+            default_reasoning_effort: "off" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
             /** Supports Vision */
             supports_vision: boolean;
+            /**
+             * Model Name
+             * @default
+             */
+            model_name: string;
+            /**
+             * Provider Kind
+             * @default
+             */
+            provider_kind: string;
+            /**
+             * Billing Mode
+             * @default metered
+             * @enum {string}
+             */
+            billing_mode: "metered" | "subscription";
+            /** Supported Reasoning Efforts */
+            supported_reasoning_efforts?: string[];
+        };
+        /** ModelTestOut */
+        ModelTestOut: {
+            /** Ok */
+            ok: boolean;
+            /** Detail */
+            detail: string;
+            /** Latency Ms */
+            latency_ms: number;
         };
         /** ModelUsage */
         ModelUsage: {
@@ -3738,7 +4071,7 @@ export interface components {
             /** Cohere Rerank Model */
             cohere_rerank_model?: ("rerank-v4.0-fast" | "rerank-v4.0-pro") | null;
             /** Web Search Provider */
-            web_search_provider?: ("duckduckgo" | "tavily") | null;
+            web_search_provider?: ("duckduckgo" | "tavily" | "perplexity") | null;
             /** Web Search Full Content */
             web_search_full_content?: boolean | null;
             /** Default Chunk Method */
@@ -3824,7 +4157,7 @@ export interface components {
             /** Model Id */
             model_id?: string | null;
             /** Reasoning Effort */
-            reasoning_effort?: ("off" | "low" | "medium" | "high") | null;
+            reasoning_effort?: ("off" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra") | null;
             /**
              * Web Search Consented
              * @default false
@@ -4217,6 +4550,79 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WebConfig */
+        WebConfig: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "duckduckgo" | "tavily" | "perplexity";
+            /** Perplexity Model */
+            perplexity_model: string;
+            /** Max Calls Per Turn */
+            max_calls_per_turn: number;
+            /** Daily Cap */
+            daily_cap: number;
+            /** Full Content */
+            full_content: boolean;
+            /** Providers */
+            providers: components["schemas"]["WebProvider"][];
+        };
+        /** WebConfigUpdate */
+        WebConfigUpdate: {
+            /** Provider */
+            provider?: ("duckduckgo" | "tavily" | "perplexity") | null;
+            /** Perplexity Model */
+            perplexity_model?: string | null;
+            /** Max Calls Per Turn */
+            max_calls_per_turn?: number | null;
+            /** Daily Cap */
+            daily_cap?: number | null;
+            /** Full Content */
+            full_content?: boolean | null;
+        };
+        /** WebKeyUpdate */
+        WebKeyUpdate: {
+            /**
+             * Api Key
+             * Format: password
+             */
+            api_key: string;
+        };
+        /** WebProvider */
+        WebProvider: {
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "duckduckgo" | "tavily" | "perplexity";
+            /** Name */
+            name: string;
+            /**
+             * Result Kind
+             * @enum {string}
+             */
+            result_kind: "links" | "answer";
+            /** Needs Key */
+            needs_key: boolean;
+            /** Key Set */
+            key_set: boolean;
+            /** Key Fingerprint */
+            key_fingerprint: string | null;
+            /** Ready */
+            ready: boolean;
+        };
+        /** WebProviderTest */
+        WebProviderTest: {
+            /** Ok */
+            ok: boolean;
+            /** Detail */
+            detail: string;
+            /** Latency Ms */
+            latency_ms: number;
+            /** Result Count */
+            result_count: number;
         };
         /** WorkspaceCreate */
         WorkspaceCreate: {
@@ -7207,6 +7613,269 @@ export interface operations {
             };
         };
     };
+    status_api_v1_admin_models_chatgpt_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatGPTStatus"];
+                };
+            };
+        };
+    };
+    disconnect_api_v1_admin_models_chatgpt_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatGPTStatus"];
+                };
+            };
+        };
+    };
+    login_api_v1_admin_models_chatgpt_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatGPTLogin"];
+                };
+            };
+        };
+    };
+    cancel_api_v1_admin_models_chatgpt_login_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatGPTLogin"];
+                };
+            };
+        };
+    };
+    poll_api_v1_admin_models_chatgpt_poll_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatGPTPoll"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatGPTLogin"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_config_api_v1_admin_web_search_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebConfig"];
+                };
+            };
+        };
+    };
+    patch_config_api_v1_admin_web_search_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebConfigUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_key_api_v1_admin_web_search_keys__provider__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "tavily" | "perplexity";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebKeyUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_key_api_v1_admin_web_search_keys__provider__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "tavily" | "perplexity";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_provider_api_v1_admin_web_search_test__provider__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "duckduckgo" | "tavily" | "perplexity";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebProviderTest"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_models_api_v1_admin_models_get: {
         parameters: {
             query?: never;
@@ -7362,6 +8031,89 @@ export interface operations {
                     "application/json": {
                         [key: string]: number;
                     };
+                };
+            };
+        };
+    };
+    catalog_providers_api_v1_admin_models_catalog_providers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogProvidersOut"];
+                };
+            };
+        };
+    };
+    catalog_models_api_v1_admin_models_catalog_models_get: {
+        parameters: {
+            query?: {
+                provider?: string | null;
+                mode?: "chat" | "embedding" | "all";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogModelsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_model_api_v1_admin_models__model_id__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                model_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

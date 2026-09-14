@@ -1,9 +1,13 @@
+from types import SimpleNamespace
+
 import httpx
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.modules.auth.models import User
 from ragz.modules.models.catalog import ModelCatalogEntry
 from ragz.modules.models.models import LOCAL_EMBEDDING_MODEL_ID
+from ragz.modules.models.runtime_catalog import build_catalog
 
 
 async def auth(client: httpx.AsyncClient, email: str) -> dict[str, str]:
@@ -135,16 +139,16 @@ async def test_catalog_listing_flags_unregistered_models(
     r = await client.get("/api/v1/admin/models/catalog", headers=h_super)
     assert r.status_code == 200
     body = r.json()
-    assert body["new_available"] == 2  # both claudes; gpt-4o-mini is registered
-    # Picker ordering contract: provider ASC, then position DESC (newest first).
-    assert [e["name"] for e in body["entries"]] == [
-        "claude-3-opus", "claude-3-haiku", "gpt-4o-mini",
-    ]
+    # Stale DB pricing rows no longer control discovery. The latest installed
+    # registry supplies this legacy response too, keeping old API consumers working.
+    assert body["new_available"] == sum(not e["registered"] for e in body["entries"])
+    assert body["new_available"] > 1000
+    assert body["entries"] == sorted(body["entries"], key=lambda e: (e["provider"], -e["position"]))
     by_name = {e["name"]: e for e in body["entries"]}
     assert by_name["gpt-4o-mini"]["registered"] is True
-    assert by_name["gpt-4o-mini"]["position"] == 3
-    assert by_name["claude-3-haiku"]["registered"] is False
-    assert by_name["claude-3-haiku"]["input_cost_per_1m"] == 0.25
+    assert by_name["chatgpt/gpt-6-astra"]["registered"] is False
+    assert by_name["chatgpt/gpt-6-astra"]["input_cost_per_1m"] is None
+    assert "claude-3-haiku" not in by_name
     # DOC-10: mode is exposed so the add-model picker can filter by Type
     # (Embedding vs Chat) -- without it, text-embedding-* get buried under
     # newer chat/image models sorted ahead of them.
@@ -266,17 +270,17 @@ async def test_reasoning_effort_fields_round_trip_and_are_public(
 
 
 async def test_catalog_listing_preserves_zero_cost_entries(
-    client: httpx.AsyncClient, seeded_superadmin: User, session: AsyncSession,
+    client: httpx.AsyncClient, seeded_superadmin: User, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A free model (cost 0.0) must be distinguished from an unknown cost
     (None) in the catalog response, not collapsed to null."""
-    session.add(
-        ModelCatalogEntry(
-            name="free-local-model", provider="ollama", max_input_tokens=8192,
-            input_cost_per_token=0.0, output_cost_per_token=0.0, source="snapshot",
-        )
-    )
-    await session.commit()
+    catalog = build_catalog(SimpleNamespace(
+        LITELLM_CHAT_PROVIDERS=["ollama"], models_by_provider={}, model_cost={
+            "free-local-model": {"litellm_provider": "ollama", "mode": "chat",
+                                 "input_cost_per_token": 0.0, "output_cost_per_token": 0.0},
+        },
+    ), version="test")
+    monkeypatch.setattr("ragz.modules.models.service.get_runtime_catalog", lambda: catalog)
 
     h_super = await auth(client, "root@platform.example")
     r = await client.get("/api/v1/admin/models/catalog", headers=h_super)

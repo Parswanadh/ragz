@@ -1,8 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StrictMode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+
+import type { ModelPublic } from '@/api/types';
 
 import { ChatPage } from './chat-page';
 
@@ -33,9 +35,29 @@ vi.mock('@/features/documents/queries', () => ({ useDocuments: () => ({ data: []
 vi.mock('@/features/models/queries', () => ({
   useModels: () => ({
     data: [
-      { id: 'model-1', display_name: 'GPT5.6 Luna', default_reasoning_effort: 'off' },
-      { id: 'model-2', display_name: 'DeepSeek V4 Flash', default_reasoning_effort: 'off' },
-    ],
+      {
+        id: 'model-1',
+        display_name: 'GPT5.6 Luna',
+        model_name: 'chatgpt/gpt-5.6-luna',
+        provider_kind: 'litellm',
+        billing_mode: 'subscription',
+        supports_vision: true,
+        supports_reasoning: true,
+        default_reasoning_effort: 'high',
+        supported_reasoning_efforts: ['off', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'],
+      },
+      {
+        id: 'model-2',
+        display_name: 'DeepSeek V4 Flash',
+        model_name: 'deepseek/deepseek-v4-flash',
+        provider_kind: 'litellm',
+        billing_mode: 'metered',
+        supports_vision: false,
+        supports_reasoning: true,
+        default_reasoning_effort: 'off',
+        supported_reasoning_efforts: ['off', 'low', 'high'],
+      },
+    ] satisfies ModelPublic[],
   }),
 }));
 vi.mock('@/features/workspaces/queries', () => ({
@@ -45,7 +67,13 @@ vi.mock('@/features/workspaces/workspace-context', () => ({
   useWorkspace: () => ({ workspaceId: 'ws-1', setWorkspaceId: vi.fn() }),
 }));
 vi.mock('./use-pending-attachments', () => ({
-  usePendingAttachments: () => ({ files: [], addFiles: vi.fn(), remove: vi.fn(), clear: vi.fn(), error: null }),
+  usePendingAttachments: () => ({
+    files: [],
+    addFiles: vi.fn(),
+    remove: vi.fn(),
+    clear: vi.fn(),
+    error: null,
+  }),
 }));
 
 function renderApp() {
@@ -67,11 +95,45 @@ afterEach(() => {
   streamCalls.length = 0;
 });
 
+test('model and reasoning are selected inside the message composer, not the header', async () => {
+  const user = userEvent.setup();
+  renderApp();
+
+  const composer = within(screen.getByRole('group', { name: 'Message composer' }));
+  const picker = composer.getByRole('button', { name: 'Model and reasoning' });
+  expect(composer.getByRole('textbox', { name: 'Message' })).toBeInTheDocument();
+  expect(composer.getByRole('button', { name: 'Add attachments and options' })).toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: 'Model and reasoning' })).toHaveLength(1);
+  expect(
+    within(screen.getByRole('banner')).queryByRole('button', {
+      name: 'Model and reasoning',
+    }),
+  ).not.toBeInTheDocument();
+
+  await user.click(picker);
+  await user.click(screen.getByRole('menuitemradio', { name: /^Ultra/ }));
+  expect(picker).toHaveTextContent('Ultra');
+  await user.type(composer.getByRole('textbox', { name: 'Message' }), 'Compare these documents');
+  await user.click(composer.getByRole('button', { name: 'Send' }));
+
+  await waitFor(() => expect(streamCalls).toHaveLength(1));
+  expect(streamCalls[0]?.body).toMatchObject({ model_id: 'model-1', reasoning_effort: 'ultra' });
+  expect(picker).toBeDisabled();
+});
+
 test('first message after switching the model is sent (with the new model) and not aborted', async () => {
   const user = userEvent.setup();
   renderApp();
 
-  await user.selectOptions(screen.getByLabelText('Model'), 'model-2');
+  await user.click(screen.getByRole('button', { name: 'Model and reasoning' }));
+  await user.click(screen.getByRole('menuitemradio', { name: /^Ultra/ }));
+  await user.click(screen.getByRole('button', { name: 'Model and reasoning' }));
+  await user.click(screen.getByRole('menuitem', { name: /Model/ }));
+  await user.click(await screen.findByRole('menuitemradio', { name: /DeepSeek V4 Flash/ }));
+  expect(screen.getByRole('button', { name: 'Model and reasoning' })).toHaveTextContent('Default');
+  await user.click(screen.getByRole('button', { name: 'Model and reasoning' }));
+  expect(screen.queryByRole('menuitemradio', { name: /^Ultra/ })).not.toBeInTheDocument();
+  await user.keyboard('{Escape}');
 
   const box = screen.getByPlaceholderText(/ask about your documents/i);
   await user.type(box, 'What is the websocket pattern for fyers?');
@@ -82,6 +144,7 @@ test('first message after switching the model is sent (with the new model) and n
   if (!last) throw new Error('expected a stream send');
   expect(last.url).toContain('/chats/chat-1/messages');
   expect((last.body as { model_id?: string }).model_id).toBe('model-2');
+  expect(last.body).not.toHaveProperty('reasoning_effort');
   await new Promise((r) => setTimeout(r, 0));
   expect(last.signal.aborted).toBe(false);
 });

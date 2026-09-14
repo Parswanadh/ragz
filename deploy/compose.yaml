@@ -108,7 +108,7 @@ services:
     # rolling stable; bump policy per PRD MODEL-13 (monthly, behind a probe run)
     # RAGZ-PUB-15: pinned to the digest that :main-stable resolved to on 2026-08-15;
     # bump deliberately (re-resolve digest per the monthly policy), don't float.
-    image: ghcr.io/berriai/litellm:main-stable@sha256:154e23bb5f31b1f10e16392a8ef299bd2cde08de3a64a6849002cfcc25ce3c63
+    image: ghcr.io/berriai/litellm:v1.100.0@sha256:c8756e7b9a61fe45df2ccb5b781d388c3b2f3a21ef9e4956630caef20f9f03aa
     depends_on:
       postgres:
         condition: service_healthy

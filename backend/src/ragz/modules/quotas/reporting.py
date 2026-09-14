@@ -23,6 +23,7 @@ from ragz.core.db import naive_utc
 from ragz.core.errors import BadRequestError
 from ragz.modules.models.catalog import ModelCatalogEntry
 from ragz.modules.models.models import Model
+from ragz.modules.models.service import canonical_catalog_name
 from ragz.modules.quotas.costing import PER_CALL_FEATURES, estimate_cost
 from ragz.modules.quotas.models import UsageRecord
 from ragz.modules.tenancy.context import TenantContext
@@ -128,22 +129,34 @@ async def _scope_filters(
 async def _price_map(
     session: AsyncSession,
 ) -> dict[UUID | None, tuple[float | None, float | None]]:
-    """model_id -> (input_cost_per_token, output_cost_per_token), joining the
-    (global) model registry to the catalog on litellm_model_name. A model with
-    no catalog match yields (None, None) -> $0 for its token rows. `models` is
-    not org-owned, so this cross-org load carries no tenancy concern."""
-    rows = (
+    """Resolve cached prices by exact name, then the runtime catalog's alias.
+
+    Legacy bare registered names keep their exact cached price. Canonical
+    provider-prefixed names can also use a bare cache row owned by that
+    provider. ChatGPT subscription models are always unpriced, even when an
+    older cache contains numerical rates. These stores are installation-wide.
+    """
+    catalog_rows = (
         await session.execute(
             select(
-                Model.id,
+                ModelCatalogEntry.name,
+                ModelCatalogEntry.provider,
                 ModelCatalogEntry.input_cost_per_token,
                 ModelCatalogEntry.output_cost_per_token,
-            ).outerjoin(
-                ModelCatalogEntry, ModelCatalogEntry.name == Model.litellm_model_name
             )
         )
     ).all()
-    return {mid: (inp, outp) for mid, inp, outp in rows}
+    exact = {name: (inp, outp) for name, _provider, inp, outp in catalog_rows}
+    aliases = {
+        canonical_catalog_name(name, provider): (inp, outp)
+        for name, provider, inp, outp in catalog_rows
+    }
+    models = (await session.execute(select(Model.id, Model.litellm_model_name))).all()
+    return {
+        mid: (None, None) if name.startswith("chatgpt/")
+        else exact.get(name, aliases.get(name, (None, None)))
+        for mid, name in models
+    }
 
 
 async def usage_report(

@@ -258,3 +258,88 @@ async def test_platform_scope_spans_all_orgs(session: AsyncSession) -> None:
         days=30, group_by="user")}
     assert str(env.u1.id) in rows  # org RepOrg
     assert str(ou.id) in rows      # org PlatOther -- cross-org, platform sees it
+
+
+@pytest.mark.parametrize("registered_name,cached_name,provider", [
+    ("anthropic/claude-opus-4-6", "claude-opus-4-6", "anthropic"),
+    ("cohere/embed-english-v3.0", "embed-english-v3.0", "cohere"),
+    ("vertex_ai/gemini-2.5-pro", "gemini-2.5-pro", "vertex_ai-language-models"),
+])
+async def test_canonical_registered_models_use_cached_provider_prices(
+    session: AsyncSession, registered_name: str, cached_name: str, provider: str,
+) -> None:
+    env = await _seed(session)
+    model = Model(litellm_model_name=registered_name, display_name="Canonical",
+                  provider_kind="litellm")
+    session.add_all([model, ModelCatalogEntry(
+        name=cached_name, provider=provider, input_cost_per_token=3e-6,
+        output_cost_per_token=15e-6,
+    )])
+    await session.flush()
+    session.add(_rec(env, env.u1, env.ws1, model, "chat", p=1000, c=500))
+    await session.commit()
+
+    rows = {r.group: r for r in await _report(
+        session, env, scope="self", days=30, group_by="model",
+    )}
+    assert rows[str(model.id)].cost_usd == pytest.approx(0.0105)
+
+
+async def test_exact_catalog_price_wins_over_canonical_alias_and_keeps_bare_names(
+    session: AsyncSession,
+) -> None:
+    env = await _seed(session)
+    prefixed = Model(litellm_model_name="anthropic/claude-opus-4-6", display_name="Prefixed",
+                     provider_kind="litellm")
+    bare = Model(litellm_model_name="claude-opus-4-6", display_name="Legacy bare",
+                 provider_kind="litellm")
+    session.add_all([
+        prefixed, bare,
+        ModelCatalogEntry(name="claude-opus-4-6", provider="anthropic",
+                          input_cost_per_token=3e-6, output_cost_per_token=15e-6),
+        ModelCatalogEntry(name="anthropic/claude-opus-4-6", provider="anthropic",
+                          input_cost_per_token=5e-6, output_cost_per_token=25e-6),
+    ])
+    await session.flush()
+    session.add_all([
+        _rec(env, env.u1, env.ws1, prefixed, "chat", p=1000, c=500),
+        _rec(env, env.u1, env.ws1, bare, "chat", p=1000, c=500),
+    ])
+    await session.commit()
+
+    rows = {r.group: r for r in await _report(
+        session, env, scope="self", days=30, group_by="model",
+    )}
+    assert rows[str(prefixed.id)].cost_usd == pytest.approx(0.0175)
+    assert rows[str(bare.id)].cost_usd == pytest.approx(0.0105)
+
+
+async def test_subscription_models_never_inherit_cached_api_prices(
+    session: AsyncSession,
+) -> None:
+    env = await _seed(session)
+    subscription = Model(litellm_model_name="chatgpt/gpt-5.5", display_name="ChatGPT plan",
+                         provider_kind="litellm")
+    api = Model(litellm_model_name="gpt-5.5", display_name="API",
+                provider_kind="openai")
+    session.add_all([
+        subscription, api,
+        ModelCatalogEntry(name="gpt-5.5", provider="openai",
+                          input_cost_per_token=5e-6, output_cost_per_token=25e-6),
+        # Upstream/prior snapshots may contain numeric ChatGPT prices; they
+        # must never turn a subscription model into metered API usage.
+        ModelCatalogEntry(name="chatgpt/gpt-5.5", provider="chatgpt",
+                          input_cost_per_token=5e-6, output_cost_per_token=25e-6),
+    ])
+    await session.flush()
+    session.add_all([
+        _rec(env, env.u1, env.ws1, subscription, "chat", p=1000, c=500),
+        _rec(env, env.u1, env.ws1, api, "chat", p=1000, c=500),
+    ])
+    await session.commit()
+
+    rows = {r.group: r for r in await _report(
+        session, env, scope="self", days=30, group_by="model",
+    )}
+    assert rows[str(subscription.id)].cost_usd == 0.0
+    assert rows[str(api.id)].cost_usd == pytest.approx(0.0175)

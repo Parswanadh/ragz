@@ -1158,8 +1158,7 @@ async def test_send_message_off_is_always_accepted(
     chat_client: httpx.AsyncClient, chat_env: dict[str, Any], session: AsyncSession,
     seeded_user: User, seeded_superadmin: User, fake_streamer: FakeStreamer,
 ) -> None:
-    """"off"/absent never actually requests reasoning, so it must never
-    conflict, even on a model with supports_reasoning=False."""
+    """Explicit off never requests reasoning, even if the model cannot reason."""
     h = await auth(chat_client, "a@acme.com")
     chat_id = await make_model_and_chat(chat_client, chat_env, session, seeded_superadmin, h)
     r = await chat_client.post(
@@ -1169,6 +1168,82 @@ async def test_send_message_off_is_always_accepted(
     )
     assert r.status_code == 200
     assert fake_streamer.calls[-1]["reasoning_effort"] is None
+
+
+@pytest.mark.parametrize("override, expected", [
+    ({}, "high"), ({"reasoning_effort": None}, "high"), ({"reasoning_effort": "off"}, None),
+])
+async def test_reasoning_default_uses_persisted_effort_but_explicit_off_disables_it(
+    chat_client: httpx.AsyncClient, chat_env: dict[str, Any], session: AsyncSession,
+    seeded_user: User, seeded_superadmin: User, fake_streamer: FakeStreamer,
+    override: dict[str, str | None], expected: str | None,
+) -> None:
+    h = await auth(chat_client, "a@acme.com")
+    h_super = await auth(chat_client, "root@platform.example")
+    chat_id = await make_model_and_chat(chat_client, chat_env, session, seeded_superadmin, h)
+    model_id = (
+        await session.execute(select(Model).where(Model.litellm_model_name == "llama3"))
+    ).scalar_one().id
+    patched = await chat_client.patch(
+        f"/api/v1/admin/models/{model_id}",
+        json={"supports_reasoning": True, "default_reasoning_effort": "high"}, headers=h_super,
+    )
+    assert patched.status_code == 200
+    response = await chat_client.post(
+        f"/api/v1/chats/{chat_id}/messages", json={"content": "hi", **override}, headers=h,
+    )
+    assert response.status_code == 200
+    assert fake_streamer.calls[-1]["reasoning_effort"] == expected
+
+
+async def test_reasoning_default_ignores_stale_effort_on_nonreasoning_model(
+    chat_client: httpx.AsyncClient, chat_env: dict[str, Any], session: AsyncSession,
+    seeded_user: User, seeded_superadmin: User, fake_streamer: FakeStreamer,
+) -> None:
+    h = await auth(chat_client, "a@acme.com")
+    chat_id = await make_model_and_chat(chat_client, chat_env, session, seeded_superadmin, h)
+    model = (
+        await session.execute(select(Model).where(Model.litellm_model_name == "llama3"))
+    ).scalar_one()
+    model.default_reasoning_effort = "high"
+    assert not model.supports_reasoning
+    await session.commit()
+    response = await chat_client.post(
+        f"/api/v1/chats/{chat_id}/messages", json={"content": "hi"}, headers=h,
+    )
+    assert response.status_code == 200
+    assert fake_streamer.calls[-1]["reasoning_effort"] is None
+
+
+@pytest.mark.parametrize("use_default", [False, True], ids=["override", "persisted-default"])
+async def test_reasoning_rejects_unsupported_advanced_tier_before_sse(
+    chat_client: httpx.AsyncClient, chat_env: dict[str, Any], session: AsyncSession,
+    seeded_user: User, seeded_superadmin: User, fake_streamer: FakeStreamer, use_default: bool,
+) -> None:
+    h = await auth(chat_client, "a@acme.com")
+    h_super = await auth(chat_client, "root@platform.example")
+    chat_id = await make_model_and_chat(chat_client, chat_env, session, seeded_superadmin, h)
+    model_id = (
+        await session.execute(select(Model).where(Model.litellm_model_name == "llama3"))
+    ).scalar_one().id
+    patched = await chat_client.patch(
+        f"/api/v1/admin/models/{model_id}", json={"supports_reasoning": True}, headers=h_super,
+    )
+    assert patched.status_code == 200
+    assert patched.json()["supported_reasoning_efforts"] == ["off", "low", "medium", "high"]
+    if use_default:
+        model = await session.get(Model, model_id)
+        assert model is not None
+        model.default_reasoning_effort = "ultra"
+        await session.commit()
+    response = await chat_client.post(
+        f"/api/v1/chats/{chat_id}/messages",
+        json={"content": "hi"} if use_default else {"content": "hi", "reasoning_effort": "ultra"},
+        headers=h,
+    )
+    assert response.status_code == 409
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert fake_streamer.calls == []
 
 
 async def test_general_knowledge_fallback_threads_existing_summary(

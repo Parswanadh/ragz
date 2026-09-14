@@ -80,7 +80,8 @@ from ragz.modules.chat.validation import (
     parse_auditor_scores,
     synthesize_with_gatekeeper,
 )
-from ragz.modules.chat.web import WebResult, WebSearcher
+from ragz.modules.chat.web import WebResult, WebSearcher, build_web_researcher
+from ragz.modules.chat.web_settings import get_web_limits
 from ragz.modules.documents import metadata as metadata_service
 from ragz.modules.documents import service as documents_service
 from ragz.modules.documents.pipeline import PageBlock, chunk_blocks, embed_batch
@@ -888,7 +889,8 @@ async def _prepare_sources(
             )
         )
         prompt_sources.append(
-            PromptSource(marker=marker, filename=w.title, page=0, text=w.snippet, url=w.url)
+            PromptSource(marker=marker, filename=w.title, page=0, text=w.snippet, url=w.url,
+                         result_kind=w.result_kind)
         )
     kept = fit_sources(prompt_sources, max_tokens, model_hint)
     return refs[: len(kept)], kept
@@ -1554,11 +1556,14 @@ async def stream_reply(
                 and workspace.web_search_enabled
                 and workspace.fallback_policy != "decline"
             )
+            web_researcher = await build_web_researcher(session, settings) if use_web else None
+            web_turn_cap, web_daily_cap = await get_web_limits(session, settings)
             gathered: AgentGathered | None = None
             async for gather_item in run_agent_gather(
                 session, ctx, workspace=workspace, question=user_message.content,
                 model=model, completer=completer, retriever=retriever,
                 chunk_reader=chunk_reader, web_searcher=web_searcher if use_web else None,
+                web_researcher=web_researcher,
                 metadata_field_names=field_names, collection_name=collection_name,
                 web_search_consented=web_search_consented,
                 # Explicit web-search toggle forces the loop's FIRST step to be
@@ -1566,8 +1571,9 @@ async def stream_reply(
                 # answer from workspace docs, picks local `search` and the
                 # toggle looks ignored even though the loop is running.
                 force_web_first=force_web,
+                web_search_budget=web_turn_cap,
                 redis=redis,
-                web_search_daily_limit=settings.web_search_daily_limit_per_user,
+                web_search_daily_limit=web_daily_cap,
                 web_search_daily_org_limit=settings.web_search_daily_limit_per_org,
             ):
                 if isinstance(gather_item, AgentStep):
@@ -1596,17 +1602,13 @@ async def stream_reply(
                 # records nothing. commit=False stages the row so it rides this
                 # turn's end-of-turn record_usage commit rather than adding a
                 # blocking write on the streaming path.
-                if (
-                    gathered.web_searches > 0
-                    and web_searcher is not None
-                    and getattr(web_searcher, "billable", False)
-                ):
+                if gathered.billable_web_searches > 0:
                     await quota_service.record_usage(
                         session, org_id=ctx.org_id, user_id=ctx.user_id,
                         workspace_id=chat.workspace_id,
                         model_id=None, feature="web_search",
                         prompt_tokens=0, completion_tokens=0,
-                        units=gathered.web_searches, commit=False,
+                        units=gathered.billable_web_searches, commit=False,
                     )
                 result = RetrievalResult(
                     # Loop findings outrank the stale weak single shot for the

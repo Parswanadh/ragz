@@ -8,7 +8,7 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import structlog
 import tiktoken
@@ -86,6 +86,7 @@ class PromptSource:
     section: str | None = None
     # Phase 3 Plan I Task 11 (D7): set for web-search hits only.
     url: str | None = None
+    result_kind: Literal["links", "answer", "answer_citation"] = "links"
 
 
 def _attr(value: str) -> str:
@@ -125,9 +126,10 @@ def _render_block(s: PromptSource) -> str:
     # section before landing in the attribute - iron rule 5's delimiter
     # defense applies here too.
     url_attr = f' url="{_attr(s.url)}"' if s.url else ""
+    kind_attr = f' kind="{s.result_kind}"' if s.result_kind != "links" else ""
     return (
         f'<data id="{s.marker}" source="{_attr(s.filename)}" page="{s.page}"'
-        f"{section_attr}{url_attr}>\n"
+        f"{section_attr}{url_attr}{kind_attr}>\n"
         f"{safe}\n</data>"
     )
 
@@ -344,6 +346,15 @@ def build_messages(
     base_prompt = SYSTEM_PROMPT + (
         WEB_SYNTHESIS_CLAUSE if any(s.url for s in sources) else ""
     )
+    if any(s.result_kind == "answer" for s in sources):
+        base_prompt += (
+            '\n- Blocks with kind="answer" are Perplexity third-party synthesis. '
+            "Attribute their claims to Perplexity; never describe this prose as a "
+            "primary page excerpt or independent verification. Its own citation numbers "
+            "refer to its bibliography, not the numbered Ragz data blocks. "
+            'Blocks with kind="answer_citation" contain bibliography metadata only; '
+            "their primary page text was not fetched."
+        )
     system_content = _system_content(
         base_prompt, system_prompt_override, split.system, model_hint
     )

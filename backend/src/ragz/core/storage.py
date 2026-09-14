@@ -1,6 +1,6 @@
 from typing import Any
 
-import aioboto3
+from aiobotocore.session import get_session
 from botocore.exceptions import ClientError
 
 from ragz.core.config import Settings
@@ -8,17 +8,17 @@ from ragz.core.errors import NotFoundError
 
 
 class ObjectStorage:
-    """Thin async S3 wrapper for MinIO (aioboto3). One bucket per deployment."""
+    """Thin async S3 wrapper for MinIO. One bucket per deployment."""
 
     def __init__(self, *, endpoint_url: str, access_key: str, secret_key: str, bucket: str) -> None:
-        self._session = aioboto3.Session()
+        self._session = get_session()
         self._endpoint_url = endpoint_url
         self._access_key = access_key
         self._secret_key = secret_key
         self.bucket = bucket
 
     def _client(self) -> Any:
-        return self._session.client(
+        return self._session.create_client(
             "s3",
             endpoint_url=self._endpoint_url,
             aws_access_key_id=self._access_key,
