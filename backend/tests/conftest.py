@@ -134,9 +134,22 @@ def _clear_caches() -> None:
     get_dense_embedder.cache_clear()
 
 
+# testcontainers' built-in default (minio/minio:RELEASE.2022-12-02T19-19-22Z)
+# was withdrawn, and docker.io/minio/minio now refuses anonymous pulls
+# outright -- which broke EVERY container-backed CI job with "pull access
+# denied ... ImageNotFound": migrations, isolation and the unit+integration
+# tier alike, none of which had changed. quay.io is MinIO's other official
+# registry and still serves the SAME manifest digest deploy/compose.yaml pins,
+# so this swaps the registry without changing a byte of the image.
+MINIO_IMAGE = (
+    "quay.io/minio/minio:latest@sha256:"
+    "14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e"
+)
+
+
 @pytest.fixture(scope="session")
 def minio_config() -> Iterator[dict[str, str]]:
-    with MinioContainer() as m:
+    with MinioContainer(image=MINIO_IMAGE) as m:
         cfg = m.get_config()
         yield {
             "endpoint": f"http://{cfg['endpoint']}",

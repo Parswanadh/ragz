@@ -3821,8 +3821,7 @@ export interface components {
         };
         /**
          * ModelPublic
-         * @description What non-superadmin users see (chat model picker) -- unchanged shape;
-         *     the route now filters to modality="chat" before serializing (Step 6).
+         * @description Enabled chat models and runtime capabilities; no keys or private endpoints.
          */
         ModelPublic: {
             /**

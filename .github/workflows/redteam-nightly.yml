@@ -45,7 +45,12 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
         with:
-          python-version: "3.12"
+          # Exact patch version, matching ci.yml and audit.yml. A bare "3.12"
+          # resolves to the runner's PREINSTALLED /usr/bin/python3.12, which is
+          # 3.12.3 -- below this project's requires-python >=3.12.4 floor, so
+          # `uv sync --locked` exits 2 before a single probe runs. An exact
+          # version makes uv fetch a managed interpreter instead.
+          python-version: "3.12.11"
 
       - name: Install dependencies
         run: uv sync --locked
