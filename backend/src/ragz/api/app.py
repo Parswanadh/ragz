@@ -48,10 +48,10 @@ from ragz.api.security_middleware import (
     trusted_hosts_for,
 )
 from ragz.core.config import Settings, get_settings
-from ragz.core.db import build_engine, build_session_factory
+from ragz.core.db import build_engine, build_session_factory, dispose_loop_engine
 from ragz.core.errors import RagzError
 from ragz.core.logging import configure_logging
-from ragz.core.middleware import RequestIDMiddleware
+from ragz.core.middleware import MetricsMiddleware, RequestIDMiddleware
 from ragz.modules.chat.llm import LLMCompleter, LLMStreamer
 from ragz.modules.chat.prompting import warm_token_encoder
 from ragz.modules.chat.service import ChunkReader, Retriever
@@ -82,6 +82,16 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     # and registry parsing must not block the event loop on a user's first send.
     await asyncio.to_thread(get_runtime_catalog)
     yield
+    # ADR-0006: routes nudge the outbox dispatcher, which opens a session via
+    # ingest._session, which caches an engine for THIS loop. The worker disposes
+    # its equivalent on worker_process_shutdown; the API had no teardown at all,
+    # so that pool outlived the app.
+    #
+    # Only the loop-cached engine is disposed. app.state.session_factory may be
+    # supplied by the caller -- the test suite shares one factory across every
+    # app it builds -- so disposing that would tear down a pool this app never
+    # created and other callers still hold.
+    await dispose_loop_engine()
 
 
 def create_app(
@@ -222,6 +232,15 @@ def create_app(
     app.add_middleware(
         BodySizeLimitMiddleware, max_bytes=body_size_ceiling_bytes(settings.max_upload_mb)
     )
+    # Added last => OUTERMOST, deliberately outside TrustedHost and
+    # BodySizeLimit. Those two reject requests before any route runs, and a
+    # rejected request is exactly the kind of thing an operator wants on a
+    # graph -- inside them, a flood of oversized uploads or bad Host headers
+    # would be invisible. It observes only; nothing downstream depends on it,
+    # so the outermost position costs no early-rejection benefit.
+    # It still labels by route template: scope["route"] is read after the inner
+    # app returns, and routing mutates the same scope dict this sees.
+    app.add_middleware(MetricsMiddleware)
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=trusted_hosts_for(settings.environment, settings.public_api_base_url),

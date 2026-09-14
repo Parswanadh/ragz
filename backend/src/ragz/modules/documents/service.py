@@ -1,7 +1,9 @@
-import hashlib
+from typing import Any
 from uuid import UUID, uuid4
 
+import structlog
 from sqlalchemy import func, select
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import get_settings
@@ -15,11 +17,15 @@ from ragz.core.storage import build_storage
 from ragz.modules.audit.service import record_audit
 from ragz.modules.documents import folders as folders_service
 from ragz.modules.documents.models import Document
+from ragz.modules.documents.uploads import UploadedContent
+from ragz.modules.outbox import service as outbox_service
 from ragz.modules.retrieval import service as retrieval_service
 from ragz.modules.tenancy.context import TenantContext
 from ragz.modules.tenancy.models import Group
 from ragz.modules.tenancy.reembed_models import ReembedJob
 from ragz.modules.tenancy.service import get_workspace_checked
+
+log = structlog.get_logger()
 
 
 async def _enforce_org_upload_quota(
@@ -73,13 +79,19 @@ async def create_from_upload(
     *,
     filename: str,
     mime: str,
-    data: bytes,
+    data: bytes | UploadedContent,
     folder_id: UUID | None = None,
 ) -> Document:
+    # One internal path. Callers that already hold the bytes (tests, inline bot
+    # attachments) keep passing them; the upload route passes an
+    # UploadedContent whose payload is still on disk, so a 100 MB upload is
+    # never resident. Everything below reads size and digest off the value
+    # object rather than off a bytes blob.
+    content = data if isinstance(data, UploadedContent) else UploadedContent.from_bytes(data)
     ws = await get_workspace_checked(session, ctx, workspace_id)
     if folder_id is not None:
         await folders_service.get_folder_checked(session, ctx, folder_id, workspace_id=ws.id)
-    await _enforce_org_upload_quota(session, ctx.org_id, len(data))
+    await _enforce_org_upload_quota(session, ctx.org_id, content.size_bytes)
     reembed_in_progress = (
         await session.execute(
             select(ReembedJob.id).where(
@@ -94,7 +106,7 @@ async def create_from_upload(
         raise ConflictError(
             "a re-embed job is in progress for this workspace; try again once it completes"
         )
-    content_hash = hashlib.sha256(data).hexdigest()
+    content_hash = content.sha256
     dup = (
         await session.execute(
             select(Document).where(
@@ -122,7 +134,7 @@ async def create_from_upload(
     ).scalar_one_or_none()
     doc = Document(
         org_id=ctx.org_id, workspace_id=ws.id, filename=filename, mime=mime,
-        size_bytes=len(data), content_hash=content_hash, storage_key="",
+        size_bytes=content.size_bytes, content_hash=content_hash, storage_key="",
         created_by=ctx.user_id, folder_id=folder_id,
         version=(predecessor.version + 1) if predecessor else 1,
         lineage_id=predecessor.lineage_id if predecessor else uuid4(),  # placeholder, fixed below
@@ -135,10 +147,20 @@ async def create_from_upload(
     doc.storage_key = f"{ctx.org_id}/{ws.id}/{doc.id}/{filename}"
     storage = build_storage(get_settings())
     await storage.ensure_bucket()
-    await storage.put(doc.storage_key, data, content_type=mime)
+    await storage.put_stream(doc.storage_key, content.stream, content_type=mime)
     await record_audit(session, org_id=ctx.org_id, actor_id=ctx.user_id,
                        action="document.uploaded", target_type="document",
                        target_id=str(doc.id))
+    # Transactional outbox (review P1): the document row, its audit event and
+    # the intent to ingest it commit TOGETHER. The route used to commit here and
+    # then call enqueue_ingest -- a crash or broker outage in that gap left a
+    # document stuck at "queued" forever with nothing to retry from, because a
+    # status column is not a queue.
+    outbox_service.publish(
+        session,
+        topic="documents.ingest",
+        payload={"document_id": str(doc.id), "size_bytes": doc.size_bytes},
+    )
     await session.commit()
     return doc
 
@@ -292,18 +314,94 @@ async def set_document_acl(
         if owned != set(acl_group_ids):
             raise NotFoundError("one or more groups not found")
     doc.acl_group_ids = list(acl_group_ids) if acl_group_ids is not None else None
+    # Fail-closed ACL projection (review P0). The new ACL, the revision bump and
+    # the audit event land in ONE commit. From this instant the document is
+    # unprojected, so retrieval stops serving it (see unprojected_document_ids)
+    # -- the previous ordering left the OLD, broader payload searchable if the
+    # Qdrant call below failed, which is precisely the over-grant window.
+    #
+    # The bump is done IN SQL, not as `doc.security_revision += 1` (Cubic P1).
+    # Read-modify-write on this session's snapshot lets two concurrent updates
+    # both read revision N and both write N+1; their projections then both
+    # compare-and-set successfully against N+1, and Qdrant can end up holding
+    # one ACL while Postgres reports the other as projected. Postgres computes
+    # the increment from the CURRENT row, so concurrent updates always get
+    # distinct revisions.
+    await session.execute(
+        sa_update(Document)
+        .where(Document.id == doc.id)
+        .values(
+            security_revision=Document.security_revision + 1,
+            index_state="pending",
+        )
+    )
+    await session.refresh(doc, ["security_revision", "index_state"])
     await record_audit(session, org_id=ctx.org_id, actor_id=ctx.user_id,
                        action="document.acl_changed", target_type="document",
                        target_id=str(doc.id))
     await session.commit()
-    # After commit so a failed Qdrant call never strands a half-applied ACL in
-    # PG; on Qdrant failure the route 502s and the admin retries (set_payload
-    # is idempotent).
-    collection_name = await retrieval_service.resolve_collection_name(session, doc.workspace_id)
-    await retrieval_service.update_document_acl(
-        ctx.org_id, doc.id, doc.acl_group_ids, collection_name=collection_name
-    )
+    await project_document_security(session, doc)
     return doc
+
+
+async def project_document_security(session: AsyncSession, doc: Document) -> None:
+    """Push a document's committed ACL into the vector store and mark it active.
+
+    Idempotent by construction: it writes the CURRENT Postgres ACL and then
+    records the revision it projected, so re-running after a partial failure
+    converges rather than double-applying. Safe to call from the request path,
+    from a retry, or from the reconciler.
+
+    On failure the document stays out of retrieval (index_state='failed') and
+    the exception propagates so the caller can surface it -- but unlike before,
+    the failure is now merely an availability problem, not a security one.
+    """
+    target_revision = doc.security_revision
+    try:
+        collection_name = await retrieval_service.resolve_collection_name(
+            session, doc.workspace_id
+        )
+        await retrieval_service.update_document_acl(
+            doc.org_id, doc.id, doc.acl_group_ids, collection_name=collection_name
+        )
+    except Exception:
+        doc.index_state = "failed"
+        await session.commit()
+        raise
+    # Activate with a COMPARE-AND-SET, not an in-memory check. `doc` is this
+    # session's snapshot: a concurrent transaction can bump security_revision
+    # in the database while we project, and comparing against the stale
+    # attribute would mark the row active at an already-superseded revision --
+    # re-opening the exact over-grant window this protocol exists to close.
+    # Guarding inside the UPDATE lets Postgres arbitrate: if the revision moved,
+    # zero rows match, the document stays unprojected, and the reconciler
+    # re-drives it at the newer revision.
+    result: Any = await session.execute(
+        sa_update(Document)
+        .where(
+            Document.id == doc.id,
+            Document.security_revision == target_revision,
+        )
+        .values(
+            projected_security_revision=target_revision,
+            index_state="active",
+        )
+    )
+    if result.rowcount == 0:
+        # Superseded mid-projection. Record what we DID project so the
+        # reconciler can see the gap, but leave the row unprojected.
+        await session.execute(
+            sa_update(Document)
+            .where(Document.id == doc.id)
+            .values(projected_security_revision=target_revision, index_state="pending")
+        )
+        log.info(
+            "security_projection_superseded",
+            document_id=str(doc.id),
+            projected_revision=target_revision,
+        )
+    await session.commit()
+    await session.refresh(doc)
 
 
 async def promote_lineage(session: AsyncSession, org_id: UUID, lineage_id: UUID) -> UUID | None:
@@ -401,5 +499,44 @@ async def set_approved(
     )
     await session.commit()
     needs_reindex = await promote_lineage(session, ctx.org_id, doc.lineage_id)
+    if needs_reindex is not None:
+        # Published HERE, not by the route (Cubic P1). promote_lineage has
+        # already committed the promotion, so a route-side publish committed
+        # separately -- a crash in between left the newly-current version
+        # without vectors and no event to recover from. This lands in
+        # promote_lineage's own transaction boundary instead.
+        outbox_service.publish(
+            session,
+            topic="documents.reindex",
+            payload={"document_id": str(needs_reindex)},
+            queue="interactive",
+        )
+        await session.commit()
     await session.refresh(doc)
     return doc, needs_reindex
+
+
+async def unprojected_document_ids(
+    session: AsyncSession, org_id: UUID, workspace_id: UUID
+) -> frozenset[UUID]:
+    """Documents whose committed security state has not reached the vector store.
+
+    Fail-closed ACL projection (review P0): a security change commits to
+    Postgres before it is projected into Qdrant, so between those two points the
+    stored payload still carries the PREVIOUS, possibly broader ACL. Retrieval
+    must not serve from that payload -- see retrieval.service._tenant_filter,
+    which excludes these ids inside the vector query rather than post-filtering.
+
+    Public because `retrieval` may call another module's service but never reach
+    into its ORM models. Backed by the ix_documents_unprojected partial index,
+    so this is a small read even on a large corpus: only documents actually
+    mid-projection are ever returned.
+    """
+    rows = await session.execute(
+        select(Document.id).where(
+            Document.org_id == org_id,
+            Document.workspace_id == workspace_id,
+            Document.index_state != "active",
+        )
+    )
+    return frozenset(rows.scalars())

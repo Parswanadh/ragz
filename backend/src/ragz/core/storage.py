@@ -1,3 +1,4 @@
+import inspect
 from typing import Any
 
 from aiobotocore.session import get_session
@@ -5,6 +6,18 @@ from botocore.exceptions import ClientError
 
 from ragz.core.config import Settings
 from ragz.core.errors import NotFoundError
+
+# Bytes per multipart part, and the cutoff below which a single put_object is
+# used instead. S3 requires every part but the last to be >= 5 MiB.
+_PART_SIZE = 8 * 1024 * 1024
+
+
+async def _read_chunk(fileobj: Any, size: int) -> bytes:
+    """Read at most `size` bytes from a sync OR async file-like object."""
+    chunk = fileobj.read(size)
+    if inspect.isawaitable(chunk):
+        chunk = await chunk
+    return chunk or b""
 
 
 class ObjectStorage:
@@ -48,6 +61,68 @@ class ObjectStorage:
     ) -> None:
         async with self._client() as s3:
             await s3.put_object(Bucket=self.bucket, Key=key, Body=data, ContentType=content_type)
+
+    async def put_stream(
+        self, key: str, fileobj: Any, content_type: str = "application/octet-stream"
+    ) -> None:
+        """Upload from a file-like object instead of a bytes blob.
+
+        `put` needs the whole object resident before the first byte goes out,
+        which for a 100 MB upload (the max_upload_mb default) means 100 MB of
+        RSS per concurrent request. This reads the stream one part at a time
+        and switches to multipart past `_PART_SIZE`, so peak memory is bounded
+        by the part size rather than by the file.
+
+        Written against raw aiobotocore on purpose: boto3's `upload_fileobj`
+        helper is not part of the aiobotocore client (it lives in boto3's
+        S3Transfer), and aioboto3 -- which does provide it -- pins
+        aiobotocore<3, which the pinned litellm build will not resolve with.
+
+        `fileobj` only has to implement `read`; the result is awaited if it is
+        awaitable, so a plain SpooledTemporaryFile (what Starlette hands us for
+        an upload) works unwrapped. It is read from its current position --
+        seek it where you want it before calling.
+        """
+        async with self._client() as s3:
+            head = await _read_chunk(fileobj, _PART_SIZE)
+            nxt = await _read_chunk(fileobj, _PART_SIZE)
+            if not nxt:  # fits in one part: no multipart handshake needed
+                await s3.put_object(
+                    Bucket=self.bucket, Key=key, Body=head, ContentType=content_type
+                )
+                return
+            started = await s3.create_multipart_upload(
+                Bucket=self.bucket, Key=key, ContentType=content_type
+            )
+            upload_id = started["UploadId"]
+            parts: list[dict[str, Any]] = []
+            try:
+                pending = [head, nxt]
+                while pending:
+                    chunk = pending.pop(0)
+                    if not chunk:
+                        break
+                    uploaded = await s3.upload_part(
+                        Bucket=self.bucket,
+                        Key=key,
+                        UploadId=upload_id,
+                        PartNumber=len(parts) + 1,
+                        Body=chunk,
+                    )
+                    parts.append({"ETag": uploaded["ETag"], "PartNumber": len(parts) + 1})
+                    if not pending:
+                        pending.append(await _read_chunk(fileobj, _PART_SIZE))
+                await s3.complete_multipart_upload(
+                    Bucket=self.bucket,
+                    Key=key,
+                    UploadId=upload_id,
+                    MultipartUpload={"Parts": parts},
+                )
+            except Exception:
+                # Orphaned parts keep billing and block the key, so never leave
+                # a half-finished upload behind.
+                await s3.abort_multipart_upload(Bucket=self.bucket, Key=key, UploadId=upload_id)
+                raise
 
     async def get(self, key: str) -> bytes:
         async with self._client() as s3:

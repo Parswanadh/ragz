@@ -94,6 +94,12 @@ def _iter_hidden_api_routes(
 #     required.
 PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("GET", "/healthz"), ("GET", "/readyz"),
+    # Reason 1 (carries its own credential), NOT "no auth": /metrics enforces
+    # RAGZ_METRICS_TOKEN as a bearer token itself and 404s when that setting is
+    # unset, so it is off by default and never anonymous when on. It is here
+    # because it has no TenantContext to check an action against -- Prometheus
+    # scrapes it as infrastructure, not as a user. See routes/health.py.
+    ("GET", "/metrics"),
     ("POST", "/api/v1/auth/login"), ("POST", "/api/v1/auth/refresh"),
     ("POST", "/api/v1/auth/logout"), ("POST", "/api/v1/auth/invitations/accept"),
     # Self-service first-run (no TenantContext -- this IS the bootstrap path,
@@ -219,6 +225,10 @@ ROUTE_POLICY: dict[tuple[str, str], str] = {
     ("DELETE", "/api/v1/chats/{chat_id}"): "chat.delete",
     ("POST", "/api/v1/chats/{chat_id}/messages"): "chat.generate",
     ("POST", "/api/v1/messages/{message_id}/regenerate"): "chat.generate",
+    # Same capability as sending: it produces an assistant reply, just for a
+    # user message that was persisted earlier (ChatCreate.first_message, or a
+    # turn stranded by a reload) instead of one supplied in the request.
+    ("POST", "/api/v1/messages/{message_id}/answer"): "chat.generate",
     ("PUT", "/api/v1/messages/{message_id}/feedback"): "chat.feedback",
     ("DELETE", "/api/v1/messages/{message_id}/feedback"): "chat.feedback",
     ("POST", "/api/v1/chats/{chat_id}/attachments"): "chat.attachments.create",

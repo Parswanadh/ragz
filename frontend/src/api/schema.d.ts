@@ -1695,6 +1695,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/messages/{message_id}/answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Answer
+         * @description Generate the reply to an ALREADY-PERSISTED user message that has none.
+         *
+         *     The companion to ChatCreate.first_message: the opening turn is persisted by
+         *     POST /chats, and this streams its answer. It also makes the whole flow
+         *     resumable -- a client that reloads mid-turn re-finds the unanswered message
+         *     and calls this, instead of the message being stranded.
+         *
+         *     Idempotency guard: refuses once an assistant reply exists, so a double call
+         *     (or a reload racing the first stream) can't fork a second answer under the
+         *     same user message. Re-answering an already-answered turn is `regenerate`.
+         *     Body is RegenerateRequest -- identical option set (model/effort/consent).
+         */
+        post: operations["answer_api_v1_messages__message_id__answer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/messages/{message_id}/feedback": {
         parameters: {
             query?: never;
@@ -2641,6 +2671,8 @@ export interface components {
             workspace_id: string;
             /** Title */
             title?: string | null;
+            /** First Message */
+            first_message?: string | null;
         };
         /** ChatGPTLogin */
         ChatGPTLogin: {
@@ -4050,6 +4082,8 @@ export interface components {
             tavily_key_set: boolean;
             /** Default Chunk Method */
             default_chunk_method: string;
+            /** Default Embedding Model Id */
+            default_embedding_model_id: string | null;
             /** Llamaparse Key Set */
             llamaparse_key_set: boolean;
             /** Cohere Key Set */
@@ -4080,6 +4114,8 @@ export interface components {
             generative_ui_images?: ("off" | "web_results") | null;
             /** Generative Ui Enabled */
             generative_ui_enabled?: boolean | null;
+            /** Default Embedding Model Id */
+            default_embedding_model_id?: string | null;
             /** Llamaparse Api Key */
             llamaparse_api_key?: string | null;
             /** Cohere Api Key */
@@ -8333,6 +8369,41 @@ export interface operations {
         };
     };
     regenerate_api_v1_messages__message_id__regenerate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RegenerateRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    answer_api_v1_messages__message_id__answer_post: {
         parameters: {
             query?: never;
             header?: never;

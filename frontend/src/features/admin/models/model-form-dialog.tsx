@@ -175,12 +175,20 @@ export function ModelFormDialog({
   onOpenChange,
   model = null,
   preset,
+  defaultModality = 'chat',
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Present → edit an existing model (provider/model id become read-only, key stays write-only-and-blank). Absent → add a new model. */
   model?: ModelOut | null;
+  /** Preselected catalog provider/model — the runtime catalog panel opens the
+   * form already pointed at a row, so the picker is skipped entirely. */
   preset?: { provider: RuntimeProvider; model?: RuntimeModel; modality: 'chat' | 'embedding' };
+  /** Which Type the add form starts on when there is no preset. Settings >
+   * Embedding opens this from an "Add embedding model" button, where starting
+   * on Chat shows the wrong catalog entirely — the picker filters by modality,
+   * so the user would search chat models while trying to add an embedder. */
+  defaultModality?: 'chat' | 'embedding';
 }) {
   const isEdit = model != null;
   const create = useCreateModel();
@@ -216,7 +224,7 @@ export function ModelFormDialog({
     model?.supports_vision ?? preset?.model?.supports_vision ?? false,
   );
   const [modality, setModality] = useState<'chat' | 'embedding'>(
-    model?.modality ?? preset?.modality ?? 'chat',
+    model?.modality ?? preset?.modality ?? defaultModality,
   );
   const [dimension, setDimension] = useState(String(preset?.model?.dimension ?? ''));
 

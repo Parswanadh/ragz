@@ -36,6 +36,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ragz.core.config import get_settings
 from ragz.core.errors import NotFoundError, WorkspaceAccessDenied
+from ragz.core.metrics import observe_stage
 from ragz.modules.documents.pipeline import Chunk
 from ragz.modules.quotas import service as quota_service
 from ragz.modules.retrieval.client import EPHEMERAL_COLLECTION, get_qdrant
@@ -90,6 +91,7 @@ def _tenant_filter(
     acl_group_ids: frozenset[UUID] | None,
     current_only: bool,
     metadata_clauses: Sequence[MetadataClause] | None,
+    unprojected_document_ids: frozenset[UUID] = frozenset(),
 ) -> models.Filter:
     """The ONE Qdrant filter builder (iron rule 1). tenant_id is always a
     must-condition. acl_group_ids, current_only, and metadata_clauses are all
@@ -165,6 +167,25 @@ def _tenant_filter(
                         key="is_current", match=models.MatchValue(value=True)
                     ),
                     models.IsEmptyCondition(is_empty=models.PayloadField(key="is_current")),
+                ]
+            )
+        )
+    # Fail-closed ACL projection (review P0). These documents have a committed
+    # security change that has NOT reached this collection, so their payload
+    # still carries the previous, possibly broader ACL. Excluded as a must_not
+    # INSIDE the vector query -- never post-filtered in Python (iron rule 2).
+    # Bounded in practice: only documents mid-projection are ever listed, which
+    # is why documents/service.py reads them from a partial index.
+    if unprojected_document_ids:
+        must.append(
+            models.Filter(
+                must_not=[
+                    models.FieldCondition(
+                        key="document_id",
+                        match=models.MatchAny(
+                            any=sorted(str(d) for d in unprojected_document_ids)
+                        ),
+                    )
                 ]
             )
         )
@@ -482,7 +503,8 @@ async def retrieve(
         embedding_model.id, provider_kind=embedding_model.provider_kind,
         litellm_model_name=embedding_model.litellm_model_name,
     )
-    dense_vecs, embed_tokens = await dense_embedder.embed_with_usage([query])
+    with observe_stage("embed_dense"):
+        dense_vecs, embed_tokens = await dense_embedder.embed_with_usage([query])
     dense_vec = dense_vecs[0]
     # Cost reporting (design 2026-08-15 §2): the query embedding's billed tokens
     # (hosted providers only; self-hosted TEI / the hash test backend report 0).
@@ -496,26 +518,65 @@ async def retrieve(
             model_id=embedding_model.id, feature="embedding",
             prompt_tokens=embed_tokens, completion_tokens=0, commit=False,
         )
-    sparse_vec = (await asyncio.to_thread(embed_sparse, [query]))[0]
+    with observe_stage("embed_sparse"):
+        sparse_vec = (await asyncio.to_thread(embed_sparse, [query]))[0]
+    # Fail-closed ACL projection (review P0): documents whose committed security
+    # state has not reached this collection are excluded from the query. Local
+    # import for the same reason as models_service above -- documents.service
+    # imports THIS module, so a module-scope import would be circular. A public
+    # service call, never that module's ORM.
+    from ragz.modules.documents import service as documents_service
+
+    unprojected = await documents_service.unprojected_document_ids(
+        session, ctx.org_id, workspace_id
+    )
     flt = _tenant_filter(
         org_id=ctx.org_id, workspace_id=workspace_id, acl_group_ids=_ctx_acl(ctx),
         current_only=True, metadata_clauses=metadata_clauses,
+        unprojected_document_ids=unprojected,
     )
     client = get_qdrant()
     fetch_k = _RERANK_PREFETCH if ws.rerank_enabled else k
     prefetch_limit = max(fetch_k, k * 4)
-    fused = await client.query_points(
-        collection_name,
-        prefetch=[
-            models.Prefetch(query=dense_vec, using="dense", filter=flt, limit=prefetch_limit),
-            models.Prefetch(query=sparse_vec, using="sparse", filter=flt, limit=prefetch_limit),
-        ],
-        query=models.FusionQuery(fusion=models.Fusion.RRF),
-        query_filter=flt,  # belt and braces on top of the filtered prefetches
-        limit=fetch_k,
-        with_payload=True,
-    )
+    with observe_stage("vector_search"):
+        fused = await client.query_points(
+            collection_name,
+            prefetch=[
+                models.Prefetch(
+                    query=dense_vec, using="dense", filter=flt, limit=prefetch_limit
+                ),
+                models.Prefetch(
+                    query=sparse_vec, using="sparse", filter=flt, limit=prefetch_limit
+                ),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            query_filter=flt,  # belt and braces on top of the filtered prefetches
+            limit=fetch_k,
+            with_payload=True,
+        )
     candidates = [_chunk_from_point(p) for p in fused.points]
+    # Close the read-then-query window (Cubic P0). The pre-query exclusion above
+    # is a SNAPSHOT: an ACL can commit between that read and query_points, and
+    # Qdrant would still be serving the pre-change payload for a document the
+    # snapshot did not know was pending. Re-reading afterwards and dropping
+    # those hits closes it.
+    #
+    # This is a Python filter, which iron rule 2 forbids for ACL enforcement --
+    # and the distinction matters. Rule 2 exists so that a permissive query is
+    # never rescued by application code, because anything the code forgets is
+    # served. This pass can only ever REMOVE candidates, never admit one the
+    # vector filter excluded, so its failure mode is a needless denial rather
+    # than a leak. The allow-decision still lives entirely in the Qdrant filter.
+    recheck = await documents_service.unprojected_document_ids(
+        session, ctx.org_id, workspace_id
+    )
+    newly_unprojected = recheck - unprojected
+    if newly_unprojected:
+        candidates = [c for c in candidates if c.document_id not in newly_unprojected]
+        structlog.get_logger().info(
+            "retrieval_dropped_newly_unprojected",
+            workspace_id=str(workspace_id), count=len(newly_unprojected),
+        )
     candidates = _dedupe_hq(candidates)
     if not candidates:
         return RetrievalResult(chunks=[], no_answer=True)
@@ -523,7 +584,8 @@ async def retrieve(
     if ws.rerank_enabled:
         try:
             reranker = await get_reranker(session, get_settings())
-            scores = await reranker.rerank(query, [c.text for c in candidates])
+            with observe_stage("rerank"):
+                scores = await reranker.rerank(query, [c.text for c in candidates])
         except RerankUnavailable as exc:
             structlog.get_logger().warning(
                 "reranker_unavailable_falling_back",
