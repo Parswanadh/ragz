@@ -17,7 +17,10 @@ function report(error: Error, info: ErrorInfo): void {
   ).catch(() => undefined); // reporting must never cascade
 }
 
-export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+export class ErrorBoundary extends Component<
+  { children: ReactNode; compact?: boolean },
+  { failed: boolean }
+> {
   state = { failed: false };
 
   static getDerivedStateFromError(): { failed: boolean } {
@@ -31,12 +34,16 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
   render(): ReactNode {
     if (!this.state.failed) return this.props.children;
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
+      <div
+        className={
+          this.props.compact
+            ? 'rounded-lg border border-line p-4'
+            : 'flex min-h-screen items-center justify-center px-4'
+        }
+      >
         <div className="max-w-sm rounded-lg border border-line bg-bg p-6 text-center">
           <p className="text-[16px] font-semibold text-ink">Something went wrong</p>
-          <p className="mt-1 text-sm text-secondary">
-            The error was reported. Reload to continue.
-          </p>
+          <p className="mt-1 text-sm text-secondary">The error was reported. Reload to continue.</p>
           <button
             type="button"
             onClick={() => window.location.reload()}

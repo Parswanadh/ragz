@@ -35,8 +35,10 @@ async def _litellm_params(
         params["api_base"] = model.base_url
     elif model.provider_kind == "litellm":
         # Catalog names already carry their provider prefix for non-openai
-        # providers (e.g. gemini/gemini-2.5-pro) — pass VERBATIM, no api_base.
+        # providers (e.g. gemini/gemini-2.5-pro) — pass VERBATIM.
         params["model"] = model.litellm_model_name
+        if model.base_url:
+            params["api_base"] = model.base_url
     else:  # openai | openai_compatible both speak the OpenAI protocol
         params["model"] = f"openai/{model.litellm_model_name}"
         if model.provider_kind == "openai_compatible":
@@ -66,7 +68,12 @@ async def sync_models_to_litellm(
     # DOC-10: the local TEI model is never routed through the gateway --
     # registering it would fall into _litellm_params's openai/* branch and
     # produce a nonsense LiteLLM deployment for a provider that isn't there.
-    models = [m for m in await list_enabled_models(session) if m.provider_kind != "tei"]
+    # Subscription calls use native Responses with encrypted DB credentials.
+    # Registering them with the proxy would invoke its plaintext-file OAuth path.
+    models = [
+        m for m in await list_enabled_models(session)
+        if m.provider_kind != "tei" and not m.litellm_model_name.startswith("chatgpt/")
+    ]
     all_models = await list_models(session)
     try:
         for model in models:

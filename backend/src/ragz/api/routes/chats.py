@@ -143,15 +143,17 @@ async def _resolve_workspace_and_model(
 
 
 def _resolve_reasoning_effort(model: Model, requested: str | None) -> str | None:
-    """None/"off" always means "don't ask for reasoning" — never a conflict,
-    even on a model with supports_reasoning=False. Any real tier
-    (low/medium/high) on an unsupported model is rejected fast, before any
-    SSE bytes are sent, same as the model_id resolution above it."""
-    if requested is None or requested == "off":
+    """Validate the effective model default or turn override before sending SSE."""
+    effort = model.default_reasoning_effort if requested is None else requested
+    if effort == "off" or (requested is None and not model.supports_reasoning):
         return None
     if not model.supports_reasoning:
         raise ConflictError(f"model does not support reasoning effort: {model.display_name}")
-    return requested
+    if effort not in models_service.model_reasoning_efforts(model):
+        raise ConflictError(
+            f"reasoning effort {effort!r} is not supported by model: {model.display_name}"
+        )
+    return effort
 
 
 def _chat_out(chat: Chat) -> ChatOut:

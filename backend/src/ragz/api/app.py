@@ -21,6 +21,7 @@ from ragz.api.routes.admin_sso import router as admin_sso_router
 from ragz.api.routes.api_keys import router as api_keys_router
 from ragz.api.routes.auth import router as auth_router
 from ragz.api.routes.bots import router as bots_router
+from ragz.api.routes.chatgpt import router as chatgpt_router
 from ragz.api.routes.chats import router as chats_router
 from ragz.api.routes.client_errors import router as client_errors_router
 from ragz.api.routes.documents import router as documents_router
@@ -38,6 +39,7 @@ from ragz.api.routes.settings import router as settings_router
 from ragz.api.routes.superadmin_ops import router as superadmin_ops_router
 from ragz.api.routes.usage import router as usage_router
 from ragz.api.routes.users import router as users_router
+from ragz.api.routes.web_search import router as web_search_router
 from ragz.api.routes.workspaces import router as workspaces_router
 from ragz.api.security_middleware import (
     BodySizeLimitMiddleware,
@@ -54,6 +56,7 @@ from ragz.modules.chat.llm import LLMCompleter, LLMStreamer
 from ragz.modules.chat.prompting import warm_token_encoder
 from ragz.modules.chat.service import ChunkReader, Retriever
 from ragz.modules.chat.web import WebSearcher
+from ragz.modules.models.service import get_runtime_catalog
 from ragz.modules.models.sync import sync_models_to_litellm
 from ragz.modules.retrieval.service import RetrievalChunkReader, retrieve
 
@@ -75,6 +78,9 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     # warm_token_encoder never raises - a failed warmup just latches the same
     # char-estimate fallback a real request would hit anyway.
     await asyncio.to_thread(warm_token_encoder)
+    # Model/effort resolution only reads this cache on request paths. SDK startup
+    # and registry parsing must not block the event loop on a user's first send.
+    await asyncio.to_thread(get_runtime_catalog)
     yield
     # ADR-0006: routes nudge the outbox dispatcher, which opens a session via
     # ingest._session, which caches an engine for THIS loop. The worker disposes
@@ -201,6 +207,8 @@ def create_app(
     app.include_router(admin_feedback_router, prefix="/api/v1")
     app.include_router(admin_sso_router, prefix="/api/v1")
     app.include_router(admin_roles_router, prefix="/api/v1")
+    app.include_router(chatgpt_router, prefix="/api/v1")
+    app.include_router(web_search_router, prefix="/api/v1")
     app.include_router(models_router, prefix="/api/v1")
     app.include_router(chats_router, prefix="/api/v1")
     app.include_router(usage_router, prefix="/api/v1")

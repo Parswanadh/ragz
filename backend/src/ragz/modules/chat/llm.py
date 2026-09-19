@@ -8,11 +8,14 @@ one sanctioned mock).
 import json
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import httpx
 
 from ragz.core.errors import UpstreamError
+
+if TYPE_CHECKING:
+    from ragz.modules.chat.chatgpt import CredentialLoader
 
 
 @dataclass(frozen=True)
@@ -65,6 +68,7 @@ class LiteLLMStreamer:
         master_key: str,
         transport: httpx.AsyncBaseTransport | None = None,
         limits: httpx.Limits | None = None,
+        chatgpt_credentials: "CredentialLoader | None" = None,
     ) -> None:
         self._base_url = base_url
         self._master_key = master_key
@@ -72,11 +76,25 @@ class LiteLLMStreamer:
         # httpx's own built-in default (100 connections / 20 keepalive) matches the
         # settings defaults below - passing None here preserves that behavior.
         self._limits = limits if limits is not None else httpx.Limits()
+        self._chatgpt_credentials = chatgpt_credentials
 
     async def stream(
         self, *, model: str, messages: list[dict[str, object]],
         reasoning_effort: str | None = None,
     ) -> AsyncGenerator[LLMDelta | LLMUsage, None]:
+        if model.startswith("chatgpt/"):
+            from ragz.modules.chat.chatgpt import ChatGPTClient
+
+            native = ChatGPTClient(credentials=self._chatgpt_credentials,
+                                   transport=self._transport, limits=self._limits)
+            stream = native.stream(model=model, messages=messages,
+                                   reasoning_effort=reasoning_effort)
+            try:
+                async for event in stream:
+                    yield event
+            finally:
+                await stream.aclose()
+            return
         payload: dict[str, object] = {
             "model": model,
             "messages": messages,
@@ -134,6 +152,13 @@ class LiteLLMStreamer:
         """One non-streaming completion (agent planner rounds). Optional
         OpenAI-style `tools` for models that do native tool calling; the raw
         tool_calls come back untouched — the agent loop owns lenient parsing."""
+        if model.startswith("chatgpt/"):
+            from ragz.modules.chat.chatgpt import ChatGPTClient
+
+            native = ChatGPTClient(credentials=self._chatgpt_credentials,
+                                   transport=self._transport, limits=self._limits)
+            return await native.complete(model=model, messages=messages, tools=tools,
+                                         reasoning_effort=reasoning_effort)
         payload: dict[str, object] = {"model": model, "messages": messages, "stream": False}
         if tools:
             payload["tools"] = tools

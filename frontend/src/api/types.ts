@@ -19,6 +19,17 @@ export type AttachmentOut = components['schemas']['AttachmentOut'];
 // on MessageNode.feedback for the caller's own rating.
 export type FeedbackOut = components['schemas']['FeedbackOut'];
 export type ModelOut = components['schemas']['ModelOut'];
+export type RuntimeProvider = components['schemas']['CatalogProvider'];
+export type RuntimeModel = components['schemas']['CatalogModel'];
+export type RuntimeProvidersOut = components['schemas']['CatalogProvidersOut'];
+export type RuntimeModelsOut = components['schemas']['CatalogModelsOut'];
+export type ChatGptLogin = components['schemas']['ChatGPTLogin'];
+export type ChatGptStatus = components['schemas']['ChatGPTStatus'];
+export type WebConfig = components['schemas']['WebConfig'];
+export type WebConfigPatch = components['schemas']['WebConfigUpdate'];
+export type WebProvider = components['schemas']['WebProvider'];
+export type ModelTestResult = components['schemas']['ModelTestOut'];
+export type WebProviderTest = components['schemas']['WebProviderTest'];
 // POST /api/v1/admin/models wire shape (DOC-10). features/admin/models/queries.ts
 // defines its own ergonomic ModelCreate (modality/dimension optional --
 // the backend defaults modality to "chat" when the key is omitted, so

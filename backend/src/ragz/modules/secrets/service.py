@@ -101,12 +101,20 @@ async def delete_secret(
         await session.flush()
 
 
-async def _get_secret_decrypted(session: AsyncSession, *, name: str, settings: Settings) -> str:
-    """THE single decryption path (iron rule 3). Only modules/models/sync.py calls this."""
+async def _get_secret_decrypted(
+    session: AsyncSession, *, name: str, settings: Settings, commit: bool = True
+) -> str:
+    """Single decryption path; callers are security-reviewed outbound boundaries.
+
+    Atomic credential refresh callers retain their transaction lock with commit=False.
+    """
     row = (await session.execute(select(Secret).where(Secret.name == name))).scalar_one_or_none()
     if row is None:
         raise NotFoundError(f"secret {name!r} not set")
     value = crypto.decrypt(crypto.load_kek(settings.kek_file), row.nonce, row.ciphertext)
     row.last_used_at = naive_utc()
-    await session.commit()
+    if commit:
+        await session.commit()
+    else:
+        await session.flush()
     return value

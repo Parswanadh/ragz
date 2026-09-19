@@ -12,6 +12,7 @@ const STEP_LABELS: Record<string, (q: string) => string> = {
   search_by_metadata: (q) => `Filtering by metadata: ${q}`,
   get_document: () => 'Reading a document…',
   web_search: (q) => `Searching the web: ${q}`,
+  web_research: (q) => `Researching the web: ${q}`,
 };
 
 function stepLabel(step: AgentStepInfo): string {
@@ -27,6 +28,7 @@ const STEP_HEADLINES: Record<string, string> = {
   search_by_metadata: 'Searching documents…',
   get_document: 'Reading a document…',
   web_search: 'Searching the web…',
+  web_research: 'Researching with Perplexity…',
 };
 
 function spinnerLabel(step: AgentStepInfo | undefined): string {

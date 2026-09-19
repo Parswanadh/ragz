@@ -117,43 +117,17 @@ test('leaving a key field blank on save omits it from the PUT body', async () =>
   expect(body.llamaparse_api_key).toBeUndefined();
 });
 
-test('renders the web-search provider select defaulting to DuckDuckGo', async () => {
+test('web search links to its canonical panel and unrelated saves do not overwrite its settings', async () => {
   render(<SettingsPage />);
-
-  expect(await screen.findByLabelText(/web search provider/i)).toHaveValue('duckduckgo');
-  // Tavily key field is hidden until Tavily is selected.
-  expect(screen.queryByLabelText(/tavily api key/i)).not.toBeInTheDocument();
-});
-
-test('picking Tavily reveals the write-only API key field', async () => {
-  render(<SettingsPage />);
-
-  await userEvent.selectOptions(screen.getByLabelText(/web search provider/i), 'tavily');
-  const key = screen.getByLabelText(/tavily api key/i);
-  expect(key).toBeInTheDocument();
-  expect(key).toHaveAttribute('type', 'password');
-});
-
-test('sends the tavily key only when typed, omitting it when blank', async () => {
-  const { unmount } = render(<SettingsPage />);
-
-  // Blank: Tavily selected, no key typed -> key omitted.
-  await userEvent.selectOptions(screen.getByLabelText(/web search provider/i), 'tavily');
+  expect(screen.getByRole('link', { name: 'Agent configuration' })).toHaveAttribute(
+    'href',
+    '/agent/config#web-search',
+  );
   await userEvent.click(screen.getByRole('button', { name: /save/i }));
-  let body = putSpy.mock.calls[0]?.[0] as Record<string, unknown>;
-  expect(body.web_search_provider).toBe('tavily');
-  expect(body.tavily_api_key).toBeUndefined();
-
-  unmount();
-  putSpy.mockClear();
-
-  // Typed: key is included.
-  render(<SettingsPage />);
-  await userEvent.selectOptions(screen.getByLabelText(/web search provider/i), 'tavily');
-  await userEvent.type(screen.getByLabelText(/tavily api key/i), 'tvly-live');
-  await userEvent.click(screen.getByRole('button', { name: /save/i }));
-  body = putSpy.mock.calls[0]?.[0] as Record<string, unknown>;
-  expect(body.tavily_api_key).toBe('tvly-live');
+  const body = putSpy.mock.calls[0]?.[0] as Record<string, unknown>;
+  expect(body).not.toHaveProperty('web_search_provider');
+  expect(body).not.toHaveProperty('web_search_full_content');
+  expect(body).not.toHaveProperty('tavily_api_key');
 });
 
 test('sends the default chunking strategy on save', async () => {
@@ -162,9 +136,7 @@ test('sends the default chunking strategy on save', async () => {
   await userEvent.selectOptions(screen.getByLabelText(/default chunking strategy/i), 'page');
   await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
-  expect(putSpy).toHaveBeenCalledWith(
-    expect.objectContaining({ default_chunk_method: 'page' }),
-  );
+  expect(putSpy).toHaveBeenCalledWith(expect.objectContaining({ default_chunk_method: 'page' }));
 });
 
 test('offers anydoc as a parser option and selects it when reported by the backend', async () => {
@@ -206,10 +178,7 @@ test('renders the generative UI images select defaulting to Off', async () => {
 test('changing generative UI images to web results and saving sends it in the PUT body', async () => {
   render(<SettingsPage />);
 
-  await userEvent.selectOptions(
-    screen.getByLabelText(/generative ui images/i),
-    'web_results',
-  );
+  await userEvent.selectOptions(screen.getByLabelText(/generative ui images/i), 'web_results');
   await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
   expect(putSpy).toHaveBeenCalledWith(
@@ -229,9 +198,7 @@ test('unchecking rich generative UI and saving sends generative_ui_enabled false
   await userEvent.click(await screen.findByLabelText(/rich generative ui/i));
   await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
-  expect(putSpy).toHaveBeenCalledWith(
-    expect.objectContaining({ generative_ui_enabled: false }),
-  );
+  expect(putSpy).toHaveBeenCalledWith(expect.objectContaining({ generative_ui_enabled: false }));
 });
 
 test('saving unchanged includes generative_ui_enabled true in the PUT body', async () => {
@@ -239,9 +206,7 @@ test('saving unchanged includes generative_ui_enabled true in the PUT body', asy
 
   await userEvent.click(await screen.findByRole('button', { name: /save/i }));
 
-  expect(putSpy).toHaveBeenCalledWith(
-    expect.objectContaining({ generative_ui_enabled: true }),
-  );
+  expect(putSpy).toHaveBeenCalledWith(expect.objectContaining({ generative_ui_enabled: true }));
 });
 
 test('shows an error message and retry button when the settings query fails', async () => {

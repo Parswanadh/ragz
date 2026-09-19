@@ -16,7 +16,6 @@ import {
   type ChunkMethod,
   type CohereRerankModel,
   type GenerativeUiImages,
-  type WebSearchProvider,
 } from './queries';
 
 /** Providers offerable as the global default embedding model. Deliberately not
@@ -46,8 +45,6 @@ export function SettingsPage() {
   );
   const [rerank, setRerank] = useState<'local' | 'cohere'>('local');
   const [cohereModel, setCohereModel] = useState<CohereRerankModel>('rerank-v4.0-fast');
-  const [webSearch, setWebSearch] = useState<WebSearchProvider>('duckduckgo');
-  const [fullContent, setFullContent] = useState(true);
   const [generativeUiImages, setGenerativeUiImages] = useState<GenerativeUiImages>('off');
   const [generativeUiEnabled, setGenerativeUiEnabled] = useState(true);
   const [defaultChunk, setDefaultChunk] = useState<ChunkMethod>('heading');
@@ -58,15 +55,12 @@ export function SettingsPage() {
   // start blank, and are cleared again after every save attempt.
   const [llamaKey, setLlamaKey] = useState('');
   const [cohereKey, setCohereKey] = useState('');
-  const [tavilyKey, setTavilyKey] = useState('');
 
   useEffect(() => {
     if (settings.data) {
       setParser(settings.data.document_parser);
       setRerank(settings.data.rerank_provider);
       setCohereModel(settings.data.cohere_rerank_model);
-      setWebSearch(settings.data.web_search_provider);
-      setFullContent(settings.data.web_search_full_content);
       setGenerativeUiImages(settings.data.generative_ui_images);
       setGenerativeUiEnabled(settings.data.generative_ui_enabled);
       setDefaultChunk(settings.data.default_chunk_method);
@@ -81,7 +75,6 @@ export function SettingsPage() {
     if (update.isSuccess) {
       setLlamaKey('');
       setCohereKey('');
-      setTavilyKey('');
     }
   }, [update.isSuccess]);
 
@@ -89,8 +82,6 @@ export function SettingsPage() {
     update.mutate({
       document_parser: parser,
       rerank_provider: rerank,
-      web_search_provider: webSearch,
-      web_search_full_content: fullContent,
       generative_ui_images: generativeUiImages,
       generative_ui_enabled: generativeUiEnabled,
       default_chunk_method: defaultChunk,
@@ -103,7 +94,6 @@ export function SettingsPage() {
       ...(rerank === 'cohere' ? { cohere_rerank_model: cohereModel } : {}),
       ...(llamaKey ? { llamaparse_api_key: llamaKey } : {}),
       ...(cohereKey ? { cohere_api_key: cohereKey } : {}),
-      ...(tavilyKey ? { tavily_api_key: tavilyKey } : {}),
     });
   }
 
@@ -234,48 +224,13 @@ export function SettingsPage() {
 
             <section className="space-y-3">
               <h3 className="text-sm font-semibold text-ink">Web search</h3>
-              <div>
-                <Label htmlFor="websearch">Web search provider</Label>
-                <NativeSelect
-                  id="websearch"
-                  value={webSearch}
-                  onChange={(e) => setWebSearch(e.target.value as WebSearchProvider)}
-                >
-                  <option value="duckduckgo">DuckDuckGo (default, keyless)</option>
-                  <option value="tavily">Tavily (cloud, needs API key)</option>
-                </NativeSelect>
-              </div>
-              {webSearch === 'tavily' ? (
-                <div>
-                  <Label htmlFor="tavilykey">
-                    Tavily API key
-                    {settings.data.tavily_key_set ? ' (set — leave blank to keep)' : ''}
-                  </Label>
-                  <Input
-                    id="tavilykey"
-                    type="password"
-                    autoComplete="off"
-                    value={tavilyKey}
-                    onChange={(e) => setTavilyKey(e.target.value)}
-                    placeholder={settings.data.tavily_key_set ? '••••••••' : 'tvly-…'}
-                  />
-                </div>
-              ) : null}
-              <div>
-                <label className="flex items-center gap-2 text-sm text-secondary">
-                  <input
-                    type="checkbox"
-                    checked={fullContent}
-                    onChange={(e) => setFullContent(e.target.checked)}
-                    aria-label="Fetch full page content"
-                  />
-                  Fetch full page content
-                </label>
-                <p className="mt-1 text-xs text-muted">
-                  Read the top results&apos; full page text (not just search snippets) so answers
-                  to list/overview questions are complete. Fetched server-side; slightly slower.
-                </p>
-              </div>
+              <p className="text-sm text-secondary">
+                Configure search providers, API keys, cited research and limits in{' '}
+                <a className="text-accent underline" href="/agent/config#web-search">
+                  Agent configuration
+                </a>
+                .
+              </p>
               <div>
                 <label className="flex items-center gap-2 text-sm text-secondary">
                   <input

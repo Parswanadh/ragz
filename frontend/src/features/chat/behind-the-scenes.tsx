@@ -80,7 +80,8 @@ function SourceCard({ result }: { result: ToolResultItem }) {
 
 function StepCard({ step, result }: { step: AgentStepInfo; result?: ToolResultInfo }) {
   const [expanded, setExpanded] = useState(false);
-  const expandable = step.tool === 'web_search' && !!result && result.results.length > 0;
+  const web = step.tool === 'web_search' || step.tool === 'web_research';
+  const expandable = web && !!result && result.results.length > 0;
   return (
     <div className="rounded-md border border-line bg-raised">
       <button
@@ -95,13 +96,19 @@ function StepCard({ step, result }: { step: AgentStepInfo; result?: ToolResultIn
           expandable && 'cursor-pointer hover:text-ink',
         )}
       >
-        {step.tool === 'web_search' ? (
+        {web ? (
           <Globe className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
         ) : (
           <Search className="h-3.5 w-3.5 shrink-0 text-muted" aria-hidden />
         )}
         <span className="min-w-0 flex-1 truncate">
-          Called the <span className="font-medium text-ink">{step.tool}</span> tool
+          {step.tool === 'web_research' ? (
+            <span className="font-medium text-ink">Research with Perplexity</span>
+          ) : (
+            <>
+              Called the <span className="font-medium text-ink">{step.tool}</span> tool
+            </>
+          )}
         </span>
         {expandable ? (
           <ChevronDown
@@ -115,7 +122,9 @@ function StepCard({ step, result }: { step: AgentStepInfo; result?: ToolResultIn
       </button>
       {expandable && expanded ? (
         <ul className="grid gap-1.5 border-t border-line p-1.5">
-          {result?.results.map((r, i) => <SourceCard key={`${r.url}-${i}`} result={r} />)}
+          {result?.results.map((r, i) => (
+            <SourceCard key={`${r.url}-${i}`} result={r} />
+          ))}
         </ul>
       ) : null}
     </div>

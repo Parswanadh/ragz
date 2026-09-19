@@ -1,5 +1,8 @@
+import asyncio
+from typing import TYPE_CHECKING
 from uuid import UUID
 
+import httpx
 from sqlalchemy import select, true, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,17 +11,25 @@ from ragz.core.errors import ConflictError, NotFoundError
 from ragz.core.net import assert_public_url
 from ragz.modules.audit.service import record_audit
 from ragz.modules.models.models import Model
-from ragz.modules.models.schemas import ModelOut
+from ragz.modules.models.runtime_catalog import (
+    canonical_catalog_name,
+    find_catalog_model,
+    get_runtime_catalog,
+)
+from ragz.modules.models.schemas import ModelOut, ModelPublic
 from ragz.modules.models.utility import get_utility_model as resolve_utility_model
 from ragz.modules.secrets import service as secrets_service
 from ragz.modules.tenancy.context import TenantContext
+
+if TYPE_CHECKING:
+    from ragz.modules.models.chatgpt_schemas import ChatGPTCredentials
 
 # `resolve_utility_model` is a deliberate re-export (Plan K Tasks 6/7/9 call
 # `models_service.resolve_utility_model(session)`; the single real
 # implementation stays in modules/models/utility.py per the single-seam
 # convention -- see that module's docstring). Listed in __all__ so linters
 # don't flag the aliased import as unused.
-__all__ = ["resolve_utility_model"]
+__all__ = ["resolve_utility_model", "get_runtime_catalog", "canonical_catalog_name"]
 
 
 async def get_model(session: AsyncSession, model_id: UUID) -> Model:
@@ -87,6 +98,7 @@ async def resolve_model(
 
 async def to_model_out(session: AsyncSession, models: list[Model]) -> list[ModelOut]:
     """Serialize with the key fingerprint joined in from the secrets module."""
+    await asyncio.to_thread(get_runtime_catalog)
     fingerprints = {s.name: s.fingerprint for s in await secrets_service.list_secrets(session)}
     return [
         ModelOut(
@@ -107,9 +119,49 @@ async def to_model_out(session: AsyncSession, models: list[Model]) -> list[Model
             modality=m.modality,  # type: ignore[arg-type]
             dimension=m.dimension,
             collection_name=m.collection_name,
+            billing_mode=(
+                "subscription" if m.litellm_model_name.startswith("chatgpt/") else "metered"
+            ),
+            supported_reasoning_efforts=model_reasoning_efforts(m),
         )
         for m in models
     ]
+
+
+def model_reasoning_efforts(model: Model) -> list[str]:
+    if not model.supports_reasoning:
+        return []
+    entry = find_catalog_model(model.litellm_model_name)
+    if entry is not None and entry.supported_reasoning_efforts:
+        return entry.supported_reasoning_efforts
+    return ["off", "low", "medium", "high"]
+
+
+async def public_models(session: AsyncSession) -> list[ModelPublic]:
+    await asyncio.to_thread(get_runtime_catalog)
+    return [ModelPublic(
+        id=m.id, display_name=m.display_name, model_name=m.litellm_model_name,
+        provider_kind=m.provider_kind, supports_reasoning=m.supports_reasoning,
+        default_reasoning_effort=m.default_reasoning_effort,  # type: ignore[arg-type]
+        supports_vision=m.supports_vision,
+        billing_mode="subscription" if m.litellm_model_name.startswith("chatgpt/") else "metered",
+        supported_reasoning_efforts=model_reasoning_efforts(m),
+    ) for m in await list_enabled_models(session, modality="chat")]
+
+
+async def get_chatgpt_credentials(
+    *, settings: Settings, transport: httpx.AsyncBaseTransport | None = None,
+) -> "ChatGPTCredentials":
+    """Public outbound-auth boundary, usable from HTTP requests and worker processes."""
+    from ragz.core.db import build_engine, build_session_factory
+    from ragz.modules.models.chatgpt_oauth import get_runtime_credentials
+
+    engine = build_engine(settings.database_url)
+    try:
+        async with build_session_factory(engine)() as session:
+            return await get_runtime_credentials(session, settings=settings, transport=transport)
+    finally:
+        await engine.dispose()
 
 
 async def create_model(

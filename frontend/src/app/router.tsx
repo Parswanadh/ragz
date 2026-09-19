@@ -67,6 +67,18 @@ export const router = createBrowserRouter([
             }),
           },
           {
+            path: '/agent',
+            lazy: async () => ({
+              Component: (await import('@/features/chat/chat-page')).ChatPage,
+            }),
+          },
+          {
+            path: '/agent/:chatId',
+            lazy: async () => ({
+              Component: (await import('@/features/chat/chat-page')).ChatPage,
+            }),
+          },
+          {
             path: '/documents',
             lazy: async () => ({
               Component: (await import('@/features/documents/documents-page')).DocumentsPage,
@@ -126,6 +138,12 @@ export const router = createBrowserRouter([
             children: [
               {
                 path: '/admin/models',
+                lazy: async () => ({
+                  Component: (await import('@/features/admin/models/models-page')).ModelsPage,
+                }),
+              },
+              {
+                path: '/agent/config',
                 lazy: async () => ({
                   Component: (await import('@/features/admin/models/models-page')).ModelsPage,
                 }),

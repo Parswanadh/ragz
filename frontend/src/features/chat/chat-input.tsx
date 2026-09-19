@@ -1,5 +1,5 @@
 import { ArrowUp, Square } from 'lucide-react';
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 
 import { ComposerControls } from './composer-controls';
 
@@ -13,6 +13,7 @@ export function ChatInput({
   webSearchAvailable,
   webSearch,
   onToggleWebSearch,
+  controls,
   placeholder = 'Ask about your documents…',
 }: {
   onSend: (content: string) => void;
@@ -24,6 +25,8 @@ export function ChatInput({
   webSearchAvailable: boolean;
   webSearch: boolean;
   onToggleWebSearch: () => void;
+  /** Per-message controls, beside attachments and beneath the message text. */
+  controls?: ReactNode;
   placeholder?: string;
 }) {
   const [value, setValue] = useState('');
@@ -46,7 +49,11 @@ export function ChatInput({
 
   return (
     <div className="mx-auto w-full max-w-thread px-4 pb-4">
-      <div className="flex flex-col gap-1 rounded-xl border border-line bg-bg p-2 shadow-soft transition-shadow duration-150 ease-out focus-within:shadow-md">
+      <div
+        role="group"
+        aria-label="Message composer"
+        className="flex flex-col gap-1 rounded-xl border border-line bg-bg p-2 shadow-soft transition-shadow duration-150 ease-out focus-within:shadow-md"
+      >
         <textarea
           ref={boxRef}
           aria-label="Message"
@@ -62,13 +69,16 @@ export function ChatInput({
           className="max-h-[200px] w-full resize-none bg-transparent px-2 py-1 text-[15px] text-ink outline-none placeholder:text-muted"
         />
         <div className="flex items-end justify-between gap-2">
-          <ComposerControls
-            onSelectFiles={onSelectFiles}
-            disabled={attachDisabled}
-            webSearchAvailable={webSearchAvailable}
-            webSearch={webSearch}
-            onToggleWebSearch={onToggleWebSearch}
-          />
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+            <ComposerControls
+              onSelectFiles={onSelectFiles}
+              disabled={attachDisabled}
+              webSearchAvailable={webSearchAvailable}
+              webSearch={webSearch}
+              onToggleWebSearch={onToggleWebSearch}
+            />
+            {controls}
+          </div>
           {busy ? (
             <button
               type="button"

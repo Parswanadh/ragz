@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, model_validator
 # creatable via this API, see ModelCreate's validator below.
 ProviderKind = Literal["openai", "ollama", "openai_compatible", "litellm", "tei"]
 
-ReasoningEffort = Literal["off", "low", "medium", "high"]
+ReasoningEffort = Literal["off", "low", "medium", "high", "xhigh", "max", "ultra"]
 
 ModelModality = Literal["chat", "embedding"]
 
@@ -42,6 +42,15 @@ class ModelCreate(BaseModel):
 
     @model_validator(mode="after")
     def _base_url_required_for_self_hosted(self) -> "ModelCreate":
+        if self.litellm_model_name.startswith("github_copilot/"):
+            raise ValueError("GitHub Copilot requires OAuth, which Ragz does not currently support")
+        if self.litellm_model_name.startswith("chatgpt/"):
+            if self.provider_kind != "litellm" or self.modality != "chat":
+                raise ValueError("ChatGPT subscription models must use the litellm chat provider")
+            if self.api_key or self.base_url:
+                raise ValueError(
+                    "Connect ChatGPT with OAuth; subscription models do not use API keys"
+                )
         if self.provider_kind in ("ollama", "openai_compatible") and not self.base_url:
             raise ValueError("base_url is required for ollama and openai_compatible providers")
         return self
@@ -106,17 +115,23 @@ class ModelOut(BaseModel):
     modality: ModelModality
     dimension: int | None
     collection_name: str | None
+    billing_mode: Literal["metered", "subscription"] = "metered"
+    supported_reasoning_efforts: list[str] = Field(default_factory=list)
 
 
 class ModelPublic(BaseModel):
-    """What non-superadmin users see (chat model picker) -- unchanged shape;
-    the route now filters to modality="chat" before serializing (Step 6)."""
+    """Enabled chat models and runtime capabilities; no keys or private endpoints."""
 
     id: UUID
     display_name: str
     supports_reasoning: bool
     default_reasoning_effort: ReasoningEffort
     supports_vision: bool
+
+    model_name: str = ""
+    provider_kind: str = ""
+    billing_mode: Literal["metered", "subscription"] = "metered"
+    supported_reasoning_efforts: list[str] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 
@@ -155,7 +170,7 @@ class ProviderSettingsUpdate(BaseModel):
     document_parser: Literal["anydoc", "docling", "llamaparse", "liteparse"] | None = None
     rerank_provider: Literal["local", "cohere"] | None = None
     cohere_rerank_model: Literal["rerank-v4.0-fast", "rerank-v4.0-pro"] | None = None
-    web_search_provider: Literal["duckduckgo", "tavily"] | None = None
+    web_search_provider: Literal["duckduckgo", "tavily", "perplexity"] | None = None
     web_search_full_content: bool | None = None
     default_chunk_method: Literal["heading", "fixed", "page", "table_qa"] | None = None
     generative_ui_images: GenerativeUiImages | None = None

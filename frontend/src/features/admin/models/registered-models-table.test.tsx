@@ -25,6 +25,7 @@ const chatModel: ModelOut = {
   litellm_model_name: 'gpt-4o-mini',
   display_name: 'GPT-4o mini',
   provider_kind: 'openai',
+  billing_mode: 'metered',
   base_url: null,
   enabled: true,
   key_fingerprint: null,

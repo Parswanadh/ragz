@@ -121,7 +121,7 @@ export function useChatStream(chatId: string | null) {
           // explicit null = new ROOT sibling; uuid = sibling under that parent.
           ...(parentMessageId !== undefined ? { parent_message_id: parentMessageId } : {}),
           ...(modelId ? { model_id: modelId } : {}),
-          ...(reasoningEffort && reasoningEffort !== 'off'
+          ...(reasoningEffort != null
             ? { reasoning_effort: reasoningEffort }
             : {}),
           ...(attachmentIds && attachmentIds.length > 0 ? { attachment_ids: attachmentIds } : {}),

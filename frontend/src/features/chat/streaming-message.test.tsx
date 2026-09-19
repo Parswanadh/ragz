@@ -66,6 +66,20 @@ test('a retrieving state with no agentSteps shows the spinner but no progress li
   expect(screen.getByText('Searching documents…')).toBeInTheDocument();
 });
 
+test('Perplexity research uses a research-specific progress label', () => {
+  render(
+    <StreamingMessage
+      stream={{
+        ...base,
+        status: 'retrieving',
+        agentSteps: [{ n: 1, tool: 'web_research', query: 'current research question' }],
+      }}
+    />,
+  );
+  expect(screen.getByText('Researching with Perplexity…')).toBeInTheDocument();
+  expect(screen.getByText('Researching the web: current research question')).toBeInTheDocument();
+});
+
 test('a web_search step retitles the spinner to "Searching the web…", not "documents"', () => {
   render(
     <StreamingMessage
@@ -95,7 +109,14 @@ test('agentSteps/toolResults captured live flow through to the "Behind the scene
           {
             n: 1,
             tool: 'web_search',
-            results: [{ title: 'ISO 45001 overview', url: 'https://example.test/iso', source: 'example.test', snippet: 'ISO 45001 is an OHS standard.' }],
+            results: [
+              {
+                title: 'ISO 45001 overview',
+                url: 'https://example.test/iso',
+                source: 'example.test',
+                snippet: 'ISO 45001 is an OHS standard.',
+              },
+            ],
           },
         ],
       }}
@@ -113,7 +134,9 @@ test('blocks captured off the live SSE frame render via BlockRenderer once strea
         ...base,
         status: 'streaming',
         text: 'Revenue grew this quarter.',
-        blocks: [{ type: 'callout', tone: 'success', title: 'Up 12%', body: 'Quarter over quarter.' }],
+        blocks: [
+          { type: 'callout', tone: 'success', title: 'Up 12%', body: 'Quarter over quarter.' },
+        ],
       }}
     />,
   );

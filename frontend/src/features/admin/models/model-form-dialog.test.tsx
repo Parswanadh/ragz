@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { CatalogOut, ModelOut } from '@/api/types';
+import type { RuntimeProvider, RuntimeModel } from './agent-api';
 
 vi.mock('@/components/ui/toaster', () => ({
   toast: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }),
@@ -14,6 +15,7 @@ import { toast } from '@/components/ui/toaster';
 import { ModelFormDialog, deriveProviderKind, prettifyModelName } from './model-form-dialog';
 
 const fixtureModel: ModelOut = {
+  billing_mode: 'metered',
   id: 'm1',
   litellm_model_name: 'gpt-4o-mini',
   display_name: 'GPT-4o mini',
@@ -37,22 +39,69 @@ const fixtureModel: ModelOut = {
 const fixtureCatalog: CatalogOut = {
   new_available: 5,
   entries: [
-    { name: 'claude-4-sonnet', provider: 'anthropic', mode: 'chat', max_input_tokens: 200000,
-      input_cost_per_1m: 3, output_cost_per_1m: 15, position: 9, registered: false },
-    { name: 'claude-3-haiku', provider: 'anthropic', mode: 'chat', max_input_tokens: 200000,
-      input_cost_per_1m: 0.25, output_cost_per_1m: 1.25, position: 2, registered: false },
-    { name: 'gemini/gemini-2.5-pro', provider: 'gemini', mode: 'chat', max_input_tokens: 1048576,
-      input_cost_per_1m: 1.25, output_cost_per_1m: 10, position: 7, registered: false },
+    {
+      name: 'claude-4-sonnet',
+      provider: 'anthropic',
+      mode: 'chat',
+      max_input_tokens: 200000,
+      input_cost_per_1m: 3,
+      output_cost_per_1m: 15,
+      position: 9,
+      registered: false,
+    },
+    {
+      name: 'claude-3-haiku',
+      provider: 'anthropic',
+      mode: 'chat',
+      max_input_tokens: 200000,
+      input_cost_per_1m: 0.25,
+      output_cost_per_1m: 1.25,
+      position: 2,
+      registered: false,
+    },
+    {
+      name: 'gemini/gemini-2.5-pro',
+      provider: 'gemini',
+      mode: 'chat',
+      max_input_tokens: 1048576,
+      input_cost_per_1m: 1.25,
+      output_cost_per_1m: 10,
+      position: 7,
+      registered: false,
+    },
     // openai has a newer chat model (higher position) AND an embedding model —
     // the picker must filter by the selected Type so text-embedding-3-small
     // isn't hidden behind gpt-4o-mini when "Embedding model" is chosen.
-    { name: 'gpt-4o-mini', provider: 'openai', mode: 'chat', max_input_tokens: 128000,
-      input_cost_per_1m: 0.15, output_cost_per_1m: 0.6, position: 5, registered: true },
-    { name: 'text-embedding-3-small', provider: 'openai', mode: 'embedding',
-      max_input_tokens: 8191, input_cost_per_1m: 0.02, output_cost_per_1m: 0,
-      position: 3, registered: false },
-    { name: 'zeta-chat', provider: 'zeta', mode: 'chat', max_input_tokens: null,
-      input_cost_per_1m: null, output_cost_per_1m: null, position: 1, registered: false },
+    {
+      name: 'gpt-4o-mini',
+      provider: 'openai',
+      mode: 'chat',
+      max_input_tokens: 128000,
+      input_cost_per_1m: 0.15,
+      output_cost_per_1m: 0.6,
+      position: 5,
+      registered: true,
+    },
+    {
+      name: 'text-embedding-3-small',
+      provider: 'openai',
+      mode: 'embedding',
+      max_input_tokens: 8191,
+      input_cost_per_1m: 0.02,
+      output_cost_per_1m: 0,
+      position: 3,
+      registered: false,
+    },
+    {
+      name: 'zeta-chat',
+      provider: 'zeta',
+      mode: 'chat',
+      max_input_tokens: null,
+      input_cost_per_1m: null,
+      output_cost_per_1m: null,
+      position: 1,
+      registered: false,
+    },
   ],
 };
 
@@ -70,11 +119,13 @@ function routedFetch(mutationResponse: (req: Request) => Promise<Response>) {
   });
 }
 
-const created = (status = 201) => async (_req: Request) =>
-  new Response(JSON.stringify({ id: 'm1', key_fingerprint: 'ab12…ef90' }), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
+const created =
+  (status = 201) =>
+  async (_req: Request) =>
+    new Response(JSON.stringify({ id: 'm1', key_fingerprint: 'ab12…ef90' }), {
+      status,
+      headers: { 'content-type': 'application/json' },
+    });
 
 function mutationCalls(fetchMock: ReturnType<typeof vi.fn>): Request[] {
   return fetchMock.mock.calls
@@ -95,6 +146,7 @@ function renderDialog(
     model?: ModelOut | null;
     onOpenChange?: (open: boolean) => void;
     queryClient?: QueryClient;
+    preset?: { provider: RuntimeProvider; model?: RuntimeModel; modality: 'chat' | 'embedding' };
   } = {},
 ) {
   vi.stubGlobal('fetch', fetchMock);
@@ -103,7 +155,12 @@ function renderDialog(
   const onOpenChange = options.onOpenChange ?? vi.fn();
   render(
     <QueryClientProvider client={queryClient}>
-      <ModelFormDialog open onOpenChange={onOpenChange} model={options.model ?? null} />
+      <ModelFormDialog
+        open
+        onOpenChange={onOpenChange}
+        model={options.model ?? null}
+        preset={options.preset}
+      />
     </QueryClientProvider>,
   );
   return { queryClient, onOpenChange };
@@ -235,7 +292,7 @@ test('custom path reveals the manual fields: kind select, model id, base URL for
   const kinds = within(kindSelect)
     .getAllByRole('option')
     .map((o) => (o as HTMLOptionElement).value);
-  expect(kinds).toEqual(['openai', 'ollama', 'openai_compatible']);
+  expect(kinds).toEqual(['openai', 'ollama', 'openai_compatible', 'litellm']);
   expect(screen.queryByLabelText('Base URL')).not.toBeInTheDocument(); // openai default
   await user.selectOptions(kindSelect, 'ollama');
   expect(screen.getByLabelText('Base URL')).toBeInTheDocument();
@@ -268,6 +325,112 @@ test('custom path submits the assembled payload', async () => {
     provider_kind: 'openai',
     api_key: 'sk-test-123',
   });
+});
+
+test('a native catalog provider retains its required base URL in the create request', async () => {
+  const fetchMock = routedFetch(created());
+  const user = userEvent.setup();
+  renderDialog(fetchMock, {
+    preset: {
+      provider: {
+        id: 'azure',
+        supported: true,
+        name: 'Azure',
+        icon: 'azure',
+        provider_kind: 'litellm',
+        needs_key: true,
+        needs_base_url: true,
+        default_base_url: null,
+        auth_mode: 'api_key',
+        model_count: 1,
+      },
+      modality: 'chat',
+    },
+  });
+  await user.type(screen.getByLabelText('Model id'), 'azure/deployment');
+  await user.type(screen.getByLabelText('Display name'), 'Azure model');
+  await user.type(screen.getByLabelText('Base URL'), 'https://example.openai.azure.com');
+  await user.click(screen.getByRole('button', { name: 'Add model' }));
+  await vi.waitFor(() => expect(mutationCalls(fetchMock)).toHaveLength(1));
+  expect((await mutationBodies(fetchMock))[0]).toMatchObject({
+    provider_kind: 'litellm',
+    litellm_model_name: 'azure/deployment',
+    base_url: 'https://example.openai.azure.com',
+  });
+});
+
+test('editing a native provider retains and can update its stored base URL', async () => {
+  const fetchMock = routedFetch(created(200));
+  const user = userEvent.setup();
+  renderDialog(fetchMock, {
+    model: { ...fixtureModel, provider_kind: 'litellm', base_url: 'https://old.example.com' },
+  });
+  await user.clear(screen.getByLabelText('Base URL'));
+  await user.type(screen.getByLabelText('Base URL'), 'https://new.example.com');
+  await user.click(screen.getByRole('button', { name: 'Save changes' }));
+  await vi.waitFor(() => expect(mutationCalls(fetchMock)).toHaveLength(1));
+  expect((await mutationBodies(fetchMock))[0]).toEqual({ base_url: 'https://new.example.com' });
+});
+
+test('Gemini embedding registration uses the runtime dimension of 3072', async () => {
+  const fetchMock = routedFetch(created());
+  const user = userEvent.setup();
+  renderDialog(fetchMock, {
+    preset: {
+      provider: {
+        id: 'gemini',
+        supported: true,
+        name: 'Gemini',
+        icon: 'gemini',
+        provider_kind: 'litellm',
+        needs_key: true,
+        needs_base_url: false,
+        default_base_url: null,
+        auth_mode: 'api_key',
+        model_count: 1,
+      },
+      model: {
+        id: 'gemini/gemini-embedding-001',
+        name: 'gemini/gemini-embedding-001',
+        provider: 'gemini',
+        mode: 'embedding',
+        display_name: 'Gemini embedding',
+        dimension: 3072,
+        max_input_tokens: 2048,
+        max_output_tokens: null,
+        input_cost_per_1m: null,
+        output_cost_per_1m: null,
+        supports_function_calling: false,
+        supports_reasoning: false,
+        supports_vision: false,
+        registered: false,
+        billing_mode: 'metered',
+      },
+      modality: 'embedding',
+    },
+  });
+  expect(screen.getByLabelText('Vector dimension')).toHaveValue(3072);
+  await user.click(screen.getByRole('button', { name: 'Add model' }));
+  await vi.waitFor(() => expect(mutationCalls(fetchMock)).toHaveLength(1));
+  expect((await mutationBodies(fetchMock))[0]).toMatchObject({
+    dimension: 3072,
+    modality: 'embedding',
+  });
+});
+
+test('editing reasoning defaults offers only efforts supported by the server', async () => {
+  renderDialog(routedFetch(created(200)), {
+    model: {
+      ...fixtureModel,
+      supports_reasoning: true,
+      default_reasoning_effort: 'high',
+      supported_reasoning_efforts: ['low', 'high', 'ultra'],
+    },
+  });
+  const efforts = within(screen.getByLabelText('Default reasoning effort'));
+  expect(efforts.getByRole('option', { name: 'Ultra' })).toBeInTheDocument();
+  expect(efforts.queryByRole('option', { name: 'Max' })).not.toBeInTheDocument();
+  expect(efforts.queryByRole('option', { name: 'Medium' })).not.toBeInTheDocument();
 });
 
 test('checking "unreliable at native tool calling" includes tools_unreliable in the create payload', async () => {
@@ -308,11 +471,12 @@ test('editing a flagged model shows the checkbox pre-checked and unchecking it P
 });
 
 test('a 502 still invalidates the caches and closes the dialog as a partial success', async () => {
-  const fetchMock = routedFetch(async (_req: Request) =>
-    new Response(JSON.stringify({ detail: 'gateway unreachable' }), {
-      status: 502,
-      headers: { 'content-type': 'application/json' },
-    }),
+  const fetchMock = routedFetch(
+    async (_req: Request) =>
+      new Response(JSON.stringify({ detail: 'gateway unreachable' }), {
+        status: 502,
+        headers: { 'content-type': 'application/json' },
+      }),
   );
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
@@ -331,11 +495,12 @@ test('a 502 still invalidates the caches and closes the dialog as a partial succ
 });
 
 test('a non-502 failure keeps the dialog open with a distinguishable generic message, but still invalidates', async () => {
-  const fetchMock = routedFetch(async (_req: Request) =>
-    new Response(JSON.stringify({ detail: 'boom' }), {
-      status: 500,
-      headers: { 'content-type': 'application/json' },
-    }),
+  const fetchMock = routedFetch(
+    async (_req: Request) =>
+      new Response(JSON.stringify({ detail: 'boom' }), {
+        status: 500,
+        headers: { 'content-type': 'application/json' },
+      }),
   );
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');

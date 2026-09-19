@@ -1,6 +1,6 @@
 from typing import Any
 
-import aioboto3
+from aiobotocore.session import get_session
 from botocore.exceptions import BotoCoreError, ClientError
 
 from ragz.modules.email.errors import EmailError
@@ -8,7 +8,7 @@ from ragz.modules.email.schemas import EmailMessage
 
 
 class SesSender:
-    """`EmailSender` implementation backed by Amazon SES (aioboto3).
+    """`EmailSender` implementation backed by Amazon SES (aiobotocore).
 
     Credentials are passed in already-decrypted; this class never imports or
     touches `modules/secrets`.
@@ -23,7 +23,7 @@ class SesSender:
         from_email: str,
         from_name: str,
     ) -> None:
-        self._session = aioboto3.Session()
+        self._session = get_session()
         self._region = region
         self._access_key_id = access_key_id
         self._secret_access_key = secret_access_key
@@ -31,7 +31,7 @@ class SesSender:
         self._from_name = from_name
 
     def _client(self) -> Any:
-        return self._session.client(
+        return self._session.create_client(
             "ses",
             region_name=self._region,
             aws_access_key_id=self._access_key_id,

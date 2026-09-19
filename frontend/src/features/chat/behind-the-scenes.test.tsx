@@ -10,6 +10,36 @@ test('renders nothing when there are no agent steps', () => {
   expect(container).toBeEmptyDOMElement();
 });
 
+test('Perplexity research exposes cited sources in an expandable research card', async () => {
+  const user = userEvent.setup();
+  render(
+    <BehindTheScenes
+      steps={[{ n: 1, tool: 'web_research', query: 'research question' }]}
+      toolResults={[
+        {
+          n: 1,
+          tool: 'web_research',
+          results: [
+            {
+              title: 'Research source',
+              url: 'https://example.test/research',
+              source: 'example.test',
+              snippet: 'A cited finding.',
+            },
+          ],
+        },
+      ]}
+    />,
+  );
+  await user.click(screen.getByRole('button', { name: 'Behind the scenes' }));
+  await user.click(screen.getByRole('button', { name: /Research with Perplexity/ }));
+  expect(screen.getByRole('link', { name: 'Research source' })).toHaveAttribute(
+    'href',
+    'https://example.test/research',
+  );
+  expect(screen.getByText('A cited finding.')).toBeInTheDocument();
+});
+
 test('renders the "Behind the scenes" toggle when agent steps exist, collapsed by default', () => {
   const steps: AgentStepInfo[] = [{ n: 1, tool: 'search', query: 'muster point' }];
   render(<BehindTheScenes steps={steps} toolResults={[]} />);
@@ -80,7 +110,9 @@ test('a non-http(s) result url renders as plain text, never as a link', async ()
     {
       n: 1,
       tool: 'web_search',
-      results: [{ title: 'Suspicious result', url: 'javascript:alert(1)', source: '', snippet: '' }],
+      results: [
+        { title: 'Suspicious result', url: 'javascript:alert(1)', source: '', snippet: '' },
+      ],
     },
   ];
   const user = userEvent.setup();

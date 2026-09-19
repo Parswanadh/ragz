@@ -31,7 +31,8 @@ that taint boundary.
 import asyncio
 import re
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
+from urllib.parse import urlsplit
 
 import httpx
 import structlog
@@ -45,6 +46,8 @@ from ragz.modules.secrets import service as secrets_service
 logger = structlog.get_logger()
 
 TAVILY_SECRET_NAME = "tavily"  # noqa: S105 - a secret NAME, not a secret
+PERPLEXITY_SECRET_NAME = "perplexity"  # noqa: S105 - secret name only
+DEFAULT_PERPLEXITY_MODEL = "openai/gpt-5.6-luna"
 _MAX_RESULTS = 10
 _SNIPPET_CHARS = 500
 # Full-page-content budget: how many chars of extracted page text one result's
@@ -97,6 +100,7 @@ _REDACT_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"bearer\s+[a-z0-9._-]{8,}", re.IGNORECASE), "[REDACTED-TOKEN]"),
     (re.compile(r"[a-z0-9_.+-]+@[a-z0-9-]+\.[a-z0-9.-]+", re.IGNORECASE), "[REDACTED-EMAIL]"),
     (re.compile(r"sk-[a-z0-9]{10,}", re.IGNORECASE), "[REDACTED-KEY]"),
+    (re.compile(r"\b(?:pplx|tvly)-[a-z0-9_-]{8,}", re.IGNORECASE), "[REDACTED-KEY]"),
     (re.compile(r"ghp_[a-z0-9]{20,}", re.IGNORECASE), "[REDACTED-KEY]"),
     (
         re.compile(
@@ -154,6 +158,166 @@ class WebResult:
     # Only TavilySearcher ever populates this; every other provider leaves it
     # None, which is byte-identical to pre-Task-8 behavior.
     image_url: str | None = None
+    result_kind: Literal["links", "answer", "answer_citation"] = "links"
+
+
+@dataclass(frozen=True)
+class WebCitation:
+    id: str
+    title: str
+    url: str
+
+
+@dataclass(frozen=True)
+class WebResearch:
+    answer: str
+    citations: tuple[WebCitation, ...]
+
+    def as_web_results(self) -> list[WebResult]:
+        """Keep one labeled synthesis; cited links never inherit its prose."""
+        bibliography = "\n".join(f"{c.id}: {c.title} — {c.url}" for c in self.citations)
+        return [
+            WebResult(
+                title="Perplexity — third-party synthesis", url="https://www.perplexity.ai/",
+                snippet=(
+                    "Perplexity third-party synthesis, not primary-source page text. "
+                    "Bracketed numbers inside this answer refer to Perplexity's own "
+                    "bibliography below, not Ragz data-block IDs.\n\n"
+                    f"{self.answer}\n\nPerplexity's cited sources:\n{bibliography}"
+                ),
+                result_kind="answer",
+            ),
+            *[
+                WebResult(
+                    title=c.title, url=c.url,
+                    snippet=(
+                        "Cited by Perplexity's third-party synthesis; page text was not fetched."
+                    ),
+                    result_kind="answer_citation",
+                )
+                for c in self.citations
+            ],
+        ]
+
+
+class WebResearcher(Protocol):
+    billable: bool
+
+    async def __call__(self, session: AsyncSession, query: str) -> WebResearch: ...
+
+
+def _parse_perplexity_output(body: object) -> WebResearch:
+    if not isinstance(body, dict) or not isinstance(body.get("output"), list):
+        raise UpstreamError("malformed Perplexity research response")
+    parts: list[str] = []
+    citations: list[WebCitation] = []
+    seen: set[str] = set()
+
+    def add_citation(raw: object) -> None:
+        if not isinstance(raw, dict) or len(citations) >= 20:
+            return
+        url = raw.get("url")
+        if not isinstance(url, str) or len(url) > 2048:
+            return
+        try:
+            parsed = urlsplit(url)
+            if parsed.scheme not in ("http", "https") or not parsed.hostname:
+                return
+            if parsed.username or parsed.password or url in seen:
+                return
+        except ValueError:
+            return
+        seen.add(url)
+        citations.append(WebCitation(
+            id=str(raw.get("id") or len(citations) + 1)[:120],
+            title=str(raw.get("title") or url)[:200], url=url,
+        ))
+
+    for item in body["output"]:
+        if not isinstance(item, dict):
+            continue
+        if item.get("type") == "search_results" and isinstance(item.get("results"), list):
+            for source in item["results"]:
+                add_citation(source)
+        if item.get("type") == "message" and isinstance(item.get("content"), list):
+            for block in item["content"]:
+                if not isinstance(block, dict) or block.get("type") != "output_text":
+                    continue
+                if isinstance(block.get("text"), str):
+                    parts.append(block["text"].strip())
+                annotations = block.get("annotations")
+                if isinstance(annotations, list):
+                    for annotation in annotations:
+                        if (
+                            isinstance(annotation, dict)
+                            and annotation.get("type") == "url_citation"
+                        ):
+                            add_citation(annotation)
+    answer = "\n\n".join(parts).strip()[:8000]
+    if not answer:
+        raise UpstreamError("Perplexity returned no answer")
+    return WebResearch(answer=answer, citations=tuple(citations))
+
+
+class PerplexityResearcher:
+    """Cited synthesis from the Agent API, using the sole secret decrypt path."""
+
+    billable = True
+
+    def __init__(
+        self, *, settings: Settings, model: str = DEFAULT_PERPLEXITY_MODEL,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        self._settings = settings
+        self._model = model
+        self._transport = transport
+
+    async def __call__(self, session: AsyncSession, query: str) -> WebResearch:
+        key = await secrets_service._get_secret_decrypted(  # noqa: SLF001
+            session, name=PERPLEXITY_SECRET_NAME, settings=self._settings,
+        )
+        payload = {
+            "model": self._model, "input": query,
+            "tools": [{"type": "web_search", "search_context_size": "medium", "max_results": 10}],
+            "instructions": (
+                "Answer from current web sources. Be concise and factual and cite sources. "
+                "Prefer primary sources and state dates for time-sensitive claims. "
+                "Say plainly when sources disagree or no answer is available."
+            ),
+            "max_output_tokens": 1500,
+        }
+        try:
+            async with httpx.AsyncClient(
+                transport=self._transport, timeout=httpx.Timeout(60.0, connect=5.0),
+            ) as client:
+                response = await client.post(
+                    "https://api.perplexity.ai/v1/agent", json=payload,
+                    headers={"Authorization": f"Bearer {key}"},
+                )
+        except httpx.HTTPError as exc:
+            raise UpstreamError("Perplexity research provider unreachable") from exc
+        if response.status_code != 200:
+            raise UpstreamError(f"Perplexity research provider returned {response.status_code}")
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise UpstreamError("malformed Perplexity research response") from exc
+        return _parse_perplexity_output(body)
+
+
+async def build_web_researcher(
+    session: AsyncSession, settings: Settings,
+    *, transport: httpx.AsyncBaseTransport | None = None,
+) -> WebResearcher | None:
+    if await get_app_setting(session, "web_search_provider") != "perplexity":
+        return None
+    present = await secrets_service.existing_secret_names(session, [PERPLEXITY_SECRET_NAME])
+    if PERPLEXITY_SECRET_NAME not in present:
+        return None
+    model = await get_app_setting(session, "web_search_perplexity_model")
+    return PerplexityResearcher(
+        settings=settings, model=model or DEFAULT_PERPLEXITY_MODEL, transport=transport,
+    )
 
 
 class WebSearcher(Protocol):

@@ -29,8 +29,12 @@ test('a stream that starts with token (no retrieval_started/sources) still rende
     {
       type: 'done',
       done: {
-        message_id: 'm1', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-        grounding: 'documents', validation_failed: false,
+        message_id: 'm1',
+        prompt_tokens: 1,
+        completion_tokens: 1,
+        no_answer: false,
+        grounding: 'documents',
+        validation_failed: false,
       },
     },
   ];
@@ -58,8 +62,12 @@ test('the reducer stores grounding="general" from the done frame', async () => {
     {
       type: 'done',
       done: {
-        message_id: 'm2', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-        grounding: 'general', validation_failed: false,
+        message_id: 'm2',
+        prompt_tokens: 1,
+        completion_tokens: 1,
+        no_answer: false,
+        grounding: 'general',
+        validation_failed: false,
       },
     },
   ];
@@ -85,8 +93,12 @@ test('the reducer stores validationFailed=true from the done frame and resets on
     {
       type: 'done',
       done: {
-        message_id: 'm4', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-        grounding: 'documents', validation_failed: true,
+        message_id: 'm4',
+        prompt_tokens: 1,
+        completion_tokens: 1,
+        no_answer: false,
+        grounding: 'documents',
+        validation_failed: true,
       },
     },
   ];
@@ -112,8 +124,12 @@ test('the reducer stores validationFailed=true from the done frame and resets on
     {
       type: 'done',
       done: {
-        message_id: 'm5', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-        grounding: 'documents', validation_failed: false,
+        message_id: 'm5',
+        prompt_tokens: 1,
+        completion_tokens: 1,
+        no_answer: false,
+        grounding: 'documents',
+        validation_failed: false,
       },
     },
   ];
@@ -139,8 +155,12 @@ test('agent_step frames accumulate in order and keep status=retrieving', async (
     {
       type: 'done',
       done: {
-        message_id: 'm3', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-        grounding: 'documents', validation_failed: false,
+        message_id: 'm3',
+        prompt_tokens: 1,
+        completion_tokens: 1,
+        no_answer: false,
+        grounding: 'documents',
+        validation_failed: false,
       },
     },
   ];
@@ -194,16 +214,28 @@ test('tool_result frames accumulate into toolResults, paired to their agent_step
     {
       type: 'tool_result',
       result: {
-        n: 1, tool: 'web_search',
-        results: [{ title: 'ISO 45001 overview', url: 'https://example.test/iso', source: 'example.test', snippet: 'ISO 45001 is an OHS standard.' }],
+        n: 1,
+        tool: 'web_search',
+        results: [
+          {
+            title: 'ISO 45001 overview',
+            url: 'https://example.test/iso',
+            source: 'example.test',
+            snippet: 'ISO 45001 is an OHS standard.',
+          },
+        ],
       },
     },
     { type: 'token', delta: 'Per ISO 45001.' },
     {
       type: 'done',
       done: {
-        message_id: 'm4', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-        grounding: 'documents', validation_failed: false,
+        message_id: 'm4',
+        prompt_tokens: 1,
+        completion_tokens: 1,
+        no_answer: false,
+        grounding: 'documents',
+        validation_failed: false,
       },
     },
   ];
@@ -220,8 +252,16 @@ test('tool_result frames accumulate into toolResults, paired to their agent_step
 
   expect(result.current.toolResults).toEqual([
     {
-      n: 1, tool: 'web_search',
-      results: [{ title: 'ISO 45001 overview', url: 'https://example.test/iso', source: 'example.test', snippet: 'ISO 45001 is an OHS standard.' }],
+      n: 1,
+      tool: 'web_search',
+      results: [
+        {
+          title: 'ISO 45001 overview',
+          url: 'https://example.test/iso',
+          source: 'example.test',
+          snippet: 'ISO 45001 is an OHS standard.',
+        },
+      ],
     },
   ]);
 });
@@ -231,7 +271,11 @@ test('toolResults resets to empty on a fresh send (back to IDLE)', async () => {
     async (_url: string, _body: unknown, onEvent: (e: ChatSseEvent) => void) => {
       onEvent({
         type: 'tool_result',
-        result: { n: 1, tool: 'web_search', results: [{ title: 't', url: 'https://x.test', source: 'x.test', snippet: '' }] },
+        result: {
+          n: 1,
+          tool: 'web_search',
+          results: [{ title: 't', url: 'https://x.test', source: 'x.test', snippet: '' }],
+        },
       });
     },
   );
@@ -262,8 +306,12 @@ test('the reducer stores blocks from the blocks SSE frame and resets on the next
     {
       type: 'done',
       done: {
-        message_id: 'm6', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-        grounding: 'documents', validation_failed: false,
+        message_id: 'm6',
+        prompt_tokens: 1,
+        completion_tokens: 1,
+        no_answer: false,
+        grounding: 'documents',
+        validation_failed: false,
       },
     },
   ];
@@ -288,8 +336,12 @@ test('the reducer stores blocks from the blocks SSE frame and resets on the next
       onEvent({
         type: 'done',
         done: {
-          message_id: 'm7', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-          grounding: 'documents', validation_failed: false,
+          message_id: 'm7',
+          prompt_tokens: 1,
+          completion_tokens: 1,
+          no_answer: false,
+          grounding: 'documents',
+          validation_failed: false,
         },
       });
     },
@@ -365,8 +417,12 @@ test('send includes reasoning_effort in the body when set and not "off"', async 
       onEvent({
         type: 'done',
         done: {
-          message_id: 'm1', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-          grounding: 'documents', validation_failed: false,
+          message_id: 'm1',
+          prompt_tokens: 1,
+          completion_tokens: 1,
+          no_answer: false,
+          grounding: 'documents',
+          validation_failed: false,
         },
       });
     },
@@ -381,14 +437,18 @@ test('send includes reasoning_effort in the body when set and not "off"', async 
   expect(body).toMatchObject({ reasoning_effort: 'high' });
 });
 
-test('send omits reasoning_effort from the body when "off" or absent', async () => {
+test('send preserves explicit off so it can override a model default', async () => {
   streamChatSse.mockImplementation(
     async (_url: string, _body: unknown, onEvent: (e: ChatSseEvent) => void) => {
       onEvent({
         type: 'done',
         done: {
-          message_id: 'm1', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-          grounding: 'documents', validation_failed: false,
+          message_id: 'm1',
+          prompt_tokens: 1,
+          completion_tokens: 1,
+          no_answer: false,
+          grounding: 'documents',
+          validation_failed: false,
         },
       });
     },
@@ -400,7 +460,14 @@ test('send omits reasoning_effort from the body when "off" or absent', async () 
   });
 
   const [, body] = streamChatSse.mock.calls[0]!;
-  expect(body).not.toHaveProperty('reasoning_effort');
+  expect(body).toMatchObject({ reasoning_effort: 'off' });
+});
+
+test.each([null, undefined])('send omits reasoning_effort for Default (%s)', async (effort) => {
+  streamChatSse.mockResolvedValue(undefined);
+  const { result } = renderHook(() => useChatStream('c1'), { wrapper });
+  await act(async () => result.current.send('hi', undefined, 'model-1', effort));
+  expect(streamChatSse.mock.calls[0]?.[1]).not.toHaveProperty('reasoning_effort');
 });
 
 test('send includes attachment_ids in the body when provided', async () => {
@@ -409,8 +476,12 @@ test('send includes attachment_ids in the body when provided', async () => {
       onEvent({
         type: 'done',
         done: {
-          message_id: 'm1', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-          grounding: 'documents', validation_failed: false,
+          message_id: 'm1',
+          prompt_tokens: 1,
+          completion_tokens: 1,
+          no_answer: false,
+          grounding: 'documents',
+          validation_failed: false,
         },
       });
     },
@@ -431,8 +502,12 @@ test('send includes web_search_consented only when the flag is true', async () =
       onEvent({
         type: 'done',
         done: {
-          message_id: 'm1', prompt_tokens: 1, completion_tokens: 1, no_answer: false,
-          grounding: 'documents', validation_failed: false,
+          message_id: 'm1',
+          prompt_tokens: 1,
+          completion_tokens: 1,
+          no_answer: false,
+          grounding: 'documents',
+          validation_failed: false,
         },
       });
     },

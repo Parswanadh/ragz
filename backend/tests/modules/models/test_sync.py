@@ -158,6 +158,22 @@ async def test_litellm_kind_passes_catalog_name_verbatim(
     assert "api_base" not in new_payload["litellm_params"]
 
 
+async def test_native_provider_endpoint_is_forwarded(
+    session: AsyncSession, seeded_user: User, settings: Settings,
+) -> None:
+    ctx = super_ctx(seeded_user)
+    await create_model(
+        session, ctx, litellm_model_name="azure/gpt-6-astra", display_name="Azure Astra",
+        provider_kind="litellm", base_url="https://example.openai.azure.com/",
+        api_key="azure-test-key", settings=settings,
+    )
+    rec = Recorder()
+    assert await sync_models_to_litellm(session, settings, transport=rec.transport) == 1
+    payload = json.loads(next(content for _, path, content in rec.calls if path == "/model/new"))
+    assert payload["litellm_params"]["model"] == "azure/gpt-6-astra"
+    assert payload["litellm_params"]["api_base"] == "https://example.openai.azure.com/"
+
+
 async def test_sync_tolerates_empty_litellm_proxy_on_first_sync(
     session: AsyncSession, seeded_user: User, settings: Settings
 ) -> None:
@@ -232,6 +248,8 @@ def test_decryption_callers_are_exactly_the_gateway_allowlist() -> None:
     allowed = {
         src_root / "modules" / "secrets" / "service.py",
         src_root / "modules" / "models" / "sync.py",
+        # Encrypted ChatGPT subscription tokens: refresh and outbound Responses auth only.
+        src_root / "modules" / "models" / "chatgpt_oauth.py",
         src_root / "modules" / "auth" / "oidc.py",
         src_root / "modules" / "models" / "keys.py",
         src_root / "modules" / "chat" / "web.py",
