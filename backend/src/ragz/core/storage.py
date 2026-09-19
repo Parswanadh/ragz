@@ -21,6 +21,13 @@ async def _read_chunk(fileobj: Any, size: int) -> bytes:
     return chunk or b""
 
 
+async def _write_chunk(fileobj: Any, chunk: bytes) -> None:
+    """Write one chunk to a sync OR async file-like object."""
+    written = fileobj.write(chunk)
+    if inspect.isawaitable(written):
+        await written
+
+
 class ObjectStorage:
     """Thin async S3 wrapper for MinIO. One bucket per deployment."""
 
@@ -143,12 +150,15 @@ class ObjectStorage:
 
         async with self._client() as s3:
             try:
-                await s3.download_fileobj(self.bucket, key, fileobj)
+                obj = await s3.get_object(Bucket=self.bucket, Key=key)
             except ClientError as exc:
                 code = exc.response.get("Error", {}).get("Code", "")
                 if code in {"NoSuchKey", "404"}:
                     raise NotFoundError(f"object not found: {key}") from exc
                 raise
+            body = obj["Body"]
+            while chunk := await body.read(_PART_SIZE):
+                await _write_chunk(fileobj, chunk)
 
     async def get_prefix(self, key: str, max_bytes: int) -> bytes:
         """Read only the bounded prefix needed for server-side type checks."""
