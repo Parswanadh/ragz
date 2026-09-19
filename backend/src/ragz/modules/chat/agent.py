@@ -393,16 +393,16 @@ async def execute_tool(
                 )
             _log_web_search_decision(allowed=True, reason="ok", redacted_query=outgoing_query)
             if action.action == "web_research" and web_researcher is not None:
-                provider = web_researcher
                 research = await web_researcher(session, outgoing_query)
                 results = research.as_web_results()
+                billable = getattr(web_researcher, "billable", False)
             else:
-                provider = web_searcher
                 results = await web_searcher(session, outgoing_query)
+                billable = getattr(web_searcher, "billable", False)
             # Persist paid-provider usage at the successful call boundary. A
             # later cancellation or source-assembly failure must not erase
             # work the provider has already performed.
-            if getattr(provider, "billable", False) and record_billable_web_usage:
+            if billable and record_billable_web_usage:
                 await record_billable_web_usage()
             # Increment ONLY on an actually-performed search (the call above
             # already succeeded) -- never on a refusal, and never before the
