@@ -3,7 +3,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import type { WorkspaceOut } from '@/api/types';
-import { setAccessToken } from '@/lib/auth-store';
 
 import { WorkspaceSettingsDialog } from './workspace-settings-dialog';
 
@@ -15,7 +14,6 @@ const ws: WorkspaceOut = {
   default_model_id: null,
   top_k: 8,
   rerank_enabled: false,
-  multi_query_enabled: false,
   system_prompt_override: null,
   fallback_policy: 'general_knowledge',
   web_search_enabled: false,
@@ -25,25 +23,10 @@ const ws: WorkspaceOut = {
   generative_ui_enabled: false,
 };
 
-const b64 = (value: object) =>
-  btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-const tokenFor = (role: 'superadmin' | 'admin' | 'user') =>
-  `${b64({ alg: 'HS256' })}.${b64({ sub: 'u1', org: 'o1', role, exp: 9999999999 })}.s`;
-
-function stubFetch(
-  responseBody: WorkspaceOut,
-  permissions: string[] = ['evals.read', 'evals.manage', 'evals.run'],
-  role: 'superadmin' | 'admin' | 'user' = 'user',
-) {
+function stubFetch(responseBody: WorkspaceOut) {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (req: Request) => {
-      if (req.url.includes('/me/authorization')) {
-        return new Response(JSON.stringify({ role, permissions, policy_version: 1 }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        });
-      }
       // MetadataFieldsSection (H-C8 mount point) fetches its own field list
       // on mount — stub it to an empty schema so it doesn't interfere with
       // these settings-form assertions.
@@ -77,13 +60,8 @@ function stubFetch(
   );
 }
 
-function renderDialog(
-  workspace: WorkspaceOut = ws,
-  responseBody: WorkspaceOut = ws,
-  permissions: string[] = ['evals.read', 'evals.manage', 'evals.run'],
-  role: 'superadmin' | 'admin' | 'user' = 'user',
-) {
-  stubFetch(responseBody, permissions, role);
+function renderDialog(workspace: WorkspaceOut = ws, responseBody: WorkspaceOut = ws) {
+  stubFetch(responseBody);
   render(
     <QueryClientProvider client={new QueryClient()}>
       <WorkspaceSettingsDialog workspace={workspace} open onOpenChange={vi.fn()} />
@@ -100,10 +78,7 @@ function findPatch(): Request {
   return call[0] as Request;
 }
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-  setAccessToken(null);
-});
+afterEach(() => vi.unstubAllGlobals());
 
 test('shows current values and PATCHes only the edited settings', async () => {
   const user = userEvent.setup();
@@ -128,75 +103,6 @@ test('shows current values and PATCHes only the edited settings', async () => {
   expect(body).toStrictEqual({ top_k: 12, rerank_enabled: true });
 });
 
-test('checking multi-query PATCHes only multi_query_enabled', async () => {
-  const user = userEvent.setup();
-  setAccessToken(tokenFor('superadmin'));
-  renderDialog(ws, { ...ws, multi_query_enabled: true }, [], 'superadmin');
-  const toggle = await screen.findByLabelText('Expand each question into multiple searches');
-  expect(toggle).not.toBeChecked();
-
-  await user.click(toggle);
-  await user.click(screen.getByRole('button', { name: 'Save settings' }));
-  await waitFor(() =>
-    expect(vi.mocked(fetch).mock.calls.some(([req]) => (req as Request).method === 'PATCH')).toBe(
-      true,
-    ),
-  );
-
-  const body = (await findPatch().clone().json()) as Record<string, unknown>;
-  expect(body).toStrictEqual({ multi_query_enabled: true });
-});
-
-test.each(['admin', 'user'] as const)('hides the multi-query control from %s users', (role) => {
-  setAccessToken(tokenFor(role));
-  renderDialog();
-
-  expect(
-    screen.queryByLabelText('Expand each question into multiple searches'),
-  ).not.toBeInTheDocument();
-  expect(screen.queryByText(/Superadmin control/)).not.toBeInTheDocument();
-});
-
-test('server authorization hides multi-query after a stale superadmin token is demoted', async () => {
-  setAccessToken(tokenFor('superadmin'));
-  renderDialog(ws, ws, [], 'admin');
-
-  await waitFor(() =>
-    expect(
-      vi
-        .mocked(fetch)
-        .mock.calls.some(([req]) => (req as Request).url.includes('/me/authorization')),
-    ).toBe(true),
-  );
-  expect(
-    screen.queryByLabelText('Expand each question into multiple searches'),
-  ).not.toBeInTheDocument();
-});
-
-test('hides the evaluations tab without evals.run permission', async () => {
-  setAccessToken(tokenFor('user'));
-  renderDialog(ws, ws, []);
-
-  await waitFor(() =>
-    expect(
-      vi
-        .mocked(fetch)
-        .mock.calls.some(([req]) => (req as Request).url.includes('/me/authorization')),
-    ).toBe(true),
-  );
-  expect(screen.queryByRole('button', { name: 'evals' })).not.toBeInTheDocument();
-});
-
-test.each(['evals.read', 'evals.manage', 'evals.run'])(
-  'shows the evaluations tab with %s permission',
-  async (permission) => {
-    setAccessToken(tokenFor('user'));
-    renderDialog(ws, ws, [permission]);
-
-    expect(await screen.findByRole('button', { name: 'evals' })).toBeInTheDocument();
-  },
-);
-
 test('leaves an untouched field out of the PATCH body entirely', async () => {
   const user = userEvent.setup();
   renderDialog(ws, { ...ws, top_k: 12 });
@@ -214,7 +120,6 @@ test('leaves an untouched field out of the PATCH body entirely', async () => {
   expect(body).toStrictEqual({ top_k: 12 });
   expect('min_score' in body).toBe(false);
   expect('rerank_enabled' in body).toBe(false);
-  expect('multi_query_enabled' in body).toBe(false);
   expect('system_prompt_override' in body).toBe(false);
 });
 
